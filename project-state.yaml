@@ -5,19 +5,81 @@ project:
   architecture: frontend-backend-separated-monolith
 
 lifecycle:
-  current_stage: business-positioning
-  current_gate: C1
-  baseline_version: V0.1-draft
+  current_stage: global-business-baseline
+  current_gate: C2
+  completed_gate: C1
+  last_completed_stage: business-positioning
+  baseline_version: V1.0
   status: in-progress
 
 confirmed:
   project_topic: true
   course_constraints: true
-  business_positioning: false
+  business_positioning: true
   global_business_baseline: false
   first_business_slice: false
   system_requirements: false
   prototype: false
+
+baselines:
+  C1:
+    name: 业务定位基线
+    version: V1.0
+    status: confirmed
+    confirmed_date: 2026-09-16
+    project_name: 面向动力电池回收利用企业的流转协同与追溯管理系统
+    system_positioning: 面向动力电池回收利用企业的 PC Web 系统，支持电池从回收接收、验收入库、库存管理、企业间流转到综合利用的业务协同和全过程追溯。
+    service_scope:
+      primary: 以企业内部管理为主。
+      secondary: 支持有限的上下游企业协同。
+      excluded_positioning: 不建设国家级监管平台。
+    business_value_priority:
+      - 电池流转全过程留痕与追溯
+      - 企业内部及企业间流转协同
+      - 异常发现和业务闭环
+      - 合规数据汇总与报表支撑
+    course_delivery_note: 课程展示属于项目交付目标，不作为业务价值。
+    in_scope:
+      - 用户、企业、角色和权限管理
+      - 电池及电池包基础档案
+      - 回收接收与验收
+      - 入库、库存和出库
+      - 企业间流转及接收确认
+      - 综合利用结果登记
+      - 生命周期追溯
+      - 异常记录与处理
+      - 统计分析和系统管理
+    out_of_scope:
+      - 对接真实国家监管平台
+      - 真实检测设备和物联网设备
+      - 在线支付、财务结算和物流调度
+      - 面向社会公众的查询平台
+      - 复杂拆解生产线控制
+      - 移动端、小程序和 App
+    initial_business_roles:
+      - 回收操作员
+      - 仓库管理员
+      - 流转管理员
+      - 综合利用人员
+      - 业务主管
+      - 系统管理员
+      - 外部协作企业
+    role_boundary: 外部协作企业作为企业间流转参与方，暂不设置独立公众角色。
+    core_business_objects:
+      - 企业
+      - 用户、角色及权限
+      - 动力电池或电池包
+      - 回收批次
+      - 验收记录
+      - 入库、库存和出库记录
+      - 流转单
+      - 接收确认记录
+      - 综合利用记录
+      - 生命周期追溯事件
+      - 异常记录
+      - 操作审计记录
+    external_interface_positioning: 首期只保留监管报送和外部系统接口的设计扩展能力，不进行真实平台连接；课程演示可以使用模拟报送或文件导出。
+    document_requirement: 按课程“软件工程27项文档”逐阶段生成；现在只确定文档清单和对应阶段，不一次性生成全部文档；如果老师提供固定名称和模板，再按课堂要求调整。
 
 constraints:
   minimum_documents: 12
@@ -28,3 +90,20 @@ constraints:
   no_code_before_required_gates: true
 
 open_questions: []
+
+next_stage:
+  stage: global-business-baseline
+  gate: C2
+  focus:
+    - 业务参与者和职责
+    - 端到端业务流程
+    - 业务对象及其关系
+    - 电池状态及状态转换
+    - 业务规则与异常流程
+    - 系统范围和人工边界
+    - 术语表
+    - 第一条纵向业务切片候选
+  prohibited_until_later_gates:
+    - 数据库设计
+    - 页面设计
+    - 前后端代码设计
