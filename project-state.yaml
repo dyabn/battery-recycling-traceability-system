@@ -89,8 +89,6 @@ constraints:
   no_invented_business_rules: true
   no_code_before_required_gates: true
 
-open_questions: []
-
 next_stage:
   stage: global-business-baseline
   gate: C2
@@ -107,3 +105,84 @@ next_stage:
     - 数据库设计
     - 页面设计
     - 前后端代码设计
+
+c2_progress:
+  current_step: C2-1 术语和业务事实盘点
+  status: paused-for-review
+  outputs:
+    - docs/business/c2-1-business-facts-baseline.md
+  completed_items:
+    - 业务术语表 V0.1
+    - 参与者及职责表 V0.1
+    - 端到端业务主流程 V0.1
+    - 业务事实基线表达 V0.1
+    - C2-1 待确认问题清单
+  not_started_items:
+    - 核心业务对象及关系
+    - 业务状态和状态转换
+    - 业务规则与异常流程
+    - 系统处理与人工处理边界
+    - 第一条纵向业务切片选择
+    - C2 检查和确认
+
+open_questions:
+  - id: Q-C2-001
+    stage: C2
+    question: 系统最小追踪单位是电池包、模组还是单体电芯？
+    impact: 影响追踪对象、编号、状态机和后续需求。
+    status: open
+  - id: Q-C2-002
+    stage: C2
+    question: 电池唯一编号从哪里产生，是否通过二维码识别？
+    impact: 影响接收、追溯、审计和演示方式。
+    status: open
+  - id: Q-C2-003
+    stage: C2
+    question: 回收接收时需要登记哪些来源信息？
+    impact: 影响回收接收事实和追溯节点。
+    status: open
+  - id: Q-C2-004
+    stage: C2
+    question: 验收结果有哪些：通过、拒收、待处理，还是包含有条件接收？
+    impact: 影响验收状态和异常路径。
+    status: open
+  - id: Q-C2-005
+    stage: C2
+    question: 入库前是否必须完成验收？
+    impact: 影响入库条件和业务规则。
+    status: open
+  - id: Q-C2-006
+    stage: C2
+    question: 企业间流转由哪一方创建，哪一方确认接收？
+    impact: 影响流转职责和协同边界。
+    status: open
+  - id: Q-C2-007
+    stage: C2
+    question: 对方拒收或实际数量不一致时如何处理？
+    impact: 影响异常流程和追溯记录。
+    status: open
+  - id: Q-C2-008
+    stage: C2
+    question: 综合利用包括梯次利用、拆解、材料回收中的哪些环节？
+    impact: 影响综合利用范围。
+    status: open
+  - id: Q-C2-009
+    stage: C2
+    question: 哪些操作必须由业务主管审核？
+    impact: 影响职责、权限和业务规则。
+    status: open
+  - id: Q-C2-010
+    stage: C2
+    question: 哪些记录一旦生效就不能删除，只能撤销或更正？
+    impact: 影响审计、追溯和更正规则。
+    status: open
+  - id: Q-C2-011
+    stage: C2
+    question: 合规报送首期采用报表导出还是模拟报送？
+    impact: 影响合规报送定位和演示交付。
+    status: open
+  - id: Q-C2-012
+    stage: C2
+    question: 追溯查询需要展示哪些关键节点和责任主体？
+    impact: 影响追溯事件口径和展示内容。
+    status: open
