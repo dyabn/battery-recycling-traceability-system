@@ -5,10 +5,10 @@ project:
   architecture: frontend-backend-separated-monolith
 
 lifecycle:
-  current_stage: global-business-baseline
-  current_gate: C2
-  completed_gate: C1
-  last_completed_stage: business-positioning
+  current_stage: first-business-slice
+  current_gate: C3
+  completed_gate: C2
+  last_completed_stage: global-business-baseline
   baseline_version: V1.0
   status: in-progress
 
@@ -16,7 +16,7 @@ confirmed:
   project_topic: true
   course_constraints: true
   business_positioning: true
-  global_business_baseline: false
+  global_business_baseline: true
   first_business_slice: false
   system_requirements: false
   prototype: false
@@ -80,6 +80,24 @@ baselines:
       - 操作审计记录
     external_interface_positioning: 首期只保留监管报送和外部系统接口的设计扩展能力，不进行真实平台连接；课程演示可以使用模拟报送或文件导出。
     document_requirement: 按课程“软件工程27项文档”逐阶段生成；现在只确定文档清单和对应阶段，不一次性生成全部文档；如果老师提供固定名称和模板，再按课堂要求调整。
+  C2:
+    name: 全局业务基线
+    version: V1.0
+    status: confirmed
+    confirmed_date: 2026-09-16
+    document: docs/business/c2-global-business-baseline.md
+    previous_baseline: C1 业务定位基线 V1.0
+    summary:
+      - 完成业务术语统一
+      - 完成业务参与者及职责定义
+      - 完成端到端业务主流程
+      - 完成核心业务对象及关系
+      - 完成电池包生命周期状态和业务单据状态
+      - 完成 50 条业务规则
+      - 完成 15 类主要异常及处理方式
+      - 完成系统处理与人工处理边界
+      - 完成追溯信息要求和统计指标定义
+      - 提出第一条纵向业务切片候选
 
 constraints:
   minimum_documents: 12
@@ -90,99 +108,121 @@ constraints:
   no_code_before_required_gates: true
 
 next_stage:
-  stage: global-business-baseline
-  gate: C2
+  stage: first-business-slice
+  gate: C3
+  name: 纵向业务切片定义
+  candidate_slice: recycle-acceptance-inbound-inventory
   focus:
-    - 业务参与者和职责
-    - 端到端业务流程
-    - 业务对象及其关系
-    - 电池状态及状态转换
-    - 业务规则与异常流程
-    - 系统范围和人工边界
-    - 术语表
-    - 第一条纵向业务切片候选
+    - 回收接收
+    - 电池登记
+    - 验收
+    - 入库
+    - 库存可见
   prohibited_until_later_gates:
-    - 数据库设计
-    - 页面设计
-    - 前后端代码设计
+    - 完整数据库设计
+    - 无关页面设计
+    - 完整系统代码生成
 
 c2_progress:
-  current_step: C2-1 术语和业务事实盘点
-  status: paused-for-review
+  current_step: C2 全局业务基线
+  status: completed
   outputs:
     - docs/business/c2-1-business-facts-baseline.md
+    - docs/business/c2-global-business-baseline.md
   completed_items:
     - 业务术语表 V0.1
     - 参与者及职责表 V0.1
     - 端到端业务主流程 V0.1
     - 业务事实基线表达 V0.1
     - C2-1 待确认问题清单
-  not_started_items:
     - 核心业务对象及关系
     - 业务状态和状态转换
     - 业务规则与异常流程
     - 系统处理与人工处理边界
     - 第一条纵向业务切片选择
     - C2 检查和确认
+  terminology: completed
+  actors_and_responsibilities: completed
+  end_to_end_process: completed
+  business_objects: completed
+  object_relationships: completed
+  lifecycle_states: completed
+  business_rules: completed
+  exception_processes: completed
+  system_manual_boundary: completed
+  metrics: completed
+  candidate_slice: completed
 
 open_questions:
   - id: Q-C2-001
     stage: C2
     question: 系统最小追踪单位是电池包、模组还是单体电芯？
     impact: 影响追踪对象、编号、状态机和后续需求。
-    status: open
+    status: resolved
+    resolution: C2 基线确定首期以电池包作为最小独立追踪单位，模组和电芯只记录数量、类型或规格。
   - id: Q-C2-002
     stage: C2
     question: 电池唯一编号从哪里产生，是否通过二维码识别？
     impact: 影响接收、追溯、审计和演示方式。
-    status: open
+    status: resolved
+    resolution: C2 基线确定每个电池包具有系统内唯一追溯编码，编码可以通过二维码展示和识别。
   - id: Q-C2-003
     stage: C2
     question: 回收接收时需要登记哪些来源信息？
     impact: 影响回收接收事实和追溯节点。
-    status: open
+    status: resolved
+    resolution: C2 基线确定登记来源企业、交接日期、交接地点、关联单据和电池原始编码等信息。
   - id: Q-C2-004
     stage: C2
     question: 验收结果有哪些：通过、拒收、待处理，还是包含有条件接收？
     impact: 影响验收状态和异常路径。
-    status: open
+    status: resolved
+    resolution: C2 基线确定验收通过、待补充资料和验收不通过三类核心结果。
   - id: Q-C2-005
     stage: C2
     question: 入库前是否必须完成验收？
     impact: 影响入库条件和业务规则。
-    status: open
+    status: resolved
+    resolution: C2 基线确定只有已验收待入库或接收待入库的电池才能入库。
   - id: Q-C2-006
     stage: C2
     question: 企业间流转由哪一方创建，哪一方确认接收？
     impact: 影响流转职责和协同边界。
-    status: open
+    status: resolved
+    resolution: C2 基线确定由转出企业发起流转，由接收企业确认接收。
   - id: Q-C2-007
     stage: C2
     question: 对方拒收或实际数量不一致时如何处理？
     impact: 影响异常流程和追溯记录。
-    status: open
+    status: resolved
+    resolution: C2 基线确定编码或数量不一致时不能直接完成接收，应暂停接收并登记异常，双方确认更正或退回。
   - id: Q-C2-008
     stage: C2
     question: 综合利用包括梯次利用、拆解、材料回收中的哪些环节？
     impact: 影响综合利用范围。
-    status: open
+    status: resolved
+    resolution: C2 基线确定综合利用包括梯次利用、拆解、材料回收或其他处置的结果登记。
   - id: Q-C2-009
     stage: C2
     question: 哪些操作必须由业务主管审核？
     impact: 影响职责、权限和业务规则。
-    status: open
+    status: resolved
+    resolution: C2 基线确定流转审核、关键异常关闭、业务更正、利用结果更正和模拟报送审核等需业务主管参与。
   - id: Q-C2-010
     stage: C2
     question: 哪些记录一旦生效就不能删除，只能撤销或更正？
     impact: 影响审计、追溯和更正规则。
-    status: open
+    status: resolved
+    resolution: C2 基线确定已生效业务记录不得物理删除，更正必须保留原始记录和变更原因。
   - id: Q-C2-011
     stage: C2
     question: 合规报送首期采用报表导出还是模拟报送？
     impact: 影响合规报送定位和演示交付。
-    status: open
+    status: resolved
+    resolution: C2 基线确定首期采用文件导出和模拟报送，不连接真实监管平台。
   - id: Q-C2-012
     stage: C2
     question: 追溯查询需要展示哪些关键节点和责任主体？
     impact: 影响追溯事件口径和展示内容。
-    status: open
+    status: resolved
+    resolution: C2 基线确定追溯视图展示追溯编码、原始编码、责任企业、状态、仓库库位、来源、验收、出入库、流转、综合利用、异常、操作人员、状态变化和审计信息。
