@@ -1,0 +1,43 @@
+# OS and editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# Logs and local config
+*.log
+.env
+.env.*
+!.env.example
+
+# Python helpers
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Java / Spring Boot future artifacts
+target/
+*.class
+*.jar
+*.war
+
+# Node / Vue future artifacts
+node_modules/
+dist/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Database local runtime files
+*.db
+*.sqlite
+*.sqlite3
+
+# Build outputs
+build/
+out/
