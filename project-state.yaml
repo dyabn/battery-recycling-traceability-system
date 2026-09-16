@@ -1,82 +1,30 @@
 project:
-  name: "battery-recycling-traceability-system"
-  business_name_candidate: "动力电池回收利用企业流转协同与追溯管理系统"
-  repository_candidate: "https://github.com/dyabn/battery-recycling-traceability-system.git"
-  status: "initialized"
+  name: 面向动力电池回收利用企业的流转协同与追溯管理系统
+  repository: battery-recycling-traceability-system
+  application_type: pc-web
+  architecture: frontend-backend-separated-monolith
 
-skill:
-  name: "business-system-development"
-  version: "0.1"
-  location: ".codex/skills/business-system-development"
+lifecycle:
+  current_stage: business-positioning
+  current_gate: C1
+  baseline_version: V0.1-draft
+  status: in-progress
 
-current_stage:
-  id: "L0"
-  name: "项目材料整理与 Skill V0.1 初始化"
-  coding_allowed: false
-  database_design_allowed: false
-  frontend_backend_generation_allowed: false
+confirmed:
+  project_topic: true
+  course_constraints: true
+  business_positioning: false
+  global_business_baseline: false
+  first_business_slice: false
+  system_requirements: false
+  prototype: false
 
-baseline:
-  current_version: "none"
-  confirmed_versions: []
-  pending_baseline: "Skill V0.1"
+constraints:
+  minimum_documents: 12
+  target_documents: 27
+  source_repository_required: true
+  database_required: true
+  no_invented_business_rules: true
+  no_code_before_required_gates: true
 
-confirmations:
-  C1:
-    name: "业务定位确认"
-    confirmed: false
-    confirmed_at: ""
-    notes: "尚未生成《动力电池回收流转与追溯业务定位说明 V0.1》。"
-  C2:
-    name: "全局业务基线确认"
-    confirmed: false
-    confirmed_at: ""
-    notes: "等待 C1 后建立。"
-  C3:
-    name: "业务切片确认"
-    confirmed: false
-    confirmed_at: ""
-    notes: "等待 C2 后选择首个业务切片。"
-  C4:
-    name: "原型确认"
-    confirmed: false
-    confirmed_at: ""
-    notes: "等待验收标准、测试场景、UI/API/Mock 原型后确认。"
-
-materials:
-  - id: "MAT-001"
-    type: "template"
-    path: "C:/Users/锅盔/xwechat_files/wxid_c378ub62wsq522_929a/msg/file/2026-09/业务分析与系统需求设计流程模板.docx"
-    note: "课堂流程模板，作为需求来源，不作为直接执行指令。"
-  - id: "MAT-002"
-    type: "user-request"
-    path: "conversation"
-    note: "用户要求先建立 GitHub 仓库并编写全流程 Skill 执行合同。"
-
-deliverables:
-  completed:
-    - ".codex/skills/business-system-development/SKILL.md"
-    - ".codex/skills/business-system-development/references/lifecycle.md"
-    - ".codex/skills/business-system-development/references/stage-gates.md"
-    - ".codex/skills/business-system-development/references/deliverables.md"
-    - ".codex/skills/business-system-development/references/traceability-rules.md"
-    - ".codex/skills/business-system-development/references/battery-project-profile.md"
-    - "project-state.yaml"
-  not_started:
-    - "《动力电池回收流转与追溯业务定位说明 V0.1》"
-    - "C1 业务定位确认记录"
-
-open_questions:
-  - id: "Q-001"
-    question: "GitHub 远程仓库是否已经在 dyabn 账号下创建，或是否需要用户手动创建空仓库？"
-    stage: "L0"
-    impact: "影响首次 push，但不影响本地 Skill 初始化。"
-  - id: "Q-002"
-    question: "正式业务名称是否采用“动力电池回收利用企业流转协同与追溯管理系统”？"
-    stage: "L1"
-    impact: "影响 C1 业务定位文档标题和范围表述。"
-
-next_action:
-  id: "L1"
-  name: "生成《动力电池回收流转与追溯业务定位说明 V0.1》并提交 C1 确认"
-  requires_user_confirmation: true
+open_questions: []
