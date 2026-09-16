@@ -123,6 +123,31 @@ next_stage:
     - 无关页面设计
     - 完整系统代码生成
 
+c3_progress:
+  current_step: 第一条业务切片定义
+  status: paused-for-review
+  document: docs/business/c3-first-business-slice.md
+  slice_name: 回收接收 -> 电池登记 -> 验收 -> 入库 -> 库存可见
+  completed_items:
+    - 切片目标与业务价值
+    - 切片范围和排除范围
+    - 参与角色和职责
+    - 前置条件与结束条件
+    - 正常业务流程
+    - 异常流程
+    - 涉及的业务对象
+    - 涉及的状态转换
+    - 引用的 C2 业务规则
+    - 详细用例
+    - Given/When/Then 验收标准
+    - 需求、规则、状态和验收标准追踪矩阵
+    - C3 检查清单
+  pending_confirmation:
+    - 切片流程是否符合课程和业务预期
+    - 异常分支是否完整
+    - 验收标准是否可作为 C4 输入
+    - 待确认问题是否可后移到 C4
+
 c2_progress:
   current_step: C2 全局业务基线
   status: completed
@@ -226,3 +251,28 @@ open_questions:
     impact: 影响追溯事件口径和展示内容。
     status: resolved
     resolution: C2 基线确定追溯视图展示追溯编码、原始编码、责任企业、状态、仓库库位、来源、验收、出入库、流转、综合利用、异常、操作人员、状态变化和审计信息。
+  - id: Q-C3-001
+    stage: C3
+    question: 电池基础信息的最终字段清单是什么？
+    impact: 影响 C4 需求规格、原型字段和验收用例。
+    status: open
+  - id: Q-C3-002
+    stage: C3
+    question: 验收项目及具体判定标准是什么？
+    impact: 影响验收记录、验收结果说明和异常判断。
+    status: open
+  - id: Q-C3-003
+    stage: C3
+    question: 仓库和库位编码规则是什么？
+    impact: 影响入库选择、库存查询和追溯展示。
+    status: open
+  - id: Q-C3-004
+    stage: C3
+    question: 是否需要上传交接凭证和检测附件？
+    impact: 影响回收来源资料和资料不足分支。
+    status: open
+  - id: Q-C3-005
+    stage: C3
+    question: 是否需要打印二维码标签？
+    impact: 影响 C4 原型和后续实现范围，但不影响 C3 业务闭环确认。
+    status: open

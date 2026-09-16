@@ -6,6 +6,7 @@
 | CHG-002 | 2026-09-16 | 用户确认 | 关闭 C1，冻结业务定位基线 V1.0，并进入 C2 全局业务基线。 | `project-state.yaml`、C2 输入基线 | 否 |
 | CHG-003 | 2026-09-16 | 用户请求 | 完成 C2-1 术语和业务事实盘点 V0.1，登记待确认问题并暂停。 | C2 全局业务基线、开放问题、追踪索引 | 否 |
 | CHG-004 | 2026-09-16 | 用户请求 | 完成 C2 全局业务基线 V1.0，关闭 C2 并进入 C3 纵向业务切片定义。 | `docs/business/c2-global-business-baseline.md`、`project-state.yaml`、追踪索引 | 否 |
+| CHG-005 | 2026-09-16 | 用户请求 | 创建 C3 第一条业务切片定义 V0.1，覆盖流程、异常、用例、验收标准和追踪矩阵，并暂停评审。 | `docs/business/c3-first-business-slice.md`、`project-state.yaml`、追踪索引、开放问题 | 否 |
 
 ## C2 全局业务基线确认
 
