@@ -419,7 +419,6 @@ function saveAcceptanceFromForm() {
     showNotice("请填写编码及身份核对情况、外观情况和资料完整情况。", "danger");
     return;
   }
-  state.batchStatus = "验收处理中";
   if (result === "待补充资料" && !note) {
     showNotice("请填写需要补充资料的说明。", "danger");
     return;
@@ -428,6 +427,7 @@ function saveAcceptanceFromForm() {
     showNotice("请填写验收不通过原因。", "danger");
     return;
   }
+  state.batchStatus = "验收处理中";
   if (result === "通过") {
     state.batteryStatus = "已验收待入库";
     state.batchStatus = "已完成";
