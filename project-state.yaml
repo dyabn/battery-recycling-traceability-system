@@ -10,7 +10,7 @@ lifecycle:
   completed_gate: C4
   last_completed_stage: prototype-and-requirements
   baseline_version: V1.0
-  status: completed
+  status: in-progress
 
 confirmed:
   project_topic: true
@@ -20,6 +20,11 @@ confirmed:
   first_business_slice: true
   system_requirements: true
   prototype: true
+  technical_architecture: false
+  database_design: false
+  api_contract: false
+  security_design: false
+  deployment_design: false
 
 baselines:
   C1:
@@ -147,20 +152,54 @@ constraints:
   no_code_before_required_gates: true
 
 next_stage:
-  stage: system-design
-  gate: 设计评审
-  name: 系统设计
+  stage: implementation-and-test
+  gate: 测试通过
+  name: 编码与测试
   candidate_slice: recycle-acceptance-inbound-inventory
   focus:
-    - 总体架构与技术栈确认
-    - 第一切片领域对象和逻辑数据模型
-    - 数据库表、字段、主外键和索引设计
-    - API 接口契约
-    - 权限与安全设计
-    - 部署和运行环境设计
-    - 技术设计评审
+    - 前后端工程初始化
+    - Flyway 数据库迁移
+    - 第一切片业务代码实现
+    - 自动化测试
+    - 联调验证
   prohibited_until_later_gates:
-    - 完整系统代码生成
+    - 技术设计评审通过前不得编写正式前后端业务代码
+    - 技术设计评审通过前不得创建正式工程骨架
+
+technical_design_progress:
+  status: in-progress
+  scope: 回收接收 -> 电池登记 -> 验收 -> 入库 -> 库存可见
+  lifecycle_stage: system-design
+  review_gate: 设计评审
+  outputs:
+    overall_design: docs/design/first-slice-overall-design.md
+    architecture_design: docs/design/first-slice-architecture-design.md
+    technical_review_record: docs/design/first-slice-technical-review-record.md
+    database_design: docs/database/first-slice-database-design.md
+    data_dictionary: docs/database/first-slice-data-dictionary.md
+    api_design: docs/api/first-slice-api-design.md
+    openapi_contract: contracts/api/openapi-first-slice.yaml
+    security_design: docs/security/first-slice-security-design.md
+    deployment_design: docs/deployment/first-slice-deployment-design.md
+    technical_test_design: docs/testing/first-slice-technical-test-design.md
+    schema_design: contracts/database/first-slice-schema-design.sql
+  prohibited_until_review:
+    - 正式前端业务代码
+    - 正式后端业务代码
+    - 全系统数据库扩展
+    - 企业间流转和综合利用实现
+    - 真实监管平台连接
+  pending_items:
+    - 技术栈确认
+    - 总体设计
+    - 架构设计
+    - 数据库设计
+    - API 契约设计
+    - 安全设计
+    - 部署设计
+    - 技术测试设计
+    - 技术追踪矩阵
+    - 技术设计评审
 
 c3_progress:
   current_step: 第一条业务切片定义
