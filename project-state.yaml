@@ -5,10 +5,10 @@ project:
   architecture: frontend-backend-separated-monolith
 
 lifecycle:
-  current_stage: first-business-slice
-  current_gate: C3
-  completed_gate: C2
-  last_completed_stage: global-business-baseline
+  current_stage: prototype-and-requirements
+  current_gate: C4
+  completed_gate: C3
+  last_completed_stage: first-business-slice
   baseline_version: V1.0
   status: in-progress
 
@@ -17,7 +17,7 @@ confirmed:
   course_constraints: true
   business_positioning: true
   global_business_baseline: true
-  first_business_slice: false
+  first_business_slice: true
   system_requirements: false
   prototype: false
 
@@ -98,6 +98,21 @@ baselines:
       - 完成系统处理与人工处理边界
       - 完成追溯信息要求和统计指标定义
       - 提出第一条纵向业务切片候选
+  C3:
+    name: 第一条业务切片定义
+    version: V1.0
+    status: confirmed
+    confirmed_date: 2026-09-17
+    review_result: 修改后通过
+    document: docs/business/c3-first-business-slice.md
+    slice_name: 回收接收 -> 电池登记 -> 验收 -> 入库 -> 库存可见
+    summary:
+      - 明确系统追溯编码和原始编码判重规则
+      - 明确回收批次与单个电池验收关系
+      - 完成 11 个用例
+      - 完成 14 条 Given/When/Then 验收标准
+      - 完成需求、规则、状态和验收标准追踪矩阵
+      - 明确 C4 后移问题
 
 constraints:
   minimum_documents: 12
@@ -108,24 +123,23 @@ constraints:
   no_code_before_required_gates: true
 
 next_stage:
-  stage: first-business-slice
-  gate: C3
-  name: 纵向业务切片定义
+  stage: prototype-and-requirements
+  gate: C4
+  name: 原型与需求验证
   candidate_slice: recycle-acceptance-inbound-inventory
   focus:
-    - 回收接收
-    - 电池登记
-    - 验收
-    - 入库
-    - 库存可见
+    - 第一切片系统需求
+    - 测试设计
+    - 验收标准细化
+    - 原型验证
   prohibited_until_later_gates:
     - 完整数据库设计
-    - 无关页面设计
+    - 冻结接口契约
     - 完整系统代码生成
 
 c3_progress:
   current_step: 第一条业务切片定义
-  status: paused-for-review
+  status: completed
   document: docs/business/c3-first-business-slice.md
   slice_name: 回收接收 -> 电池登记 -> 验收 -> 入库 -> 库存可见
   completed_items:
@@ -142,11 +156,15 @@ c3_progress:
     - Given/When/Then 验收标准
     - 需求、规则、状态和验收标准追踪矩阵
     - C3 检查清单
-  pending_confirmation:
-    - 切片流程是否符合课程和业务预期
-    - 异常分支是否完整
-    - 验收标准是否可作为 C4 输入
-    - 待确认问题是否可后移到 C4
+    - C3 评审修订
+    - C3 确认
+  review_result: 修改后通过
+  use_cases: UC-C3-001..011
+  acceptance_criteria: AC-001..014
+  deferred_to_c4:
+    - Q-C3-001
+    - Q-C3-002
+    - Q-C3-003
 
 c2_progress:
   current_step: C2 全局业务基线
@@ -255,24 +273,29 @@ open_questions:
     stage: C3
     question: 电池基础信息的最终字段清单是什么？
     impact: 影响 C4 需求规格、原型字段和验收用例。
-    status: open
+    status: deferred-to-C4
+    resolution: 不阻塞 C3，后续进入 C4 需求规格和原型字段定义。
   - id: Q-C3-002
     stage: C3
     question: 验收项目及具体判定标准是什么？
     impact: 影响验收记录、验收结果说明和异常判断。
-    status: open
+    status: deferred-to-C4
+    resolution: C3 确定由人工判断，具体检测数值和行业判定阈值后移到 C4。
   - id: Q-C3-003
     stage: C3
     question: 仓库和库位编码规则是什么？
     impact: 影响入库选择、库存查询和追溯展示。
-    status: open
+    status: deferred-to-C4
+    resolution: C3 确定入库必须引用已存在且有效的仓库和库位，具体编码规则后移到 C4。
   - id: Q-C3-004
     stage: C3
     question: 是否需要上传交接凭证和检测附件？
     impact: 影响回收来源资料和资料不足分支。
-    status: open
+    status: resolved
+    resolution: 支持选填，附件缺失不阻止正常验收；待补充资料时可通过附件补充。
   - id: Q-C3-005
     stage: C3
     question: 是否需要打印二维码标签？
     impact: 影响 C4 原型和后续实现范围，但不影响 C3 业务闭环确认。
-    status: open
+    status: resolved
+    resolution: 第一切片支持展示电池追溯编码，C3 不包含二维码标签打印。
