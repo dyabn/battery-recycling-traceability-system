@@ -8,6 +8,14 @@
 | CHG-004 | 2026-09-16 | 用户请求 | 完成 C2 全局业务基线 V1.0，关闭 C2 并进入 C3 纵向业务切片定义。 | `docs/business/c2-global-business-baseline.md`、`project-state.yaml`、追踪索引 | 否 |
 | CHG-005 | 2026-09-16 | 用户请求 | 创建 C3 第一条业务切片定义 V0.1，覆盖流程、异常、用例、验收标准和追踪矩阵，并暂停评审。 | `docs/business/c3-first-business-slice.md`、`project-state.yaml`、追踪索引、开放问题 | 否 |
 | CHG-006 | 2026-09-17 | 用户评审 | 按“修改后通过”结论修订 C3，明确编码判重、批次与单电池关系、删除保护追踪缺口，并关闭 C3 进入 C4。 | `docs/business/c3-first-business-slice.md`、`project-state.yaml`、追踪索引、开放问题 | 否 |
+| CHG-007 | 2026-09-17 | 用户请求 | 创建 C4 第一切片系统需求规格 V0.1，完成 UR、FR、NFR、权限矩阵、字段、校验、错误提示、追溯审计和 BSR->UR->FR->AC 追踪。 | `docs/requirements/c4-first-slice-system-requirements.md`、`project-state.yaml`、追踪索引 | 否 |
+| CHG-008 | 2026-09-17 | 用户请求 | 创建 C4 第一切片测试设计 V0.1，覆盖 16 条测试用例和 BSR->UR->FR->AC->TC 追踪矩阵。 | `docs/testing/c4-first-slice-test-design.md`、`project-state.yaml`、追踪索引 | 否 |
+| CHG-009 | 2026-09-17 | 用户请求 | 创建 C4 第一切片低保真原型规格和静态交互原型，并将 C4 状态暂停在评审。 | `docs/prototype/c4-first-slice-prototype-spec.md`、`prototype/first-slice/`、`project-state.yaml`、追踪索引 | 否 |
+| CHG-010 | 2026-09-17 | 用户评审 | 按 C4“修改后通过但不能关闭”结论修订原型真实交互校验、重复编码人工核实、状态重置、批次状态联动、结构化追溯审计和权限矩阵演示。 | `prototype/first-slice/` | 否 |
+| CHG-011 | 2026-09-17 | 用户评审 | 补充 C4 测试、NFR 验证、完整追踪索引、开放问题 resolved 状态、原型评审记录和新版原型压缩包，继续暂停等待复核。 | C4 需求/测试/原型文档、`project-state.yaml`、开放问题、追踪索引、变更记录、原型压缩包 | 否 |
+| CHG-012 | 2026-09-17 | 用户复核 | 修订 C4 剩余阻断项：补齐验收三项必填校验、入库空选校验、权限矩阵真实计算、系统管理员权限/审计入口和补充评审证据，继续暂停等待复核。 | `prototype/first-slice/app.js`、C4 需求/测试/原型评审文档、追踪索引、原型压缩包 | 否 |
+| CHG-013 | 2026-09-17 | 用户最终复核 | 修复验收条件必填失败时提前改变批次状态的问题，补充 TC-C4-016 状态保持预期、NFR-C4-002 映射和 REVIEW-C4-009 评审证据。 | `prototype/first-slice/app.js`、C4 测试设计、原型规格、评审记录、追踪索引、原型压缩包 | 否 |
+| CHG-014 | 2026-09-17 | 用户确认 | C4 最终复核通过，确认第一切片需求、测试和低保真原型基线 V1.0，并进入 system-design/设计评审。 | C4 三份文档、原型评审记录、`project-state.yaml`、追踪索引 | 否 |
 
 ## C3 第一条业务切片确认
 
