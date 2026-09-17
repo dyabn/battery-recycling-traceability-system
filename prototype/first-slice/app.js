@@ -407,9 +407,16 @@ function saveAcceptanceFromForm() {
     return;
   }
   const result = document.querySelector("#acceptanceResult").value;
+  const identityCheck = document.querySelector("#identityCheck").value.trim();
+  const appearanceCheck = document.querySelector("#appearanceCheck").value.trim();
+  const materialCheck = document.querySelector("#materialCheck").value.trim();
   const note = document.querySelector("#acceptanceNote").value.trim();
   if (!result) {
     showNotice("验收必须给出明确结果。", "danger");
+    return;
+  }
+  if (!identityCheck || !appearanceCheck || !materialCheck) {
+    showNotice("请填写编码及身份核对情况、外观情况和资料完整情况。", "danger");
     return;
   }
   state.batchStatus = "验收处理中";
@@ -473,6 +480,11 @@ function submitInboundFromForm() {
   }
   const warehouseCode = document.querySelector("#warehouseSelect").value;
   const locationCode = document.querySelector("#locationSelect").value;
+  if (!warehouseCode || !locationCode) {
+    addAudit(makeRecord("audit", "入库失败", state.traceCode, "", "拒绝入库", "未选择仓库或库位"));
+    showNotice("请选择仓库和库位。", "danger");
+    return;
+  }
   const warehouse = warehouses[warehouseCode];
   const location = locations[locationCode];
   if (!warehouse?.enabled || !location?.enabled) {
@@ -496,25 +508,43 @@ function submitInboundFromForm() {
 function runPermissionMatrixDemo() {
   resetDemo();
   const checks = [
-    ["recycle", "入库", "回收操作员不能办理入库"],
-    ["warehouse", "验收登记", "仓库管理员不能登记验收"],
-    ["manager", "创建批次", "业务主管只能查看，不能代替操作员办理业务"],
-    ["admin", "验收或入库", "系统管理员不能代替业务角色完成验收或入库"],
-    ["viewer", "业务操作", "无权限用户不能执行任何业务操作"],
-    ["admin", "权限管理与审计", "系统管理员可以管理权限并查看审计"],
+    ["recycle", "inbound", "入库", false, "回收操作员不能办理入库"],
+    ["warehouse", "acceptance", "验收登记", false, "仓库管理员不能登记验收"],
+    ["manager", "createBatch", "创建批次", false, "业务主管只能查看，不能代替操作员办理业务"],
+    ["admin", "acceptance", "验收登记", false, "系统管理员不能代替业务角色完成验收"],
+    ["admin", "inbound", "入库", false, "系统管理员不能代替业务角色完成入库"],
+    ["viewer", "createBatch", "业务操作", false, "无权限用户不能执行任何业务操作"],
+    ["admin", "permissionAdmin", "权限管理与审计", true, "系统管理员可以管理权限并查看审计"],
   ];
-  state.audits = checks.map(([role, object, result]) => ({
-    kind: "audit",
-    name: "权限矩阵验证",
-    object,
-    operator: users[role].name,
-    time: nowText(),
-    statusChange: "",
-    result,
-    reason: role === "admin" && object === "权限管理与审计" ? "具备系统管理权限" : "角色职责边界限制",
-  }));
+  const originalRole = state.role;
+  state.audits = checks.map(([role, action, object, expectedAllowed, description]) => {
+    state.role = role;
+    const actualAllowed = hasPermission(action);
+    const passed = actualAllowed === expectedAllowed;
+    return {
+      kind: "audit",
+      name: "权限矩阵验证",
+      object,
+      operator: users[role].name,
+      time: nowText(),
+      statusChange: "",
+      result: `${description}；实际计算=${actualAllowed ? "允许" : "拒绝"}；期望=${expectedAllowed ? "允许" : "拒绝"}；${passed ? "通过" : "不通过"}`,
+      reason: actualAllowed ? "具备对应权限" : "角色职责边界限制",
+    };
+  });
+  state.role = originalRole;
   showNotice("权限矩阵测试已生成：覆盖回收操作员、仓库管理员、业务主管、系统管理员和无权限用户。", "success");
   setScreen("exceptions");
+}
+
+function openAdminAuditEntry() {
+  if (!hasPermission("permissionAdmin")) {
+    deny("权限管理与审计", "当前角色不能进入系统管理入口", "系统管理入口");
+    return;
+  }
+  addAudit(makeRecord("audit", "系统管理入口", "权限管理与审计", "", "允许进入系统管理员权限和审计入口", "具备系统管理权限"));
+  showNotice("系统管理员可以进入权限管理与审计入口；该入口仅用于 C4 权限验证原型。", "success");
+  render();
 }
 
 function renderTimeline() {
@@ -708,16 +738,17 @@ function screenAcceptanceForm() {
     <h2>验收登记</h2>
     <div class="form-row">
       <label class="field"><span>验收结果 *</span><select id="acceptanceResult"><option value="">请选择</option><option>通过</option><option>待补充资料</option><option>不通过</option></select></label>
-      <label class="field"><span>编码及身份核对情况 *</span><input value="编码与实物一致" /></label>
+      <label class="field"><span>编码及身份核对情况 *</span><input id="identityCheck" value="编码与实物一致" /></label>
     </div>
     <div class="form-row">
-      <label class="field"><span>外观情况 *</span><input value="外观无明显破损" /></label>
-      <label class="field"><span>资料完整情况 *</span><input value="资料完整" /></label>
+      <label class="field"><span>外观情况 *</span><input id="appearanceCheck" value="外观无明显破损" /></label>
+      <label class="field"><span>资料完整情况 *</span><input id="materialCheck" value="资料完整" /></label>
     </div>
     <label class="field"><span>验收说明</span><textarea id="acceptanceNote">人工验收结论记录</textarea></label>
     <div class="toolbar">
       <button onclick="saveAcceptanceFromForm()">保存验收结果</button>
       <button class="secondary" onclick="document.querySelector('#acceptanceResult').value=''; saveAcceptanceFromForm()">演示验收结果为空</button>
+      <button class="secondary" onclick="document.querySelector('#identityCheck').value=''; document.querySelector('#appearanceCheck').value=''; document.querySelector('#materialCheck').value=''; saveAcceptanceFromForm()">演示验收必填项缺失</button>
       <button class="secondary" onclick="document.querySelector('#acceptanceResult').value='不通过'; document.querySelector('#acceptanceNote').value='外观严重破损'; saveAcceptanceFromForm()">演示验收不通过</button>
     </div>
   `;
@@ -747,11 +778,12 @@ function screenInboundForm() {
     <h2>入库办理</h2>
     ${renderStatusBox()}
     <div class="form-row">
-      <label class="field"><span>仓库 *</span><select id="warehouseSelect"><option value="WH-001">WH-001 主仓库（启用）</option><option value="WH-002">WH-002 停用仓库</option></select></label>
-      <label class="field"><span>库位 *</span><select id="locationSelect"><option value="WH-001-A01-R01-L01">WH-001-A01-R01-L01（启用）</option><option value="WH-001-A01-R01-L99">WH-001-A01-R01-L99（停用）</option><option value="WH-002-A01-R01-L01">WH-002-A01-R01-L01（属于 WH-002）</option></select></label>
+      <label class="field"><span>仓库 *</span><select id="warehouseSelect"><option value="">请选择仓库</option><option value="WH-001" selected>WH-001 主仓库（启用）</option><option value="WH-002">WH-002 停用仓库</option></select></label>
+      <label class="field"><span>库位 *</span><select id="locationSelect"><option value="">请选择库位</option><option value="WH-001-A01-R01-L01" selected>WH-001-A01-R01-L01（启用）</option><option value="WH-001-A01-R01-L99">WH-001-A01-R01-L99（停用）</option><option value="WH-002-A01-R01-L01">WH-002-A01-R01-L01（属于 WH-002）</option></select></label>
     </div>
     <div class="toolbar">
       <button onclick="submitInboundFromForm()">确认入库</button>
+      <button class="secondary" onclick="document.querySelector('#warehouseSelect').value=''; document.querySelector('#locationSelect').value=''; submitInboundFromForm()">演示未选择仓库库位</button>
       <button class="secondary" onclick="document.querySelector('#warehouseSelect').value='WH-002'; submitInboundFromForm()">演示停用仓库</button>
       <button class="secondary" onclick="document.querySelector('#locationSelect').value='WH-002-A01-R01-L01'; submitInboundFromForm()">演示库位归属不一致</button>
       <button class="secondary" onclick="runUnauthorized()">演示越权入库</button>
@@ -789,6 +821,7 @@ function screenExceptions() {
       <div class="box col-6"><span class="tag fail">校验失败</span><p>来源必填信息缺失、空批次、无效仓库或库位都会阻止流程继续，状态保持不变。</p><button class="secondary" onclick="runBatchFailure()">演示</button></div>
       <div class="box col-6"><span class="tag fail">越权操作</span><p>无入库权限用户尝试入库会被拒绝，并记录审计日志。</p><button class="secondary" onclick="runUnauthorized()">演示</button></div>
       <div class="box col-6"><span class="tag fail">删除保护</span><p>已生效记录不能物理删除或直接覆盖，后续通过更正或撤销流程处理。</p><button class="danger" onclick="runDeleteProtection()">演示</button></div>
+      <div class="box col-6"><span class="tag ok">系统管理入口</span><p>系统管理员可以进入权限管理与审计入口，但不能代替业务角色完成验收或入库。</p><button class="secondary" onclick="state.role='admin'; roleSelect.value='admin'; openAdminAuditEntry()">以系统管理员进入</button></div>
     </div>
     <h3>审计日志</h3>
     ${renderTimeline()}
