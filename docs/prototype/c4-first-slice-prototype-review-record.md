@@ -3,7 +3,7 @@
 评审对象：`prototype/first-slice/`  
 评审方式：本地 HTTP 服务访问与人工操作检查  
 评审日期：2026-09-17  
-评审结论：修改后通过，等待用户复核；当前不关闭 C4。  
+评审结论：复核通过，C4 可以关闭。
 边界说明：本记录只验证低保真原型与 C4 需求、测试和验收标准的一致性，不确认数据库、API 或生产代码。
 
 ## 1. 实际操作记录
@@ -43,7 +43,7 @@
 
 ## 3. C4 状态
 
-- `completed_gate` 保持为 `C3`。
-- `current_gate` 保持为 `C4`。
-- `c4_progress.status` 保持为 `paused-for-review`。
-- C4 尚未关闭，后续仍需用户复核确认。
+- `completed_gate` 更新为 `C4`。
+- `current_stage` 更新为 `system-design`。
+- `current_gate` 更新为 `设计评审`。
+- `c4_progress.status` 更新为 `completed`。

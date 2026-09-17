@@ -2,7 +2,7 @@
 
 当前阶段：C4 原型与需求验证。
 
-C4 已围绕第一条纵向业务切片建立需求、测试和低保真原型追踪链。当前状态为修订后待复核，尚未关闭 C4，仍不得冻结数据库、API 或生产代码。
+C4 已围绕第一条纵向业务切片建立需求、测试和低保真原型追踪链。当前状态为已确认，C4 已关闭。后续进入 `system-design`，在技术设计评审前仍不得编写生产代码。
 
 ## 当前来源
 
@@ -65,16 +65,16 @@ C4 已围绕第一条纵向业务切片建立需求、测试和低保真原型�
 
 | 编号 | 类型 | 来源 | 状态 |
 | --- | --- | --- | --- |
-| C4-REQ-001 | 系统需求规格 | `docs/requirements/c4-first-slice-system-requirements.md` | 待复核 |
-| UR-C4-001..010 | 用户需求 | C4 第一切片系统需求规格 | 待复核 |
-| FR-C4-001..022 | 功能需求 | C4 第一切片系统需求规格 | 待复核 |
-| NFR-C4-001..005 | 非功能需求 | C4 第一切片系统需求规格 | 待复核 |
+| C4-REQ-001 | 系统需求规格 | `docs/requirements/c4-first-slice-system-requirements.md` | 已确认 |
+| UR-C4-001..010 | 用户需求 | C4 第一切片系统需求规格 | 已确认 |
+| FR-C4-001..022 | 功能需求 | C4 第一切片系统需求规格 | 已确认 |
+| NFR-C4-001..005 | 非功能需求 | C4 第一切片系统需求规格 | 已确认 |
 | Q-C3-001..003 | C4 后移问题处理 | C4 第一切片系统需求规格第 10 节 | resolved |
-| C4-TEST-001 | 测试设计 | `docs/testing/c4-first-slice-test-design.md` | 待复核 |
-| TC-C4-001..017 | 测试用例 | C4 第一切片测试设计 | 待复核 |
-| C4-PROTO-001 | 低保真原型规格 | `docs/prototype/c4-first-slice-prototype-spec.md` | 待复核 |
-| UI-C4-001..014 | 原型页面 | `prototype/first-slice/` | 待复核 |
-| C4-REVIEW-001 | 原型评审记录 | `docs/prototype/c4-first-slice-prototype-review-record.md` | 已填写 |
+| C4-TEST-001 | 测试设计 | `docs/testing/c4-first-slice-test-design.md` | 已确认 |
+| TC-C4-001..017 | 测试用例 | C4 第一切片测试设计 | 已确认 |
+| C4-PROTO-001 | 低保真原型规格 | `docs/prototype/c4-first-slice-prototype-spec.md` | 已确认 |
+| UI-C4-001..014 | 原型页面 | `prototype/first-slice/` | 已确认 |
+| C4-REVIEW-001 | 原型评审记录 | `docs/prototype/c4-first-slice-prototype-review-record.md` | 已确认 |
 
 ## C4 BSR -> UR -> FR -> AC 追踪摘要
 

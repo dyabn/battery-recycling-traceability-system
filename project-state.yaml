@@ -5,12 +5,12 @@ project:
   architecture: frontend-backend-separated-monolith
 
 lifecycle:
-  current_stage: prototype-and-requirements
-  current_gate: C4
-  completed_gate: C3
-  last_completed_stage: first-business-slice
+  current_stage: system-design
+  current_gate: 设计评审
+  completed_gate: C4
+  last_completed_stage: prototype-and-requirements
   baseline_version: V1.0
-  status: in-progress
+  status: completed
 
 confirmed:
   project_topic: true
@@ -18,8 +18,8 @@ confirmed:
   business_positioning: true
   global_business_baseline: true
   first_business_slice: true
-  system_requirements: false
-  prototype: false
+  system_requirements: true
+  prototype: true
 
 baselines:
   C1:
@@ -113,6 +113,30 @@ baselines:
       - 完成 14 条 Given/When/Then 验收标准
       - 完成需求、规则、状态和验收标准追踪矩阵
       - 明确 C4 后移问题
+  C4:
+    name: 第一切片需求与原型基线
+    version: V1.0
+    status: confirmed
+    confirmed_date: 2026-09-17
+    review_result: 复核通过
+    scope: 回收接收 -> 电池登记 -> 验收 -> 入库 -> 库存可见
+    documents:
+      requirements: docs/requirements/c4-first-slice-system-requirements.md
+      test_design: docs/testing/c4-first-slice-test-design.md
+      prototype_spec: docs/prototype/c4-first-slice-prototype-spec.md
+      prototype_review_record: docs/prototype/c4-first-slice-prototype-review-record.md
+    prototype:
+      source: prototype/first-slice/
+      package: prototype/c4-first-slice-prototype.zip
+    summary:
+      - 完成 10 条用户需求
+      - 完成 22 条功能需求
+      - 完成 5 条非功能需求
+      - 完成 17 个测试用例
+      - 完成 16 条原型评审记录
+      - 完成权限、状态、异常、追溯及审计验证
+      - 完成 UR/FR/NFR/AC/TC/UI 追踪
+      - 明确尚未设计正式数据库、冻结 API 或编写生产代码
 
 constraints:
   minimum_documents: 12
@@ -123,18 +147,19 @@ constraints:
   no_code_before_required_gates: true
 
 next_stage:
-  stage: prototype-and-requirements
-  gate: C4
-  name: 原型与需求验证
+  stage: system-design
+  gate: 设计评审
+  name: 系统设计
   candidate_slice: recycle-acceptance-inbound-inventory
   focus:
-    - 第一切片系统需求
-    - 测试设计
-    - 验收标准细化
-    - 原型验证
+    - 总体架构与技术栈确认
+    - 第一切片领域对象和逻辑数据模型
+    - 数据库表、字段、主外键和索引设计
+    - API 接口契约
+    - 权限与安全设计
+    - 部署和运行环境设计
+    - 技术设计评审
   prohibited_until_later_gates:
-    - 完整数据库设计
-    - 冻结接口契约
     - 完整系统代码生成
 
 c3_progress:
@@ -167,8 +192,8 @@ c3_progress:
     - Q-C3-003
 
 c4_progress:
-  current_step: C4-3 低保真原型
-  status: paused-for-review
+  current_step: C4 关闭确认
+  status: completed
   scope: 回收接收 -> 电池登记 -> 验收 -> 入库 -> 库存可见
   outputs:
     requirements: docs/requirements/c4-first-slice-system-requirements.md
@@ -178,7 +203,7 @@ c4_progress:
     prototype_review_record: docs/prototype/c4-first-slice-prototype-review-record.md
     prototype_package: prototype/c4-first-slice-prototype.zip
   completed_items:
-    - 第一切片系统需求规格 V0.1
+    - 第一切片系统需求规格 V1.0
     - UR-C4-001..010
     - FR-C4-001..022
     - NFR-C4-001..005
@@ -188,11 +213,11 @@ c4_progress:
     - 错误提示要求
     - 追溯和审计要求
     - BSR -> UR -> FR -> AC 追踪矩阵
-    - 第一切片测试设计 V0.1
+    - 第一切片测试设计 V1.0
     - TC-C4-001..017
     - BSR -> UR -> FR -> AC -> TC 追踪矩阵
     - NFR -> TC/REVIEW 验证矩阵
-    - 第一切片低保真原型规格 V0.1
+    - 第一切片低保真原型规格 V1.0
     - 静态低保真交互原型
     - 原型真实表单校验修订
     - 验收记录三项必填校验修订
@@ -205,13 +230,12 @@ c4_progress:
     - 原型评审脚本
     - 已填写原型评审记录
     - 新版原型压缩包
-  pending_items:
-    - C4 修订复核确认
+  pending_items: []
   deferred_questions_resolved_in_requirements:
     - Q-C3-001
     - Q-C3-002
     - Q-C3-003
-  review_result: 最终复核发现状态一致性问题，已修订，等待再次复核
+  review_result: 复核通过
 
 c2_progress:
   current_step: C2 全局业务基线
