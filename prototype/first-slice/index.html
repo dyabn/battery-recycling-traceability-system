@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>C4 第一切片低保真原型</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="原型页面导航">
+        <div class="brand">
+          <span class="brand-mark">C4</span>
+          <div>
+            <strong>第一切片原型</strong>
+            <small>需求验证</small>
+          </div>
+        </div>
+        <nav id="screenNav" class="nav-list"></nav>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="prototype-note">这是验证需求的低保真原型，不是正式前端代码。</p>
+            <h1 id="screenTitle">登录</h1>
+          </div>
+          <label class="role-switch">
+            当前角色
+            <select id="roleSelect">
+              <option value="recycle">回收操作员</option>
+              <option value="warehouse">仓库管理员</option>
+              <option value="manager">业务主管</option>
+              <option value="viewer">无入库权限用户</option>
+            </select>
+          </label>
+        </header>
+
+        <section id="notice" class="notice info" aria-live="polite">
+          选择左侧页面或点击工作台场景按钮开始评审。
+        </section>
+
+        <section id="screenContent" class="screen-panel"></section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
+

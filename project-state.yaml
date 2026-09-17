@@ -167,12 +167,14 @@ c3_progress:
     - Q-C3-003
 
 c4_progress:
-  current_step: C4-2 测试设计
-  status: in-progress
+  current_step: C4-3 低保真原型
+  status: paused-for-review
   scope: 回收接收 -> 电池登记 -> 验收 -> 入库 -> 库存可见
   outputs:
     requirements: docs/requirements/c4-first-slice-system-requirements.md
     test_design: docs/testing/c4-first-slice-test-design.md
+    prototype_spec: docs/prototype/c4-first-slice-prototype-spec.md
+    prototype: prototype/first-slice/
   completed_items:
     - 第一切片系统需求规格 V0.1
     - UR-C4-001..010
@@ -187,8 +189,11 @@ c4_progress:
     - 第一切片测试设计 V0.1
     - TC-C4-001..016
     - BSR -> UR -> FR -> AC -> TC 追踪矩阵
+    - 第一切片低保真原型规格 V0.1
+    - 静态低保真交互原型
+    - 原型评审脚本
+    - 验证记录模板
   pending_items:
-    - C4-3 低保真原型
     - C4 评审确认
   deferred_questions_resolved_in_requirements:
     - Q-C3-001
