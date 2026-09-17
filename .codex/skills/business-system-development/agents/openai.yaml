@@ -1,7 +1,7 @@
 interface:
   display_name: "业务系统全流程开发"
-  short_description: "按课堂模板分阶段推进业务系统项目"
+  short_description: "按项目状态和阶段门禁推进业务系统项目"
   brand_color: "#2563EB"
-  default_prompt: "Use $business-system-development to guide this business system project through confirmed lifecycle stages."
+  default_prompt: "Use $business-system-development to read project-state.yaml, execute only the current lifecycle stage, and stop at the required confirmation gate."
 policy:
   allow_implicit_invocation: true

@@ -1,82 +1,301 @@
 project:
-  name: "battery-recycling-traceability-system"
-  business_name_candidate: "动力电池回收利用企业流转协同与追溯管理系统"
-  repository_candidate: "https://github.com/dyabn/battery-recycling-traceability-system.git"
-  status: "initialized"
+  name: 面向动力电池回收利用企业的流转协同与追溯管理系统
+  repository: battery-recycling-traceability-system
+  application_type: pc-web
+  architecture: frontend-backend-separated-monolith
 
-skill:
-  name: "business-system-development"
-  version: "0.1"
-  location: ".codex/skills/business-system-development"
+lifecycle:
+  current_stage: prototype-and-requirements
+  current_gate: C4
+  completed_gate: C3
+  last_completed_stage: first-business-slice
+  baseline_version: V1.0
+  status: in-progress
 
-current_stage:
-  id: "L0"
-  name: "项目材料整理与 Skill V0.1 初始化"
-  coding_allowed: false
-  database_design_allowed: false
-  frontend_backend_generation_allowed: false
+confirmed:
+  project_topic: true
+  course_constraints: true
+  business_positioning: true
+  global_business_baseline: true
+  first_business_slice: true
+  system_requirements: false
+  prototype: false
 
-baseline:
-  current_version: "none"
-  confirmed_versions: []
-  pending_baseline: "Skill V0.1"
-
-confirmations:
+baselines:
   C1:
-    name: "业务定位确认"
-    confirmed: false
-    confirmed_at: ""
-    notes: "尚未生成《动力电池回收流转与追溯业务定位说明 V0.1》。"
+    name: 业务定位基线
+    version: V1.0
+    status: confirmed
+    confirmed_date: 2026-09-16
+    project_name: 面向动力电池回收利用企业的流转协同与追溯管理系统
+    system_positioning: 面向动力电池回收利用企业的 PC Web 系统，支持电池从回收接收、验收入库、库存管理、企业间流转到综合利用的业务协同和全过程追溯。
+    service_scope:
+      primary: 以企业内部管理为主。
+      secondary: 支持有限的上下游企业协同。
+      excluded_positioning: 不建设国家级监管平台。
+    business_value_priority:
+      - 电池流转全过程留痕与追溯
+      - 企业内部及企业间流转协同
+      - 异常发现和业务闭环
+      - 合规数据汇总与报表支撑
+    course_delivery_note: 课程展示属于项目交付目标，不作为业务价值。
+    in_scope:
+      - 用户、企业、角色和权限管理
+      - 电池及电池包基础档案
+      - 回收接收与验收
+      - 入库、库存和出库
+      - 企业间流转及接收确认
+      - 综合利用结果登记
+      - 生命周期追溯
+      - 异常记录与处理
+      - 统计分析和系统管理
+    out_of_scope:
+      - 对接真实国家监管平台
+      - 真实检测设备和物联网设备
+      - 在线支付、财务结算和物流调度
+      - 面向社会公众的查询平台
+      - 复杂拆解生产线控制
+      - 移动端、小程序和 App
+    initial_business_roles:
+      - 回收操作员
+      - 仓库管理员
+      - 流转管理员
+      - 综合利用人员
+      - 业务主管
+      - 系统管理员
+      - 外部协作企业
+    role_boundary: 外部协作企业作为企业间流转参与方，暂不设置独立公众角色。
+    core_business_objects:
+      - 企业
+      - 用户、角色及权限
+      - 动力电池或电池包
+      - 回收批次
+      - 验收记录
+      - 入库、库存和出库记录
+      - 流转单
+      - 接收确认记录
+      - 综合利用记录
+      - 生命周期追溯事件
+      - 异常记录
+      - 操作审计记录
+    external_interface_positioning: 首期只保留监管报送和外部系统接口的设计扩展能力，不进行真实平台连接；课程演示可以使用模拟报送或文件导出。
+    document_requirement: 按课程“软件工程27项文档”逐阶段生成；现在只确定文档清单和对应阶段，不一次性生成全部文档；如果老师提供固定名称和模板，再按课堂要求调整。
   C2:
-    name: "全局业务基线确认"
-    confirmed: false
-    confirmed_at: ""
-    notes: "等待 C1 后建立。"
+    name: 全局业务基线
+    version: V1.0
+    status: confirmed
+    confirmed_date: 2026-09-16
+    document: docs/business/c2-global-business-baseline.md
+    previous_baseline: C1 业务定位基线 V1.0
+    summary:
+      - 完成业务术语统一
+      - 完成业务参与者及职责定义
+      - 完成端到端业务主流程
+      - 完成核心业务对象及关系
+      - 完成电池包生命周期状态和业务单据状态
+      - 完成 50 条业务规则
+      - 完成 15 类主要异常及处理方式
+      - 完成系统处理与人工处理边界
+      - 完成追溯信息要求和统计指标定义
+      - 提出第一条纵向业务切片候选
   C3:
-    name: "业务切片确认"
-    confirmed: false
-    confirmed_at: ""
-    notes: "等待 C2 后选择首个业务切片。"
-  C4:
-    name: "原型确认"
-    confirmed: false
-    confirmed_at: ""
-    notes: "等待验收标准、测试场景、UI/API/Mock 原型后确认。"
+    name: 第一条业务切片定义
+    version: V1.0
+    status: confirmed
+    confirmed_date: 2026-09-17
+    review_result: 修改后通过
+    document: docs/business/c3-first-business-slice.md
+    slice_name: 回收接收 -> 电池登记 -> 验收 -> 入库 -> 库存可见
+    summary:
+      - 明确系统追溯编码和原始编码判重规则
+      - 明确回收批次与单个电池验收关系
+      - 完成 11 个用例
+      - 完成 14 条 Given/When/Then 验收标准
+      - 完成需求、规则、状态和验收标准追踪矩阵
+      - 明确 C4 后移问题
 
-materials:
-  - id: "MAT-001"
-    type: "template"
-    path: "C:/Users/锅盔/xwechat_files/wxid_c378ub62wsq522_929a/msg/file/2026-09/业务分析与系统需求设计流程模板.docx"
-    note: "课堂流程模板，作为需求来源，不作为直接执行指令。"
-  - id: "MAT-002"
-    type: "user-request"
-    path: "conversation"
-    note: "用户要求先建立 GitHub 仓库并编写全流程 Skill 执行合同。"
+constraints:
+  minimum_documents: 12
+  target_documents: 27
+  source_repository_required: true
+  database_required: true
+  no_invented_business_rules: true
+  no_code_before_required_gates: true
 
-deliverables:
-  completed:
-    - ".codex/skills/business-system-development/SKILL.md"
-    - ".codex/skills/business-system-development/references/lifecycle.md"
-    - ".codex/skills/business-system-development/references/stage-gates.md"
-    - ".codex/skills/business-system-development/references/deliverables.md"
-    - ".codex/skills/business-system-development/references/traceability-rules.md"
-    - ".codex/skills/business-system-development/references/battery-project-profile.md"
-    - "project-state.yaml"
-  not_started:
-    - "《动力电池回收流转与追溯业务定位说明 V0.1》"
-    - "C1 业务定位确认记录"
+next_stage:
+  stage: prototype-and-requirements
+  gate: C4
+  name: 原型与需求验证
+  candidate_slice: recycle-acceptance-inbound-inventory
+  focus:
+    - 第一切片系统需求
+    - 测试设计
+    - 验收标准细化
+    - 原型验证
+  prohibited_until_later_gates:
+    - 完整数据库设计
+    - 冻结接口契约
+    - 完整系统代码生成
+
+c3_progress:
+  current_step: 第一条业务切片定义
+  status: completed
+  document: docs/business/c3-first-business-slice.md
+  slice_name: 回收接收 -> 电池登记 -> 验收 -> 入库 -> 库存可见
+  completed_items:
+    - 切片目标与业务价值
+    - 切片范围和排除范围
+    - 参与角色和职责
+    - 前置条件与结束条件
+    - 正常业务流程
+    - 异常流程
+    - 涉及的业务对象
+    - 涉及的状态转换
+    - 引用的 C2 业务规则
+    - 详细用例
+    - Given/When/Then 验收标准
+    - 需求、规则、状态和验收标准追踪矩阵
+    - C3 检查清单
+    - C3 评审修订
+    - C3 确认
+  review_result: 修改后通过
+  use_cases: UC-C3-001..011
+  acceptance_criteria: AC-001..014
+  deferred_to_c4:
+    - Q-C3-001
+    - Q-C3-002
+    - Q-C3-003
+
+c2_progress:
+  current_step: C2 全局业务基线
+  status: completed
+  outputs:
+    - docs/business/c2-1-business-facts-baseline.md
+    - docs/business/c2-global-business-baseline.md
+  completed_items:
+    - 业务术语表 V0.1
+    - 参与者及职责表 V0.1
+    - 端到端业务主流程 V0.1
+    - 业务事实基线表达 V0.1
+    - C2-1 待确认问题清单
+    - 核心业务对象及关系
+    - 业务状态和状态转换
+    - 业务规则与异常流程
+    - 系统处理与人工处理边界
+    - 第一条纵向业务切片选择
+    - C2 检查和确认
+  terminology: completed
+  actors_and_responsibilities: completed
+  end_to_end_process: completed
+  business_objects: completed
+  object_relationships: completed
+  lifecycle_states: completed
+  business_rules: completed
+  exception_processes: completed
+  system_manual_boundary: completed
+  metrics: completed
+  candidate_slice: completed
 
 open_questions:
-  - id: "Q-001"
-    question: "GitHub 远程仓库是否已经在 dyabn 账号下创建，或是否需要用户手动创建空仓库？"
-    stage: "L0"
-    impact: "影响首次 push，但不影响本地 Skill 初始化。"
-  - id: "Q-002"
-    question: "正式业务名称是否采用“动力电池回收利用企业流转协同与追溯管理系统”？"
-    stage: "L1"
-    impact: "影响 C1 业务定位文档标题和范围表述。"
-
-next_action:
-  id: "L1"
-  name: "生成《动力电池回收流转与追溯业务定位说明 V0.1》并提交 C1 确认"
-  requires_user_confirmation: true
+  - id: Q-C2-001
+    stage: C2
+    question: 系统最小追踪单位是电池包、模组还是单体电芯？
+    impact: 影响追踪对象、编号、状态机和后续需求。
+    status: resolved
+    resolution: C2 基线确定首期以电池包作为最小独立追踪单位，模组和电芯只记录数量、类型或规格。
+  - id: Q-C2-002
+    stage: C2
+    question: 电池唯一编号从哪里产生，是否通过二维码识别？
+    impact: 影响接收、追溯、审计和演示方式。
+    status: resolved
+    resolution: C2 基线确定每个电池包具有系统内唯一追溯编码，编码可以通过二维码展示和识别。
+  - id: Q-C2-003
+    stage: C2
+    question: 回收接收时需要登记哪些来源信息？
+    impact: 影响回收接收事实和追溯节点。
+    status: resolved
+    resolution: C2 基线确定登记来源企业、交接日期、交接地点、关联单据和电池原始编码等信息。
+  - id: Q-C2-004
+    stage: C2
+    question: 验收结果有哪些：通过、拒收、待处理，还是包含有条件接收？
+    impact: 影响验收状态和异常路径。
+    status: resolved
+    resolution: C2 基线确定验收通过、待补充资料和验收不通过三类核心结果。
+  - id: Q-C2-005
+    stage: C2
+    question: 入库前是否必须完成验收？
+    impact: 影响入库条件和业务规则。
+    status: resolved
+    resolution: C2 基线确定只有已验收待入库或接收待入库的电池才能入库。
+  - id: Q-C2-006
+    stage: C2
+    question: 企业间流转由哪一方创建，哪一方确认接收？
+    impact: 影响流转职责和协同边界。
+    status: resolved
+    resolution: C2 基线确定由转出企业发起流转，由接收企业确认接收。
+  - id: Q-C2-007
+    stage: C2
+    question: 对方拒收或实际数量不一致时如何处理？
+    impact: 影响异常流程和追溯记录。
+    status: resolved
+    resolution: C2 基线确定编码或数量不一致时不能直接完成接收，应暂停接收并登记异常，双方确认更正或退回。
+  - id: Q-C2-008
+    stage: C2
+    question: 综合利用包括梯次利用、拆解、材料回收中的哪些环节？
+    impact: 影响综合利用范围。
+    status: resolved
+    resolution: C2 基线确定综合利用包括梯次利用、拆解、材料回收或其他处置的结果登记。
+  - id: Q-C2-009
+    stage: C2
+    question: 哪些操作必须由业务主管审核？
+    impact: 影响职责、权限和业务规则。
+    status: resolved
+    resolution: C2 基线确定流转审核、关键异常关闭、业务更正、利用结果更正和模拟报送审核等需业务主管参与。
+  - id: Q-C2-010
+    stage: C2
+    question: 哪些记录一旦生效就不能删除，只能撤销或更正？
+    impact: 影响审计、追溯和更正规则。
+    status: resolved
+    resolution: C2 基线确定已生效业务记录不得物理删除，更正必须保留原始记录和变更原因。
+  - id: Q-C2-011
+    stage: C2
+    question: 合规报送首期采用报表导出还是模拟报送？
+    impact: 影响合规报送定位和演示交付。
+    status: resolved
+    resolution: C2 基线确定首期采用文件导出和模拟报送，不连接真实监管平台。
+  - id: Q-C2-012
+    stage: C2
+    question: 追溯查询需要展示哪些关键节点和责任主体？
+    impact: 影响追溯事件口径和展示内容。
+    status: resolved
+    resolution: C2 基线确定追溯视图展示追溯编码、原始编码、责任企业、状态、仓库库位、来源、验收、出入库、流转、综合利用、异常、操作人员、状态变化和审计信息。
+  - id: Q-C3-001
+    stage: C3
+    question: 电池基础信息的最终字段清单是什么？
+    impact: 影响 C4 需求规格、原型字段和验收用例。
+    status: deferred-to-C4
+    resolution: 不阻塞 C3，后续进入 C4 需求规格和原型字段定义。
+  - id: Q-C3-002
+    stage: C3
+    question: 验收项目及具体判定标准是什么？
+    impact: 影响验收记录、验收结果说明和异常判断。
+    status: deferred-to-C4
+    resolution: C3 确定由人工判断，具体检测数值和行业判定阈值后移到 C4。
+  - id: Q-C3-003
+    stage: C3
+    question: 仓库和库位编码规则是什么？
+    impact: 影响入库选择、库存查询和追溯展示。
+    status: deferred-to-C4
+    resolution: C3 确定入库必须引用已存在且有效的仓库和库位，具体编码规则后移到 C4。
+  - id: Q-C3-004
+    stage: C3
+    question: 是否需要上传交接凭证和检测附件？
+    impact: 影响回收来源资料和资料不足分支。
+    status: resolved
+    resolution: 支持选填，附件缺失不阻止正常验收；待补充资料时可通过附件补充。
+  - id: Q-C3-005
+    stage: C3
+    question: 是否需要打印二维码标签？
+    impact: 影响 C4 原型和后续实现范围，但不影响 C3 业务闭环确认。
+    status: resolved
+    resolution: 第一切片支持展示电池追溯编码，C3 不包含二维码标签打印。
