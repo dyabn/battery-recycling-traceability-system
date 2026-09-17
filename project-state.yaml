@@ -161,7 +161,7 @@ c3_progress:
   review_result: 修改后通过
   use_cases: UC-C3-001..011
   acceptance_criteria: AC-001..014
-  deferred_to_c4:
+  resolved_in_c4:
     - Q-C3-001
     - Q-C3-002
     - Q-C3-003
@@ -175,6 +175,8 @@ c4_progress:
     test_design: docs/testing/c4-first-slice-test-design.md
     prototype_spec: docs/prototype/c4-first-slice-prototype-spec.md
     prototype: prototype/first-slice/
+    prototype_review_record: docs/prototype/c4-first-slice-prototype-review-record.md
+    prototype_package: prototype/c4-first-slice-prototype.zip
   completed_items:
     - 第一切片系统需求规格 V0.1
     - UR-C4-001..010
@@ -187,18 +189,25 @@ c4_progress:
     - 追溯和审计要求
     - BSR -> UR -> FR -> AC 追踪矩阵
     - 第一切片测试设计 V0.1
-    - TC-C4-001..016
+    - TC-C4-001..017
     - BSR -> UR -> FR -> AC -> TC 追踪矩阵
+    - NFR -> TC/REVIEW 验证矩阵
     - 第一切片低保真原型规格 V0.1
     - 静态低保真交互原型
+    - 原型真实表单校验修订
+    - 重复编码人工核实分支修订
+    - 结构化追溯事件和审计日志修订
+    - 权限矩阵表驱动测试补充
     - 原型评审脚本
-    - 验证记录模板
+    - 已填写原型评审记录
+    - 新版原型压缩包
   pending_items:
-    - C4 评审确认
+    - C4 修订复核确认
   deferred_questions_resolved_in_requirements:
     - Q-C3-001
     - Q-C3-002
     - Q-C3-003
+  review_result: 修改后通过，阻断项已修订，等待复核
 
 c2_progress:
   current_step: C2 全局业务基线
@@ -307,20 +316,20 @@ open_questions:
     stage: C3
     question: 电池基础信息的最终字段清单是什么？
     impact: 影响 C4 需求规格、原型字段和验收用例。
-    status: deferred-to-C4
-    resolution: 不阻塞 C3，后续进入 C4 需求规格和原型字段定义。
+    status: resolved
+    resolution: C4 需求规格已定义电池包字段清单：系统追溯编码、原始编码、电池类型、电池型号、生产企业、电池体系、标称容量、生产日期、当前责任企业和生命周期状态。
   - id: Q-C3-002
     stage: C3
     question: 验收项目及具体判定标准是什么？
     impact: 影响验收记录、验收结果说明和异常判断。
-    status: deferred-to-C4
-    resolution: C3 确定由人工判断，具体检测数值和行业判定阈值后移到 C4。
+    status: resolved
+    resolution: C4 需求规格已定义验收记录字段：验收结果、编码及身份核对情况、外观情况、资料完整情况、验收说明、验收人员和时间、附件；系统只记录人工结论，不自动判定行业阈值。
   - id: Q-C3-003
     stage: C3
     question: 仓库和库位编码规则是什么？
     impact: 影响入库选择、库存查询和追溯展示。
-    status: deferred-to-C4
-    resolution: C3 确定入库必须引用已存在且有效的仓库和库位，具体编码规则后移到 C4。
+    status: resolved
+    resolution: C4 需求规格已定义仓库编码格式为 WH-{3位数字}，示例 WH-001；库位编码格式为 {仓库编码}-A{2位数字}-R{2位数字}-L{2位数字}，示例 WH-001-A01-R01-L01。
   - id: Q-C3-004
     stage: C3
     question: 是否需要上传交接凭证和检测附件？

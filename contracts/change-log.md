@@ -11,6 +11,8 @@
 | CHG-007 | 2026-09-17 | 用户请求 | 创建 C4 第一切片系统需求规格 V0.1，完成 UR、FR、NFR、权限矩阵、字段、校验、错误提示、追溯审计和 BSR->UR->FR->AC 追踪。 | `docs/requirements/c4-first-slice-system-requirements.md`、`project-state.yaml`、追踪索引 | 否 |
 | CHG-008 | 2026-09-17 | 用户请求 | 创建 C4 第一切片测试设计 V0.1，覆盖 16 条测试用例和 BSR->UR->FR->AC->TC 追踪矩阵。 | `docs/testing/c4-first-slice-test-design.md`、`project-state.yaml`、追踪索引 | 否 |
 | CHG-009 | 2026-09-17 | 用户请求 | 创建 C4 第一切片低保真原型规格和静态交互原型，并将 C4 状态暂停在评审。 | `docs/prototype/c4-first-slice-prototype-spec.md`、`prototype/first-slice/`、`project-state.yaml`、追踪索引 | 否 |
+| CHG-010 | 2026-09-17 | 用户评审 | 按 C4“修改后通过但不能关闭”结论修订原型真实交互校验、重复编码人工核实、状态重置、批次状态联动、结构化追溯审计和权限矩阵演示。 | `prototype/first-slice/` | 否 |
+| CHG-011 | 2026-09-17 | 用户评审 | 补充 C4 测试、NFR 验证、完整追踪索引、开放问题 resolved 状态、原型评审记录和新版原型压缩包，继续暂停等待复核。 | C4 需求/测试/原型文档、`project-state.yaml`、开放问题、追踪索引、变更记录、原型压缩包 | 否 |
 
 ## C3 第一条业务切片确认
 
