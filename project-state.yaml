@@ -167,7 +167,7 @@ next_stage:
     - 技术设计评审通过前不得创建正式工程骨架
 
 technical_design_progress:
-  status: in-progress
+  status: paused-for-review
   scope: 回收接收 -> 电池登记 -> 验收 -> 入库 -> 库存可见
   lifecycle_stage: system-design
   review_gate: 设计评审
@@ -189,17 +189,25 @@ technical_design_progress:
     - 全系统数据库扩展
     - 企业间流转和综合利用实现
     - 真实监管平台连接
-  pending_items:
+  completed_items:
     - 技术栈确认
     - 总体设计
     - 架构设计
     - 数据库设计
-    - API 契约设计
+    - 数据字典
+    - SQL 设计稿
+    - API 设计
+    - OpenAPI 契约
     - 安全设计
     - 部署设计
     - 技术测试设计
     - 技术追踪矩阵
-    - 技术设计评审
+    - 技术设计评审记录
+  pending_items:
+    - 用户技术设计评审
+    - OpenAPI 严格解析复核
+    - MySQL 8 SQL 解析复核
+  review_result: 等待技术设计评审
 
 c3_progress:
   current_step: 第一条业务切片定义
