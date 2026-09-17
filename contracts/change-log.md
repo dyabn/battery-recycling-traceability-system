@@ -9,6 +9,7 @@
 | CHG-005 | 2026-09-16 | 用户请求 | 创建 C3 第一条业务切片定义 V0.1，覆盖流程、异常、用例、验收标准和追踪矩阵，并暂停评审。 | `docs/business/c3-first-business-slice.md`、`project-state.yaml`、追踪索引、开放问题 | 否 |
 | CHG-006 | 2026-09-17 | 用户评审 | 按“修改后通过”结论修订 C3，明确编码判重、批次与单电池关系、删除保护追踪缺口，并关闭 C3 进入 C4。 | `docs/business/c3-first-business-slice.md`、`project-state.yaml`、追踪索引、开放问题 | 否 |
 | CHG-007 | 2026-09-17 | 用户请求 | 创建 C4 第一切片系统需求规格 V0.1，完成 UR、FR、NFR、权限矩阵、字段、校验、错误提示、追溯审计和 BSR->UR->FR->AC 追踪。 | `docs/requirements/c4-first-slice-system-requirements.md`、`project-state.yaml`、追踪索引 | 否 |
+| CHG-008 | 2026-09-17 | 用户请求 | 创建 C4 第一切片测试设计 V0.1，覆盖 16 条测试用例和 BSR->UR->FR->AC->TC 追踪矩阵。 | `docs/testing/c4-first-slice-test-design.md`、`project-state.yaml`、追踪索引 | 否 |
 
 ## C3 第一条业务切片确认
 
