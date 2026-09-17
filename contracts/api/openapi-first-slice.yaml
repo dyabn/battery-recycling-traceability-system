@@ -1,0 +1,917 @@
+openapi: 3.0.3
+info:
+  title: Battery Recycling Traceability First Slice API
+  version: 0.1.0
+  description: 第一切片 API 设计契约，用于技术设计评审，不等同于已冻结生产接口。
+servers:
+  - url: http://localhost:8080/api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: RecycleBatch
+  - name: Battery
+  - name: Acceptance
+  - name: Inbound
+  - name: Inventory
+  - name: System
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: 用户登录
+      security: []
+      x-traceability:
+        fr: [FR-C4-020, FR-C4-021]
+        ac: [AC-013]
+        tc: [TC-C4-012, TC-C4-017]
+        ui: [UI-C4-001]
+        permission: anonymous
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponseEnvelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/current-user:
+    get:
+      tags: [Auth]
+      summary: 获取当前用户
+      x-traceability:
+        fr: [FR-C4-021]
+        ac: [AC-013]
+        tc: [TC-C4-017]
+        ui: [UI-C4-002]
+        permission: authenticated
+      responses:
+        '200':
+          description: 当前用户信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserEnvelope'
+  /recycle-batches:
+    post:
+      tags: [RecycleBatch]
+      summary: 创建回收批次
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      x-traceability:
+        fr: [FR-C4-001, FR-C4-002, FR-C4-003]
+        ac: [AC-001]
+        tc: [TC-C4-001, TC-C4-015]
+        ui: [UI-C4-004]
+        permission: batch:create
+        module: MOD-BATCH
+        db: [recycle_batch, business_attachment]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecycleBatchCreateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/BatchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    get:
+      tags: [RecycleBatch]
+      summary: 查询回收批次列表
+      x-traceability:
+        fr: [FR-C4-001]
+        ac: [AC-001]
+        tc: [TC-C4-001]
+        ui: [UI-C4-003]
+        permission: batch:read
+        module: MOD-BATCH
+        db: [recycle_batch]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/BatchListResponse'
+  /recycle-batches/{id}:
+    get:
+      tags: [RecycleBatch]
+      summary: 查询回收批次详情
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      x-traceability:
+        fr: [FR-C4-008, FR-C4-009, FR-C4-010]
+        ac: [AC-004]
+        tc: [TC-C4-003, TC-C4-006]
+        ui: [UI-C4-005]
+        permission: batch:read
+        module: MOD-BATCH
+        db: [recycle_batch, recycle_batch_battery, battery]
+      responses:
+        '200':
+          $ref: '#/components/responses/BatchResponse'
+    put:
+      tags: [RecycleBatch]
+      summary: 修改草稿回收批次
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      x-traceability:
+        fr: [FR-C4-002, FR-C4-003]
+        ac: [AC-001]
+        tc: [TC-C4-002, TC-C4-015]
+        ui: [UI-C4-004]
+        permission: batch:create
+        module: MOD-BATCH
+        db: [recycle_batch]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecycleBatchUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/BatchResponse'
+  /recycle-batches/{id}/submit:
+    post:
+      tags: [RecycleBatch]
+      summary: 提交批次验收
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      x-traceability:
+        fr: [FR-C4-009, FR-C4-010, FR-C4-019]
+        ac: [AC-004, AC-012]
+        tc: [TC-C4-002, TC-C4-003, TC-C4-006, TC-C4-014]
+        ui: [UI-C4-005]
+        permission: batch:submit
+        module: MOD-BATCH
+        db: [recycle_batch, battery, recycle_batch_battery, lifecycle_event, audit_log]
+        transaction: batchSubmit
+      responses:
+        '200':
+          $ref: '#/components/responses/BatchResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /batteries:
+    post:
+      tags: [Battery]
+      summary: 登记电池包
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      x-traceability:
+        fr: [FR-C4-004, FR-C4-005, FR-C4-006, FR-C4-019]
+        ac: [AC-002, AC-003, AC-012]
+        tc: [TC-C4-001, TC-C4-004, TC-C4-014]
+        ui: [UI-C4-006]
+        permission: battery:create
+        module: MOD-BATTERY
+        db: [battery, lifecycle_event]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatteryCreateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/BatteryResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /batteries/duplicate-check:
+    post:
+      tags: [Battery]
+      summary: 检查原始编码疑似重复
+      x-traceability:
+        fr: [FR-C4-006]
+        ac: [AC-003]
+        tc: [TC-C4-004]
+        ui: [UI-C4-006]
+        permission: battery:create
+        module: MOD-DUPLICATE
+        db: [battery]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DuplicateCheckRequest'
+      responses:
+        '200':
+          description: 重复检查结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DuplicateCheckEnvelope'
+  /batteries/{id}/duplicate-resolution:
+    post:
+      tags: [Battery]
+      summary: 处理重复原始编码核实
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      x-traceability:
+        fr: [FR-C4-007]
+        ac: [AC-003]
+        tc: [TC-C4-005]
+        ui: [UI-C4-006]
+        permission: battery:duplicate:resolve
+        module: MOD-DUPLICATE
+        db: [duplicate_code_review, battery]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DuplicateResolutionRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/BatteryResponse'
+  /recycle-batches/{id}/batteries:
+    post:
+      tags: [RecycleBatch]
+      summary: 将电池加入回收批次
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      x-traceability:
+        fr: [FR-C4-008]
+        ac: [AC-003, AC-004]
+        tc: [TC-C4-001, TC-C4-006]
+        ui: [UI-C4-006]
+        permission: battery:create
+        module: MOD-BATCH
+        db: [recycle_batch_battery]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [batteryId]
+              properties:
+                batteryId:
+                  type: integer
+                  format: int64
+      responses:
+        '200':
+          $ref: '#/components/responses/BatchResponse'
+  /acceptances/pending:
+    get:
+      tags: [Acceptance]
+      summary: 查询待验收任务
+      x-traceability:
+        fr: [FR-C4-011, FR-C4-012, FR-C4-014]
+        ac: [AC-005, AC-006, AC-008]
+        tc: [TC-C4-001, TC-C4-007, TC-C4-008]
+        ui: [UI-C4-007]
+        permission: acceptance:create
+        module: MOD-ACCEPTANCE
+        db: [battery, recycle_batch_battery]
+      responses:
+        '200':
+          $ref: '#/components/responses/BatteryListResponse'
+  /batteries/{id}/acceptances:
+    post:
+      tags: [Acceptance]
+      summary: 保存验收记录
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      x-traceability:
+        fr: [FR-C4-011, FR-C4-012, FR-C4-014, FR-C4-019]
+        ac: [AC-005, AC-006, AC-008, AC-012]
+        tc: [TC-C4-001, TC-C4-007, TC-C4-008, TC-C4-016]
+        ui: [UI-C4-008]
+        permission: acceptance:create
+        module: MOD-ACCEPTANCE
+        db: [acceptance_record, battery, recycle_batch, lifecycle_event, audit_log]
+        transaction: saveAcceptance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptanceCreateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/AcceptanceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /batteries/{id}/acceptance-supplements:
+    post:
+      tags: [Acceptance]
+      summary: 补充验收资料
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      x-traceability:
+        fr: [FR-C4-013, FR-C4-019]
+        ac: [AC-007, AC-012]
+        tc: [TC-C4-007, TC-C4-014]
+        ui: [UI-C4-009]
+        permission: acceptance:supplement
+        module: MOD-ACCEPTANCE
+        db: [acceptance_supplement, battery, lifecycle_event, audit_log]
+        transaction: supplementAcceptance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptanceSupplementRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/BatteryResponse'
+  /inbounds/pending:
+    get:
+      tags: [Inbound]
+      summary: 查询待入库电池
+      x-traceability:
+        fr: [FR-C4-015]
+        ac: [AC-008, AC-009]
+        tc: [TC-C4-008, TC-C4-011]
+        ui: [UI-C4-010]
+        permission: inbound:create
+        module: MOD-INBOUND
+        db: [battery]
+      responses:
+        '200':
+          $ref: '#/components/responses/BatteryListResponse'
+  /batteries/{id}/inbounds:
+    post:
+      tags: [Inbound]
+      summary: 办理入库
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      x-traceability:
+        fr: [FR-C4-015, FR-C4-016, FR-C4-017, FR-C4-019, FR-C4-020]
+        ac: [AC-009, AC-010, AC-011, AC-012]
+        tc: [TC-C4-001, TC-C4-009, TC-C4-010, TC-C4-011, TC-C4-014]
+        ui: [UI-C4-011]
+        permission: inbound:create
+        module: MOD-INBOUND
+        db: [inbound_record, inventory, battery, lifecycle_event, audit_log]
+        transaction: inbound
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InboundCreateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/InboundResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /inventory:
+    get:
+      tags: [Inventory]
+      summary: 查询当前库存
+      x-traceability:
+        fr: [FR-C4-018]
+        ac: [AC-011]
+        tc: [TC-C4-001]
+        ui: [UI-C4-012]
+        permission: inventory:read
+        module: MOD-INVENTORY
+        db: [inventory, battery]
+      parameters:
+        - name: systemTraceCode
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/InventoryListResponse'
+  /batteries/{id}/trace:
+    get:
+      tags: [Inventory]
+      summary: 查询电池追溯时间线
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      x-traceability:
+        fr: [FR-C4-019, FR-C4-020]
+        ac: [AC-012]
+        tc: [TC-C4-001, TC-C4-014]
+        ui: [UI-C4-013]
+        permission: trace:read
+        module: MOD-TRACE
+        db: [lifecycle_event, audit_log]
+      responses:
+        '200':
+          $ref: '#/components/responses/TraceResponse'
+  /audit-logs:
+    get:
+      tags: [System]
+      summary: 查询审计日志
+      x-traceability:
+        fr: [FR-C4-020, FR-C4-021]
+        ac: [AC-013]
+        tc: [TC-C4-012, TC-C4-017]
+        ui: [UI-C4-014]
+        permission: audit:read
+        module: MOD-AUDIT
+        db: [audit_log]
+      responses:
+        '200':
+          $ref: '#/components/responses/AuditLogListResponse'
+  /roles:
+    get:
+      tags: [System]
+      summary: 查询角色
+      x-traceability:
+        fr: [FR-C4-021]
+        ac: [AC-013]
+        tc: [TC-C4-017]
+        ui: [UI-C4-002]
+        permission: permission:manage
+        module: MOD-AUTH
+        db: [sys_role]
+      responses:
+        '200':
+          $ref: '#/components/responses/RoleListResponse'
+  /permissions:
+    get:
+      tags: [System]
+      summary: 查询权限
+      x-traceability:
+        fr: [FR-C4-021]
+        ac: [AC-013]
+        tc: [TC-C4-017]
+        ui: [UI-C4-002]
+        permission: permission:manage
+        module: MOD-AUTH
+        db: [sys_permission]
+      responses:
+        '200':
+          $ref: '#/components/responses/PermissionListResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PathId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        maxLength: 80
+  responses:
+    BadRequest:
+      description: 业务校验失败
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Unauthorized:
+      description: 认证失败
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Forbidden:
+      description: 权限不足
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Conflict:
+      description: 状态冲突或重复提交
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    BatchResponse:
+      description: 批次响应
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RecycleBatchEnvelope'
+    BatchListResponse:
+      description: 批次列表响应
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RecycleBatchListEnvelope'
+    BatteryResponse:
+      description: 电池响应
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BatteryEnvelope'
+    BatteryListResponse:
+      description: 电池列表响应
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BatteryListEnvelope'
+    AcceptanceResponse:
+      description: 验收响应
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AcceptanceEnvelope'
+    InboundResponse:
+      description: 入库响应
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InboundEnvelope'
+    InventoryListResponse:
+      description: 库存列表响应
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InventoryListEnvelope'
+    TraceResponse:
+      description: 追溯响应
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TraceEnvelope'
+    AuditLogListResponse:
+      description: 审计日志列表响应
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuditLogListEnvelope'
+    RoleListResponse:
+      description: 角色列表响应
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StringListEnvelope'
+    PermissionListResponse:
+      description: 权限列表响应
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StringListEnvelope'
+  schemas:
+    Envelope:
+      type: object
+      required: [code, message, traceId]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        traceId:
+          type: string
+    ErrorEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              nullable: true
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+    LoginResponseEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                token:
+                  type: string
+                expiresIn:
+                  type: integer
+    CurrentUserEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/CurrentUser'
+    CurrentUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        displayName:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: array
+          items:
+            type: string
+    RecycleBatchCreateRequest:
+      type: object
+      required: [sourceType, sourceSubjectName, handoverDate]
+      properties:
+        sourceType:
+          type: string
+        sourceSubjectName:
+          type: string
+        handoverDate:
+          type: string
+          format: date
+        handoverLocation:
+          type: string
+        relatedDocumentNo:
+          type: string
+        handoverPerson:
+          type: string
+        remark:
+          type: string
+    RecycleBatchUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/RecycleBatchCreateRequest'
+    RecycleBatchEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/RecycleBatch'
+    RecycleBatchListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/RecycleBatch'
+    RecycleBatch:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        batchNo:
+          type: string
+        sourceType:
+          type: string
+        sourceSubjectName:
+          type: string
+        handoverDate:
+          type: string
+          format: date
+        batchStatus:
+          type: string
+    BatteryCreateRequest:
+      type: object
+      required: [batteryType, batteryChemistry]
+      properties:
+        originalCode:
+          type: string
+        batteryType:
+          type: string
+          enum: [PACK]
+        batteryModel:
+          type: string
+        manufacturer:
+          type: string
+        batteryChemistry:
+          type: string
+        nominalCapacity:
+          type: number
+        productionDate:
+          type: string
+          format: date
+    BatteryEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Battery'
+    BatteryListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Battery'
+    Battery:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        systemTraceCode:
+          type: string
+        originalCode:
+          type: string
+        lifecycleStatus:
+          type: string
+        duplicateStatus:
+          type: string
+    DuplicateCheckRequest:
+      type: object
+      required: [originalCode]
+      properties:
+        originalCode:
+          type: string
+    DuplicateCheckEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                duplicated:
+                  type: boolean
+                matchedBatteryIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+    DuplicateResolutionRequest:
+      type: object
+      required: [reviewResult]
+      properties:
+        reviewResult:
+          type: string
+          enum: [SAME_BATTERY, DIFFERENT_BATTERY]
+        matchedBatteryId:
+          type: integer
+          format: int64
+        duplicateReason:
+          type: string
+    AcceptanceCreateRequest:
+      type: object
+      required: [acceptanceResult, identityCheckResult, appearanceCheckResult, documentCheckResult]
+      properties:
+        acceptanceResult:
+          type: string
+          enum: [PASS, NEED_SUPPLEMENT, REJECT]
+        identityCheckResult:
+          type: string
+        appearanceCheckResult:
+          type: string
+        documentCheckResult:
+          type: string
+        acceptanceNote:
+          type: string
+    AcceptanceEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                acceptanceRecordId:
+                  type: integer
+                  format: int64
+                batteryStatus:
+                  type: string
+    AcceptanceSupplementRequest:
+      type: object
+      required: [supplementNote]
+      properties:
+        supplementNote:
+          type: string
+    InboundCreateRequest:
+      type: object
+      required: [warehouseId, locationId]
+      properties:
+        warehouseId:
+          type: integer
+          format: int64
+        locationId:
+          type: integer
+          format: int64
+    InboundEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                inboundRecordId:
+                  type: integer
+                  format: int64
+                inventoryId:
+                  type: integer
+                  format: int64
+                batteryStatus:
+                  type: string
+    InventoryListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/InventoryItem'
+    InventoryItem:
+      type: object
+      properties:
+        systemTraceCode:
+          type: string
+        warehouseCode:
+          type: string
+        locationCode:
+          type: string
+        lifecycleStatus:
+          type: string
+    TraceEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/TraceEvent'
+    TraceEvent:
+      type: object
+      properties:
+        eventName:
+          type: string
+        objectCode:
+          type: string
+        operator:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        statusChange:
+          type: string
+        result:
+          type: string
+    AuditLogListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/AuditLog'
+    AuditLog:
+      type: object
+      properties:
+        actionCode:
+          type: string
+        objectType:
+          type: string
+        objectId:
+          type: integer
+          format: int64
+        result:
+          type: string
+        rejectReason:
+          type: string
+        operatedAt:
+          type: string
+          format: date-time
+    StringListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: string
+
