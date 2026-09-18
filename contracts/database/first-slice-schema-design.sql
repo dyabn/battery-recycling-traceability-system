@@ -121,6 +121,29 @@ CREATE TABLE IF NOT EXISTS battery (
   CONSTRAINT ck_battery_duplicate_status CHECK (duplicate_status IN ('NORMAL', 'SUSPECTED_DUPLICATE', 'RESOLVED_SAME', 'RESOLVED_DIFFERENT'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS battery_registration_candidate (
+  id BIGINT PRIMARY KEY,
+  enterprise_id BIGINT NOT NULL,
+  original_code VARCHAR(100) NOT NULL,
+  battery_type VARCHAR(20) NOT NULL DEFAULT 'PACK',
+  battery_model VARCHAR(100) NULL,
+  manufacturer VARCHAR(100) NULL,
+  battery_chemistry VARCHAR(40) NOT NULL,
+  nominal_capacity DECIMAL(10, 2) NULL,
+  production_date DATE NULL,
+  candidate_status VARCHAR(40) NOT NULL DEFAULT 'PENDING_REVIEW',
+  submitted_by BIGINT NOT NULL,
+  submitted_at DATETIME(3) NOT NULL,
+  closed_at DATETIME(3) NULL,
+  created_at DATETIME(3) NOT NULL,
+  updated_at DATETIME(3) NOT NULL,
+  version INT NOT NULL DEFAULT 0,
+  CONSTRAINT fk_candidate_enterprise FOREIGN KEY (enterprise_id) REFERENCES enterprise(id),
+  CONSTRAINT fk_candidate_submitted_by FOREIGN KEY (submitted_by) REFERENCES sys_user(id),
+  CONSTRAINT ck_candidate_type CHECK (battery_type = 'PACK'),
+  CONSTRAINT ck_candidate_status CHECK (candidate_status IN ('PENDING_REVIEW', 'CLOSED_SAME', 'CLOSED_DIFFERENT', 'CANCELLED'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS recycle_batch_battery (
   id BIGINT PRIMARY KEY,
   enterprise_id BIGINT NOT NULL,
@@ -140,9 +163,10 @@ CREATE TABLE IF NOT EXISTS recycle_batch_battery (
 CREATE TABLE IF NOT EXISTS duplicate_code_review (
   id BIGINT PRIMARY KEY,
   enterprise_id BIGINT NOT NULL,
-  battery_id BIGINT NOT NULL,
+  candidate_id BIGINT NOT NULL,
   original_code VARCHAR(100) NOT NULL,
-  matched_battery_id BIGINT NULL,
+  existing_battery_id BIGINT NULL,
+  created_battery_id BIGINT NULL,
   review_result VARCHAR(40) NOT NULL,
   duplicate_reason VARCHAR(255) NULL,
   reviewer_id BIGINT NOT NULL,
@@ -150,8 +174,9 @@ CREATE TABLE IF NOT EXISTS duplicate_code_review (
   created_at DATETIME(3) NOT NULL,
   version INT NOT NULL DEFAULT 0,
   CONSTRAINT fk_dcr_enterprise FOREIGN KEY (enterprise_id) REFERENCES enterprise(id),
-  CONSTRAINT fk_dcr_battery FOREIGN KEY (battery_id) REFERENCES battery(id),
-  CONSTRAINT fk_dcr_matched_battery FOREIGN KEY (matched_battery_id) REFERENCES battery(id),
+  CONSTRAINT fk_dcr_candidate FOREIGN KEY (candidate_id) REFERENCES battery_registration_candidate(id),
+  CONSTRAINT fk_dcr_existing_battery FOREIGN KEY (existing_battery_id) REFERENCES battery(id),
+  CONSTRAINT fk_dcr_created_battery FOREIGN KEY (created_battery_id) REFERENCES battery(id),
   CONSTRAINT fk_dcr_reviewer FOREIGN KEY (reviewer_id) REFERENCES sys_user(id),
   CONSTRAINT ck_dcr_result CHECK (review_result IN ('SAME_BATTERY', 'DIFFERENT_BATTERY'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -243,7 +268,6 @@ CREATE TABLE IF NOT EXISTS inbound_record (
   created_at DATETIME(3) NOT NULL,
   version INT NOT NULL DEFAULT 0,
   CONSTRAINT uk_inbound_no UNIQUE (inbound_no),
-  CONSTRAINT uk_inbound_battery UNIQUE (battery_id),
   CONSTRAINT fk_inbound_enterprise FOREIGN KEY (enterprise_id) REFERENCES enterprise(id),
   CONSTRAINT fk_inbound_battery FOREIGN KEY (battery_id) REFERENCES battery(id),
   CONSTRAINT fk_inbound_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouse(id),
@@ -312,6 +336,26 @@ CREATE TABLE IF NOT EXISTS audit_log (
   CONSTRAINT ck_audit_result CHECK (result IN ('SUCCESS', 'FAILED', 'FORBIDDEN'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS idempotency_record (
+  id BIGINT PRIMARY KEY,
+  enterprise_id BIGINT NOT NULL,
+  operator_user_id BIGINT NOT NULL,
+  operation_code VARCHAR(80) NOT NULL,
+  idempotency_key VARCHAR(80) NOT NULL,
+  request_hash VARCHAR(128) NOT NULL,
+  process_status VARCHAR(20) NOT NULL,
+  response_code VARCHAR(80) NULL,
+  response_body JSON NULL,
+  created_at DATETIME(3) NOT NULL,
+  updated_at DATETIME(3) NOT NULL,
+  expires_at DATETIME(3) NOT NULL,
+  version INT NOT NULL DEFAULT 0,
+  CONSTRAINT uk_idempotency_record UNIQUE (enterprise_id, operator_user_id, operation_code, idempotency_key),
+  CONSTRAINT fk_idempotency_enterprise FOREIGN KEY (enterprise_id) REFERENCES enterprise(id),
+  CONSTRAINT fk_idempotency_operator FOREIGN KEY (operator_user_id) REFERENCES sys_user(id),
+  CONSTRAINT ck_idempotency_status CHECK (process_status IN ('PROCESSING', 'SUCCEEDED', 'FAILED'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS business_attachment (
   id BIGINT PRIMARY KEY,
   enterprise_id BIGINT NOT NULL,
@@ -331,13 +375,15 @@ CREATE INDEX idx_sys_user_enterprise ON sys_user (enterprise_id, enabled_status)
 CREATE INDEX idx_batch_enterprise_status ON recycle_batch (enterprise_id, batch_status);
 CREATE INDEX idx_battery_original_code ON battery (original_code);
 CREATE INDEX idx_battery_enterprise_status ON battery (enterprise_id, lifecycle_status);
+CREATE INDEX idx_candidate_original_code ON battery_registration_candidate (enterprise_id, original_code, candidate_status);
 CREATE INDEX idx_batch_battery_battery ON recycle_batch_battery (battery_id);
 CREATE INDEX idx_duplicate_original_code ON duplicate_code_review (original_code);
+CREATE INDEX idx_duplicate_candidate ON duplicate_code_review (candidate_id);
 CREATE INDEX idx_acceptance_battery ON acceptance_record (battery_id, created_at);
 CREATE INDEX idx_warehouse_enterprise_status ON warehouse (enterprise_id, enabled_status);
 CREATE INDEX idx_location_warehouse_status ON warehouse_location (warehouse_id, enabled_status);
 CREATE INDEX idx_inventory_enterprise_location ON inventory (enterprise_id, warehouse_id, location_id, is_current);
 CREATE INDEX idx_event_battery_time ON lifecycle_event (battery_id, occurred_at);
 CREATE INDEX idx_audit_operator_time ON audit_log (operator_user_id, operated_at);
+CREATE INDEX idx_idempotency_expires ON idempotency_record (expires_at);
 CREATE INDEX idx_attachment_object ON business_attachment (object_type, object_id);
-

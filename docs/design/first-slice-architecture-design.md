@@ -30,6 +30,8 @@ Spring Boot Modular Monolith
   - batch
   - battery
   - duplicate
+  - idempotency
+  - attachment
   - acceptance
   - inbound
   - inventory
@@ -61,7 +63,7 @@ MySQL 8
 | --- | --- | --- |
 | 登录与工作台 | UI-C4-001、UI-C4-002 | `/auth/login`、`/auth/current-user` |
 | 回收批次 | UI-C4-003..005 | `/recycle-batches` |
-| 电池登记 | UI-C4-006 | `/batteries`、`/batteries/duplicate-check`、`/duplicate-resolution` |
+| 电池登记 | UI-C4-006 | `/batteries`、`/batteries/duplicate-check`、`/battery-registration-candidates/{id}/duplicate-resolution` |
 | 验收处理 | UI-C4-007..009 | `/acceptances/pending`、`/acceptances`、`/acceptance-supplements` |
 | 入库与库存 | UI-C4-010..012 | `/inbounds/pending`、`/inbounds`、`/inventory` |
 | 追溯与异常 | UI-C4-013..014 | `/batteries/{id}/trace`、统一错误响应 |
@@ -76,18 +78,21 @@ MySQL 8
 | 身份与权限 | `auth` | `AuthService`、`PermissionService` | `sys_user`、`sys_role`、`sys_permission` |
 | 回收批次 | `batch` | `RecycleBatchService` | `recycle_batch`、`recycle_batch_battery` |
 | 电池档案 | `battery` | `BatteryService`、`TraceCodeService` | `battery` |
-| 重复编码核实 | `duplicate` | `DuplicateCodeReviewService` | `duplicate_code_review` |
+| 重复编码核实 | `duplicate` | `DuplicateCodeReviewService`、`BatteryRegistrationCandidateService` | `battery_registration_candidate`、`duplicate_code_review` |
 | 验收 | `acceptance` | `AcceptanceService`、`SupplementService` | `acceptance_record`、`acceptance_supplement` |
 | 入库 | `inbound` | `InboundService` | `warehouse`、`warehouse_location`、`inbound_record`、`inventory` |
 | 库存查询 | `inventory` | `InventoryQueryService` | `inventory`、`battery` |
 | 生命周期追溯 | `trace` | `LifecycleEventService` | `lifecycle_event` |
 | 审计日志 | `audit` | `AuditLogService` | `audit_log` |
 | 附件 | `attachment` | `AttachmentService` | `business_attachment` |
+| 幂等 | `idempotency` | `IdempotencyService` | `idempotency_record` |
 
 ## 6. 模块依赖规则
 
 - `auth` 可被所有业务模块依赖。
 - `trace` 和 `audit` 为基础能力，可被业务模块调用。
+- `idempotency` 为写接口基础能力，由应用服务在业务事务前后调用。
+- `attachment` 只保存附件元数据和文件存储路径，不直接参与业务状态裁决。
 - `batch` 可依赖 `battery` 和 `duplicate` 做提交校验。
 - `acceptance` 可依赖 `batch` 查询批次状态并回写批次完成状态。
 - `inbound` 可依赖 `battery`、`inventory` 和仓库基础资料。
@@ -135,7 +140,7 @@ MySQL 8
 
 业务写接口支持 `Idempotency-Key` 请求头。相同用户、相同接口、相同业务对象和相同幂等键的重复请求，应返回首次成功结果或明确的重复提交错误，不得产生重复业务记录。
 
-没有幂等键但触发唯一约束的请求，应返回 `DUPLICATE_SUBMISSION` 或业务专用错误码。
+幂等记录保存到 `idempotency_record`。相同键和相同请求体返回首次结果；相同键但请求体不同返回 `IDEMPOTENCY_KEY_REUSED`。没有幂等键但触发唯一约束或状态条件冲突的请求，应返回 `DUPLICATE_SUBMISSION` 或业务专用错误码。
 
 ## 10. 错误响应
 
@@ -163,4 +168,3 @@ MySQL 8
 ## 12. 后续实现约束
 
 本架构设计通过前，不创建正式工程骨架。本设计通过后，后续 `feature/first-slice-implementation` 才能初始化 Vue 和 Spring Boot 工程。
-

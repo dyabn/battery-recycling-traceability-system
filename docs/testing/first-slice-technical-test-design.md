@@ -36,8 +36,8 @@
 | TC-C4-001 | TD-TC-001 | 创建批次、登记电池、提交验收、保存验收、入库、库存、追溯 | `recycle_batch`、`battery`、`acceptance_record`、`inbound_record`、`inventory`、`lifecycle_event` | MOD-BATCH、MOD-BATTERY、MOD-ACCEPTANCE、MOD-INBOUND、MOD-INVENTORY、MOD-TRACE |
 | TC-C4-002 | TD-TC-002 | `POST /recycle-batches/{id}/submit` | `recycle_batch`、`audit_log` | MOD-BATCH |
 | TC-C4-003 | TD-TC-003 | `POST /recycle-batches/{id}/submit` | `recycle_batch_battery` | MOD-BATCH |
-| TC-C4-004 | TD-TC-004 | `POST /batteries`、`POST /batteries/duplicate-check` | `battery` | MOD-BATTERY、MOD-DUPLICATE |
-| TC-C4-005 | TD-TC-005 | `POST /batteries/{id}/duplicate-resolution` | `duplicate_code_review`、`battery` | MOD-DUPLICATE |
+| TC-C4-004 | TD-TC-004 | `POST /batteries`、`POST /batteries/duplicate-check` | `battery`、`battery_registration_candidate` | MOD-BATTERY、MOD-DUPLICATE |
+| TC-C4-005 | TD-TC-005 | `POST /battery-registration-candidates/{id}/duplicate-resolution` | `battery_registration_candidate`、`duplicate_code_review`、`battery` | MOD-DUPLICATE |
 | TC-C4-006 | TD-TC-006 | `POST /recycle-batches/{id}/submit` | `recycle_batch`、`battery`、`audit_log` | MOD-BATCH |
 | TC-C4-007 | TD-TC-007 | 验收和补充资料接口 | `acceptance_record`、`acceptance_supplement`、`lifecycle_event` | MOD-ACCEPTANCE、MOD-TRACE |
 | TC-C4-008 | TD-TC-008 | 验收和入库接口 | `acceptance_record`、`battery`、`audit_log` | MOD-ACCEPTANCE、MOD-INBOUND |
@@ -58,8 +58,8 @@
 | TD-TC-001 | 正常入库闭环技术支撑 | 有效用户、仓库和库位。 | 依次调用创建批次、登记电池、加入批次、提交验收、验收通过、入库、库存查询、追溯查询。 | API 响应成功；相关表生成记录；电池状态最终 `IN_STOCK`；库存当前记录唯一；追溯事件完整。 | API、DB、事务 |
 | TD-TC-002 | 来源必填缺失状态不变 | 草稿批次缺少来源必填字段。 | 提交批次。 | 返回 `BATCH_REQUIRED_FIELD_MISSING`；批次和电池状态不变；记录失败审计。 | 校验、状态 |
 | TD-TC-003 | 空批次提交失败 | 草稿批次无有效电池。 | 提交批次。 | 返回 `BATCH_EMPTY`；批次保持 `DRAFT`。 | 边界 |
-| TD-TC-004 | 原始编码重复识别 | 已存在相同 `original_code` 电池。 | 创建新电池或重复检查。 | 返回疑似重复；`original_code` 不因数据库唯一约束失败；进入核实流程。 | 约束、异常 |
-| TD-TC-005 | 重复编码人工核实 | 存在疑似重复电池。 | 分别提交同一电池和不同电池核实结果。 | 同一电池使用原档案；不同电池记录原因并保留新追溯编码；写 `duplicate_code_review`。 | 业务规则 |
+| TD-TC-004 | 原始编码重复识别 | 已存在相同 `original_code` 电池。 | 创建新电池或重复检查。 | 返回疑似重复；不创建第二条有效 `battery`；创建 `battery_registration_candidate` 并进入核实流程。 | 约束、异常 |
+| TD-TC-005 | 重复编码人工核实 | 存在疑似重复候选记录。 | 分别提交同一电池和不同电池核实结果。 | 同一电池关闭候选并返回原档案；不同电池记录原因、关闭候选并创建新 `battery`；写 `duplicate_code_review`。 | 业务规则 |
 | TD-TC-006 | 批次整体校验原子性 | 批次含有效电池和未核实疑似重复电池。 | 提交批次。 | 整批失败；所有电池状态不变；事务回滚。 | 事务 |
 | TD-TC-007 | 待补充资料与重新提交 | 电池待验收。 | 验收为待补充资料，再补充资料。 | 资料不足说明必填；状态先到 `PENDING_SUPPLEMENT` 再回到 `PENDING_ACCEPTANCE`；事件完整。 | 状态、追溯 |
 | TD-TC-008 | 验收不通过不可入库 | 电池待验收。 | 保存不通过，再尝试入库。 | 不通过原因必填；电池 `ACCEPTANCE_REJECTED`；入库返回 `INVALID_BATTERY_STATE`。 | 状态 |
@@ -73,10 +73,11 @@
 | TD-TC-016 | 验收必填失败状态保持 | 电池待验收，批次待验收。 | 验收结果或三项检查字段为空；或资料不足/不通过说明为空。 | 返回 `ACCEPTANCE_REQUIRED_FIELD_MISSING`；不写最终验收记录；批次和电池均保持待验收。 | 校验、事务 |
 | TD-TC-017 | 权限矩阵表驱动验证 | 初始化五类用户。 | 按角色权限矩阵逐项调用接口。 | 允许项成功；拒绝项返回 403 并审计；系统管理员只能管理权限和查看审计。 | 权限 |
 | TD-TC-018 | 并发提交同一批次 | 两个用户或两个请求同时提交同一草稿批次。 | 并发调用提交接口。 | 只有一个成功；另一个返回 `DUPLICATE_SUBMISSION` 或版本冲突；无重复事件。 | 并发 |
-| TD-TC-019 | 重复点击入库 | 同一电池快速重复调用入库。 | 两次调用入库接口。 | 只有一条入库记录和一条当前库存；第二次返回冲突。 | 幂等、唯一约束 |
+| TD-TC-019 | 重复点击入库 | 同一电池快速重复调用入库。 | 两次调用入库接口。 | 只有一条有效当前库存；第二次通过幂等记录、状态条件或当前库存唯一约束返回首次结果或冲突。 | 幂等、唯一约束 |
 | TD-TC-020 | OpenAPI 契约检查 | OpenAPI 文件存在。 | 使用 OpenAPI 解析工具检查。 | 文件可解析；路径、请求、响应和安全方案完整。 | 契约 |
-| TD-TC-021 | SQL 设计检查 | SQL 设计文件存在。 | 在 MySQL 8 兼容环境中解析建表语句。 | 19 张表、外键、唯一约束和索引无明显冲突。 | DB |
+| TD-TC-021 | SQL 设计检查 | SQL 设计文件存在。 | 在 MySQL 8 兼容环境中解析建表语句。 | 21 张表、外键、唯一约束和索引无明显冲突。 | DB |
 | TD-TC-022 | 部署配置检查 | 部署设计已完成。 | 检查环境变量、端口、健康检查、日志、备份和初始化说明。 | 配置项完整，不含密钥明文。 | 部署 |
+| TD-TC-023 | 企业数据隔离 | 企业 A 和企业 B 均有批次、电池、库存、仓库和库位。 | 企业 A 用户查询或操作企业 B 的批次、电池、库存、追溯，或将企业 B 电池加入企业 A 批次。 | 返回 403 或业务拒绝；记录跨企业拒绝审计；Repository 更新必须同时带主键和 `enterprise_id` 条件。 | 安全、数据隔离 |
 
 ## 5. NFR 技术验证
 
@@ -84,7 +85,7 @@
 | --- | --- |
 | NFR-C4-001 | TD-TC-001、007、014 验证生命周期事件。 |
 | NFR-C4-002 | TD-TC-002、006、009、010、011、016 验证失败状态保持。 |
-| NFR-C4-003 | TD-TC-012、017 验证权限默认拒绝和审计。 |
+| NFR-C4-003 | TD-TC-012、017、023 验证权限默认拒绝、企业隔离和审计。 |
 | NFR-C4-004 | TD-TC-013 验证已生效记录删除保护。 |
 | NFR-C4-005 | 技术设计评审确认原型不作为正式代码。 |
 
@@ -94,10 +95,11 @@
 | --- | --- |
 | 两人同时提交同一批次 | 批次 `version` 和状态条件更新生效。 |
 | 重复点击验收 | 验收幂等键和电池状态条件生效。 |
-| 重复点击入库 | `inbound_record.battery_id` 和 `inventory.current_battery_id` 唯一约束生效。 |
+| 重复点击入库 | 幂等记录、电池状态条件更新和 `inventory.current_battery_id` 当前库存唯一约束生效。 |
 | 两人同时登记相同原始编码 | 原始编码不唯一；进入重复核实而不是数据库异常。 |
 | 已验收电池再次验收 | 返回状态错误，不新增最终验收。 |
 | 已入库电池再次入库 | 返回冲突，不新增库存。 |
+| 幂等键复用不同请求体 | 返回 `IDEMPOTENCY_KEY_REUSED`，不执行业务操作。 |
 
 ## 7. 技术评审检查项
 
@@ -117,4 +119,3 @@
 | 追踪链完整 | `contracts/traceability-index.md`。 |
 | 未编写正式业务代码 | 本阶段只新增文档和契约。 |
 | 未扩展到第一切片以外 | 所有设计均限定第一切片。 |
-
