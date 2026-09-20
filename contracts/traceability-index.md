@@ -152,22 +152,22 @@ C4 已围绕第一条纵向业务切片建立需求、测试和低保真原型�
 
 ## 系统设计技术追踪项
 
-当前技术设计状态：待评审。
+当前技术设计状态：已确认。
 追踪链扩展为：`BSR -> UR -> FR -> AC -> TC -> UI -> API -> DB -> MODULE`。
 
 | 编号 | 类型 | 来源 | 状态 |
 | --- | --- | --- | --- |
-| TD-ARCH-001 | 总体设计 | `docs/design/first-slice-overall-design.md` | 待评审 |
-| TD-ARCH-002 | 架构设计 | `docs/design/first-slice-architecture-design.md` | 待评审 |
-| TD-DB-001 | 数据库设计 | `docs/database/first-slice-database-design.md` | 待评审 |
-| TD-DB-002 | 数据字典 | `docs/database/first-slice-data-dictionary.md` | 待评审 |
-| TD-DB-003 | SQL 设计稿 | `contracts/database/first-slice-schema-design.sql` | 待评审 |
-| TD-API-001 | API 设计 | `docs/api/first-slice-api-design.md` | 待评审 |
-| TD-API-002 | OpenAPI 契约 | `contracts/api/openapi-first-slice.yaml` | 待评审 |
-| TD-SEC-001 | 安全设计 | `docs/security/first-slice-security-design.md` | 待评审 |
-| TD-DEP-001 | 部署设计 | `docs/deployment/first-slice-deployment-design.md` | 待评审 |
-| TD-TEST-001 | 技术测试设计 | `docs/testing/first-slice-technical-test-design.md` | 待评审 |
-| TD-REVIEW-001 | 技术评审记录 | `docs/design/first-slice-technical-review-record.md` | 待评审 |
+| TD-ARCH-001 | 总体设计 | `docs/design/first-slice-overall-design.md` | 已确认 |
+| TD-ARCH-002 | 架构设计 | `docs/design/first-slice-architecture-design.md` | 已确认 |
+| TD-DB-001 | 数据库设计 | `docs/database/first-slice-database-design.md` | 已确认 |
+| TD-DB-002 | 数据字典 | `docs/database/first-slice-data-dictionary.md` | 已确认 |
+| TD-DB-003 | SQL 设计稿 | `contracts/database/first-slice-schema-design.sql` | 已确认 |
+| TD-API-001 | API 设计 | `docs/api/first-slice-api-design.md` | 已确认 |
+| TD-API-002 | OpenAPI 契约 | `contracts/api/openapi-first-slice.yaml` | 已确认 |
+| TD-SEC-001 | 安全设计 | `docs/security/first-slice-security-design.md` | 已确认 |
+| TD-DEP-001 | 部署设计 | `docs/deployment/first-slice-deployment-design.md` | 已确认 |
+| TD-TEST-001 | 技术测试设计 | `docs/testing/first-slice-technical-test-design.md` | 已确认 |
+| TD-REVIEW-001 | 技术评审记录 | `docs/design/first-slice-technical-review-record.md` | 已确认 |
 
 ## 系统设计 FR -> API -> DB -> MODULE 追踪摘要
 

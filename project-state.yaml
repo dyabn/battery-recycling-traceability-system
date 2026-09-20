@@ -5,10 +5,10 @@ project:
   architecture: frontend-backend-separated-monolith
 
 lifecycle:
-  current_stage: system-design
-  current_gate: 设计评审
-  completed_gate: C4
-  last_completed_stage: prototype-and-requirements
+  current_stage: implementation-and-test
+  current_gate: 测试通过
+  completed_gate: 设计评审
+  last_completed_stage: system-design
   baseline_version: V1.0
   status: in-progress
 
@@ -20,11 +20,11 @@ confirmed:
   first_business_slice: true
   system_requirements: true
   prototype: true
-  technical_architecture: false
-  database_design: false
-  api_contract: false
-  security_design: false
-  deployment_design: false
+  technical_architecture: true
+  database_design: true
+  api_contract: true
+  security_design: true
+  deployment_design: true
 
 baselines:
   C1:
@@ -142,6 +142,35 @@ baselines:
       - 完成权限、状态、异常、追溯及审计验证
       - 完成 UR/FR/NFR/AC/TC/UI 追踪
       - 明确尚未设计正式数据库、冻结 API 或编写生产代码
+  system_design:
+    name: 第一切片技术设计基线
+    version: V1.0
+    status: confirmed
+    confirmed_date: 2026-09-20
+    review_result: 复核通过
+    scope: 回收接收 -> 电池登记 -> 验收 -> 入库 -> 库存可见
+    documents:
+      overall_design: docs/design/first-slice-overall-design.md
+      architecture_design: docs/design/first-slice-architecture-design.md
+      database_design: docs/database/first-slice-database-design.md
+      data_dictionary: docs/database/first-slice-data-dictionary.md
+      api_design: docs/api/first-slice-api-design.md
+      security_design: docs/security/first-slice-security-design.md
+      deployment_design: docs/deployment/first-slice-deployment-design.md
+      technical_test_design: docs/testing/first-slice-technical-test-design.md
+      technical_review_record: docs/design/first-slice-technical-review-record.md
+    contracts:
+      openapi: contracts/api/openapi-first-slice.yaml
+      schema_sql: contracts/database/first-slice-schema-design.sql
+      mysql8_validation_workflow: .github/workflows/first-slice-schema-mysql8.yml
+      mysql8_validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35508080386
+    summary:
+      - 完成第一切片总体设计、架构设计、数据库设计、API 设计、安全设计和部署设计
+      - 完成 21 张表、220 个字段、26 个 API 路径、28 个唯一 operationId 和 42 个 Schema
+      - 完成 25 个技术验证用例
+      - 完成 Redocly OpenAPI 严格解析
+      - 完成 GitHub Actions MySQL 8.4 实际建表验证并校验 21 张表
+      - 尚未创建正式前后端工程，尚未编写生产业务代码
 
 constraints:
   minimum_documents: 12
@@ -167,7 +196,7 @@ next_stage:
     - 技术设计评审通过前不得创建正式工程骨架
 
 technical_design_progress:
-  status: paused-for-review
+  status: completed
   scope: 回收接收 -> 电池登记 -> 验收 -> 入库 -> 库存可见
   lifecycle_stage: system-design
   review_gate: 设计评审
@@ -212,10 +241,20 @@ technical_design_progress:
     - 删除保护拦截路径和 409 响应修订
     - 数据字典 220 字段覆盖校验通过
     - GitHub Actions MySQL 8.4 建表验证工作流
-  pending_items:
-    - 用户技术设计评审
-    - GitHub Actions MySQL 8 SQL 建表验证
-  review_result: 修改后复核
+  pending_items: []
+  review_result: 复核通过
+  confirmed_date: 2026-09-20
+  validation_results:
+    redocly_openapi: passed
+    mysql8_schema_validation: passed
+    mysql8_validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35508080386
+    table_count: 21
+    sql_field_count: 220
+    data_dictionary_coverage: 220/220
+    operation_count: 28
+    path_count: 26
+    schema_count: 42
+    technical_test_count: 25
   review_findings:
     - duplicate-code-candidate-model-fixed
     - idempotency-record-added

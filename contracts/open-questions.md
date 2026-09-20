@@ -37,4 +37,4 @@
 | TD-Q-009 | system-design | 附件上传存在先有业务对象还是先有附件的循环。 | 已改为临时上传后绑定模型，新增 `binding_status`、`expires_at` 和附件绑定安全规则。 | fixed-for-review |
 | TD-Q-010 | system-design | 幂等契约“支持/建议/必须”表述不一致。 | 已统一为业务写接口必须携带 `Idempotency-Key`，并明确成功、业务失败和系统异常的幂等记录事务方案。 | fixed-for-review |
 | TD-Q-011 | system-design | 跨文档旧内容残留。 | 已修订验收/入库唯一约束旧说法、模块和权限编码数量、OpenAPI 验证状态、401/403 响应和删除保护拦截说明。 | fixed-for-review |
-| TD-Q-012 | system-design | MySQL 8 实际建表验证未完成。 | 已新增 GitHub Actions MySQL 8.4 建表验证流程；待工作流执行通过后回填评审记录。 | pending-external-validation |
+| TD-Q-012 | system-design | MySQL 8 实际建表验证未完成。 | GitHub Actions `First Slice Schema MySQL 8 Validation #1` 已使用 MySQL 8.4 建表并校验 21 张表通过。 | resolved |
