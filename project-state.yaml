@@ -183,6 +183,7 @@ technical_design_progress:
     deployment_design: docs/deployment/first-slice-deployment-design.md
     technical_test_design: docs/testing/first-slice-technical-test-design.md
     schema_design: contracts/database/first-slice-schema-design.sql
+    mysql8_validation_workflow: .github/workflows/first-slice-schema-mysql8.yml
   prohibited_until_review:
     - 正式前端业务代码
     - 正式后端业务代码
@@ -204,9 +205,16 @@ technical_design_progress:
     - 技术追踪矩阵
     - 技术设计评审记录
     - OpenAPI Redocly 严格解析通过
+    - 候选登记 API 响应闭环修订
+    - 临时附件上传后绑定模型修订
+    - 幂等必填契约和失败记录事务方案修订
+    - 受保护接口 401 和 403 响应补齐
+    - 删除保护拦截路径和 409 响应修订
+    - 数据字典 220 字段覆盖校验通过
+    - GitHub Actions MySQL 8.4 建表验证工作流
   pending_items:
     - 用户技术设计评审
-    - MySQL 8 SQL 解析复核
+    - GitHub Actions MySQL 8 SQL 建表验证
   review_result: 修改后复核
   review_findings:
     - duplicate-code-candidate-model-fixed
@@ -217,7 +225,12 @@ technical_design_progress:
     - enterprise-isolation-test-added
     - data-dictionary-expanded
     - openapi-redocly-lint-passed
-    - mysql8-runtime-unavailable-for-local-parse
+    - candidate-registration-response-closed
+    - temporary-attachment-binding-added
+    - idempotency-required-and-failure-transaction-aligned
+    - protected-operations-401-403-completed
+    - delete-protection-409-interceptor-specified
+    - mysql8-github-actions-validation-added
 
 c3_progress:
   current_step: 第一条业务切片定义

@@ -104,7 +104,11 @@
 - 单个附件大小建议不超过 20 MB。
 - 文件名需做规范化处理，存储路径不得直接使用用户输入。
 - 附件下载必须校验登录、权限和企业数据范围。
-- 附件元数据写入 `business_attachment`。
+- `POST /attachments` 只创建 `TEMP` 临时附件，不要求业务对象 ID。
+- 创建批次或补充资料绑定附件时，必须校验附件属于当前企业、当前上传用户、状态为 `TEMP`、未过期且未被其他对象绑定。
+- 禁止绑定其他企业附件、其他用户临时附件或已过期临时附件；拒绝结果写入 `audit_log`。
+- 绑定成功后更新 `business_attachment.binding_status=BOUND`、`object_type` 和 `object_id`。
+- 附件元数据写入 `business_attachment`，过期 `TEMP` 附件由定时清理任务处理。
 
 ## 10. 参数校验
 

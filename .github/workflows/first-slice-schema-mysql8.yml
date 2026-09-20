@@ -1,0 +1,64 @@
+name: First Slice Schema MySQL 8 Validation
+
+on:
+  push:
+    branches:
+      - feature/first-slice-technical-design
+  pull_request:
+    paths:
+      - "contracts/database/first-slice-schema-design.sql"
+      - ".github/workflows/first-slice-schema-mysql8.yml"
+  workflow_dispatch:
+
+jobs:
+  mysql8-schema:
+    name: Validate first-slice schema on MySQL 8.4
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: battery_review
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install MySQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y default-mysql-client
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -uroot -proot --silent; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MySQL did not become ready in time"
+          exit 1
+
+      - name: Apply first-slice schema
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot battery_review < contracts/database/first-slice-schema-design.sql
+
+      - name: Verify table count
+        run: |
+          TABLE_COUNT=$(mysql -h 127.0.0.1 -uroot -proot -N -B -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='battery_review' AND table_type='BASE TABLE';")
+          echo "table_count=${TABLE_COUNT}"
+          if [ "${TABLE_COUNT}" != "21" ]; then
+            mysql -h 127.0.0.1 -uroot -proot -e "SHOW TABLES FROM battery_review;"
+            exit 1
+          fi
+          mysql -h 127.0.0.1 -uroot -proot -e "SHOW TABLES FROM battery_review;"

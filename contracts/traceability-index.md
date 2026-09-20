@@ -176,7 +176,7 @@ C4 已围绕第一条纵向业务切片建立需求、测试和低保真原型�
 | FR-C4-001 | UI-C4-004 | `POST /api/v1/recycle-batches` | `recycle_batch` | MOD-BATCH |
 | FR-C4-002 | UI-C4-004 | `POST /api/v1/recycle-batches`、`PUT /api/v1/recycle-batches/{id}` | `recycle_batch` | MOD-BATCH |
 | FR-C4-003 | UI-C4-004 | `POST /api/v1/recycle-batches`、`PUT /api/v1/recycle-batches/{id}`、`POST /api/v1/attachments`、`GET /api/v1/attachments/{id}/download` | `recycle_batch`、`business_attachment`、`idempotency_record` | MOD-BATCH、MOD-ATTACHMENT、MOD-IDEMPOTENCY |
-| FR-C4-004 | UI-C4-006 | `POST /api/v1/batteries` | `battery`、`lifecycle_event` | MOD-BATTERY、MOD-TRACE |
+| FR-C4-004 | UI-C4-006 | `POST /api/v1/batteries` | `battery`、`battery_registration_candidate`、`lifecycle_event`、`audit_log`、`idempotency_record` | MOD-BATTERY、MOD-DUPLICATE、MOD-TRACE、MOD-AUDIT、MOD-IDEMPOTENCY |
 | FR-C4-005 | UI-C4-006 | `POST /api/v1/batteries` | `battery` | MOD-BATTERY |
 | FR-C4-006 | UI-C4-006、UI-C4-014 | `POST /api/v1/batteries`、`POST /api/v1/batteries/duplicate-check` | `battery`、`battery_registration_candidate` | MOD-BATTERY、MOD-DUPLICATE |
 | FR-C4-007 | UI-C4-006 | `POST /api/v1/battery-registration-candidates/{id}/duplicate-resolution` | `battery_registration_candidate`、`duplicate_code_review`、`battery` | MOD-DUPLICATE |
@@ -194,22 +194,22 @@ C4 已围绕第一条纵向业务切片建立需求、测试和低保真原型�
 | FR-C4-019 | UI-C4-013 | `GET /api/v1/batteries/{id}/trace` | `lifecycle_event` | MOD-TRACE |
 | FR-C4-020 | UI-C4-014 | `GET /api/v1/audit-logs` | `audit_log` | MOD-AUDIT |
 | FR-C4-021 | UI-C4-001、UI-C4-002 | `POST /api/v1/auth/login`、`GET /api/v1/auth/current-user`、`GET /api/v1/users`、`GET /api/v1/roles`、`GET /api/v1/permissions`、`PUT /api/v1/users/{id}/roles`、`PUT /api/v1/roles/{id}/permissions` | `sys_user`、`sys_role`、`sys_permission`、`sys_user_role`、`sys_role_permission`、`audit_log`、`idempotency_record` | MOD-AUTH、MOD-AUDIT、MOD-IDEMPOTENCY |
-| FR-C4-022 | UI-C4-014 | 删除保护统一拦截 | `acceptance_record`、`inbound_record`、`inventory`、`lifecycle_event`、`audit_log` | MOD-AUDIT |
+| FR-C4-022 | UI-C4-014 | 删除保护统一拦截：`DELETE /api/v1/acceptance-records/{id}`、`DELETE /api/v1/inbound-records/{id}`、`DELETE /api/v1/lifecycle-events/{id}` | `acceptance_record`、`inbound_record`、`inventory`、`lifecycle_event`、`audit_log` | MOD-AUDIT |
 
 ## 系统设计完整链路摘要
 
 | BSR | UR | FR | AC | TC | UI | API | DB | MODULE |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| BSR-C3-001 | UR-C4-001 | FR-C4-001..003 | AC-001、AC-004 | TC-C4-001、002、015 | UI-C4-003..005 | 批次创建、修改、查询、提交、附件接口 | `recycle_batch`、`business_attachment`、`idempotency_record` | MOD-BATCH、MOD-ATTACHMENT、MOD-IDEMPOTENCY |
-| BSR-C3-002 | UR-C4-002 | FR-C4-004、005 | AC-002、AC-012 | TC-C4-001、014 | UI-C4-006、013 | 电池登记、追溯接口 | `battery`、`lifecycle_event` | MOD-BATTERY、MOD-TRACE |
+| BSR-C3-001 | UR-C4-001 | FR-C4-001..003 | AC-001、AC-004 | TC-C4-001、002、015、024、025 | UI-C4-003..005 | 批次创建、修改、查询、提交、附件接口 | `recycle_batch`、`business_attachment`、`idempotency_record` | MOD-BATCH、MOD-ATTACHMENT、MOD-IDEMPOTENCY |
+| BSR-C3-002 | UR-C4-002 | FR-C4-004、005 | AC-002、AC-012 | TC-C4-001、014 | UI-C4-006、013 | 电池登记、追溯接口 | `battery`、`battery_registration_candidate`、`lifecycle_event`、`audit_log`、`idempotency_record` | MOD-BATTERY、MOD-DUPLICATE、MOD-TRACE、MOD-AUDIT、MOD-IDEMPOTENCY |
 | BSR-C3-003 | UR-C4-003 | FR-C4-006..008 | AC-003 | TC-C4-004、005 | UI-C4-006、014 | 重复检查、候选核实、加入批次接口 | `battery`、`battery_registration_candidate`、`duplicate_code_review`、`recycle_batch_battery` | MOD-DUPLICATE、MOD-BATTERY、MOD-BATCH |
 | BSR-C3-004 | UR-C4-004 | FR-C4-008..010 | AC-004、AC-012 | TC-C4-003、006、014 | UI-C4-005、007、013 | 加入批次、提交批次、追溯接口 | `recycle_batch`、`battery`、`recycle_batch_battery`、`lifecycle_event` | MOD-BATCH、MOD-TRACE |
 | BSR-C3-005 | UR-C4-005 | FR-C4-011、019 | AC-005、AC-012 | TC-C4-001、014、016 | UI-C4-007、008、013 | 验收接口、追溯接口 | `acceptance_record`、`battery`、`lifecycle_event` | MOD-ACCEPTANCE、MOD-TRACE |
-| BSR-C3-006 | UR-C4-005、006 | FR-C4-012、013、019 | AC-006、AC-007、AC-012 | TC-C4-007、014、016 | UI-C4-008、009、013 | 验收接口、补充资料接口、附件接口、追溯接口 | `acceptance_record`、`acceptance_supplement`、`business_attachment`、`battery`、`lifecycle_event`、`idempotency_record` | MOD-ACCEPTANCE、MOD-ATTACHMENT、MOD-TRACE、MOD-IDEMPOTENCY |
+| BSR-C3-006 | UR-C4-005、006 | FR-C4-012、013、019 | AC-006、AC-007、AC-012 | TC-C4-007、014、016、024、025 | UI-C4-008、009、013 | 验收接口、补充资料接口、附件接口、追溯接口 | `acceptance_record`、`acceptance_supplement`、`business_attachment`、`battery`、`lifecycle_event`、`idempotency_record` | MOD-ACCEPTANCE、MOD-ATTACHMENT、MOD-TRACE、MOD-IDEMPOTENCY |
 | BSR-C3-007 | UR-C4-005、007 | FR-C4-014、015 | AC-008 | TC-C4-008、011、016 | UI-C4-008、011、014 | 验收接口、入库接口 | `acceptance_record`、`battery`、`audit_log` | MOD-ACCEPTANCE、MOD-INBOUND、MOD-AUDIT |
 | BSR-C3-008 | UR-C4-007、008 | FR-C4-015..019 | AC-009..012 | TC-C4-001、009、010、011、014 | UI-C4-010..013 | 待入库、仓库库位、入库、库存、追溯接口 | `warehouse`、`warehouse_location`、`inbound_record`、`inventory`、`battery`、`lifecycle_event`、`idempotency_record` | MOD-INBOUND、MOD-INVENTORY、MOD-TRACE、MOD-IDEMPOTENCY |
 | BSR-C3-009 | UR-C4-009 | FR-C4-020、021 | AC-013 | TC-C4-012、014、017 | UI-C4-001、002、011、014 | 登录、当前用户、用户、角色、权限、审计接口 | 权限表、`audit_log`、`idempotency_record` | MOD-AUTH、MOD-AUDIT、MOD-IDEMPOTENCY |
-| BSR-C3-010 | UR-C4-010 | FR-C4-022 | AC-014 | TC-C4-013 | UI-C4-014 | 删除保护统一拦截 | 生效业务表、`audit_log` | MOD-AUDIT |
+| BSR-C3-010 | UR-C4-010 | FR-C4-022 | AC-014 | TC-C4-013 | UI-C4-014 | 删除保护统一拦截路径 | 生效业务表、`audit_log` | MOD-AUDIT |
 
 ## 系统设计覆盖检查
 

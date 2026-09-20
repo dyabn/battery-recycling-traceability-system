@@ -74,9 +74,8 @@ erDiagram
   battery ||--o{ inventory : current
   battery ||--o{ lifecycle_event : traced
   sys_user ||--o{ audit_log : operates
-  battery ||--o{ business_attachment : attached
-  recycle_batch ||--o{ business_attachment : attached
-  acceptance_record ||--o{ business_attachment : attached
+  recycle_batch ||--o{ business_attachment : bound
+  acceptance_supplement ||--o{ business_attachment : bound
 ```
 
 ## 5. 关键约束
@@ -93,6 +92,7 @@ erDiagram
 | 入库防重复 | 不使用永久 `UNIQUE(inbound_record.battery_id)`；通过电池状态条件更新、幂等键和当前库存唯一约束防止重复入库。 |
 | 当前库存唯一 | `inventory.current_battery_id` 生成列唯一索引。 |
 | 幂等键唯一 | `idempotency_record` 对企业、操作人、操作编码和幂等键建立唯一约束。 |
+| 临时附件绑定 | `business_attachment.binding_status` 区分 `TEMP` 和 `BOUND`；临时附件不带业务对象，绑定后必须写入 `object_type/object_id`。 |
 | 仓库库位归属 | `warehouse_location.warehouse_id` 外键。 |
 | 企业数据范围 | 业务查询必须带 `enterprise_id`，核心表建立企业索引。 |
 | 已生效记录保护 | 关键业务表不提供物理删除接口，数据库保留审计和事件。 |
@@ -112,6 +112,7 @@ erDiagram
 | `lifecycle_event` | `event_result` | `SUCCESS`、`FAILED` |
 | `audit_log` | `result` | `SUCCESS`、`FAILED`、`FORBIDDEN` |
 | `idempotency_record` | `process_status` | `PROCESSING`、`SUCCEEDED`、`FAILED` |
+| `business_attachment` | `binding_status` | `TEMP`、`BOUND` |
 
 ## 7. 索引设计
 
@@ -129,6 +130,7 @@ erDiagram
 | `lifecycle_event` | `idx_event_battery_time(battery_id, occurred_at)` | 追溯时间线。 |
 | `audit_log` | `idx_audit_operator_time(operator_user_id, operated_at)` | 审计查询。 |
 | `idempotency_record` | `uk_idempotency_record(enterprise_id, operator_user_id, operation_code, idempotency_key)` | 幂等记录唯一。 |
+| `business_attachment` | `idx_attachment_temp_expires(binding_status, expires_at)` | 临时附件过期清理。 |
 
 ## 8. 生效记录保护策略
 
@@ -147,7 +149,8 @@ erDiagram
 | 保存验收 | `acceptance_record`、`battery`、`recycle_batch`、`lifecycle_event`、`audit_log` | 验收记录、状态变化、批次完成判定和事件原子提交。 |
 | 补充资料 | `acceptance_supplement`、`battery`、`lifecycle_event`、`audit_log` | 补充资料保存和状态恢复原子提交。 |
 | 办理入库 | `inbound_record`、`inventory`、`battery`、`lifecycle_event`、`audit_log` | 入库记录、库存记录和电池在库状态原子提交。 |
-| 幂等写接口 | `idempotency_record` 与目标业务表 | 相同键相同请求返回首次结果；相同键不同请求体返回 `IDEMPOTENCY_KEY_REUSED`。 |
+| 幂等写接口 | `idempotency_record` 与目标业务表 | 成功时业务数据和 `SUCCEEDED` 在同一事务提交；业务失败时主事务回滚，再用独立事务记录 `FAILED`；系统异常留下 `PROCESSING` 时按过期策略允许重试。 |
+| 附件绑定 | `business_attachment` 与目标业务表 | 上传先形成 `TEMP` 附件；创建批次或补充资料时校验企业、上传人、未过期和未绑定后，在业务事务内更新为 `BOUND` 并写入业务对象。 |
 
 ## 10. 并发和幂等设计
 
@@ -158,7 +161,7 @@ erDiagram
 | 重复点击入库 | `battery.lifecycle_status` 必须为 `ACCEPTED_PENDING_INBOUND`；幂等键和当前库存唯一约束防重复。 |
 | 两人同时登记相同原始编码 | `original_code` 可重复；疑似重复先进入 `battery_registration_candidate`；不靠唯一约束误拦截。 |
 | 已验收电池再次验收 | 状态条件更新失败，返回 `INVALID_BATTERY_STATE`。 |
-| 已入库电池再次入库 | 唯一约束或状态条件失败，返回 `DUPLICATE_SUBMISSION` 或 `INVALID_BATTERY_STATE`。 |
+| 已入库电池再次入库 | 当前库存唯一约束或状态条件失败，返回 `DUPLICATE_SUBMISSION` 或 `INVALID_BATTERY_STATE`。 |
 
 ## 11.1 重复原始编码候选模型
 
@@ -181,12 +184,12 @@ erDiagram
 - 相同键且 `request_hash` 相同，若已有 `SUCCEEDED` 记录则返回首次 `response_code` 和 `response_body`。
 - 相同键但 `request_hash` 不同，返回 `IDEMPOTENCY_KEY_REUSED`，不执行业务操作。
 - 无记录时先插入 `PROCESSING`，再在同一业务事务内写业务记录并更新为 `SUCCEEDED` 或 `FAILED`。
-- 业务事务回滚时，幂等记录必须能反映失败或允许后续重试，具体实现可在应用服务层控制。
+- 业务失败时主事务回滚后，使用独立事务记录 `FAILED`；系统异常或超时留下 `PROCESSING` 时，由 `expires_at` 过期策略允许后续重试。
 
 ## 11. 数据保留策略
 
 - 审计日志、生命周期事件、验收记录、入库记录按课程项目要求长期保留。
-- 附件元数据长期保留，附件文件存储路径由部署设计配置。
+- 附件先以 `TEMP` 状态上传并设置 `expires_at`；创建批次或补充资料时绑定为 `BOUND`。过期临时附件由定时清理任务清理，附件文件存储路径由部署设计配置。
 - 草稿批次如需清理，应由后续维护策略定义，本切片不自动清理。
 - 生产环境备份保留周期由部署设计定义。
 

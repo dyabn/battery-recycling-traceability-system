@@ -15,7 +15,7 @@
 - 时间字段：`created_at`、`updated_at`、业务发生时间均由后端服务端生成。
 - 操作人字段来自登录上下文。
 - `updated_by` 目前不统一设置数据库外键，避免历史用户停用或跨模块更新导致约束阻塞；由应用层按登录用户维护。
-- `business_attachment.object_type/object_id` 是应用层维护的多态关联，不设置数据库外键；上传、下载和归属校验由附件服务完成。
+- `business_attachment.object_type/object_id` 是应用层维护的多态关联，不设置数据库外键；临时上传阶段允许为空，绑定到批次或补充资料后必须填写。
 
 ## 2. 字段字典
 
@@ -231,14 +231,16 @@
 | `idempotency_record` | `version` | INT | 否 | 0 | 乐观锁 | 版本号 | 系统维护 |
 | `business_attachment` | `id` | BIGINT | 否 | 无 | PK | 附件主键 | 系统 ASSIGN_ID |
 | `business_attachment` | `enterprise_id` | BIGINT | 否 | 无 | FK | 当前企业 | 登录上下文 |
-| `business_attachment` | `object_type` | VARCHAR(40) | 否 | 无 | 多态关联 | 所属对象类型 | 应用层维护 |
-| `business_attachment` | `object_id` | BIGINT | 否 | 无 | 多态关联 | 所属对象 ID | 应用层维护 |
+| `business_attachment` | `object_type` | VARCHAR(40) | 是 | NULL | 多态关联 | 所属对象类型 | 绑定后填写 |
+| `business_attachment` | `object_id` | BIGINT | 是 | NULL | 多态关联 | 所属对象 ID | 绑定后填写 |
+| `business_attachment` | `binding_status` | VARCHAR(20) | 否 | 无 | CHECK | 绑定状态，`TEMP` 或 `BOUND` | 系统维护 |
 | `business_attachment` | `file_name` | VARCHAR(255) | 否 | 无 | 无 | 原始文件名 | 上传文件 |
 | `business_attachment` | `file_ext` | VARCHAR(20) | 否 | 无 | 无 | 文件扩展名 | 系统解析 |
 | `business_attachment` | `file_size_bytes` | BIGINT | 否 | 无 | 无 | 文件大小 | 系统解析 |
 | `business_attachment` | `storage_path` | VARCHAR(500) | 否 | 无 | 无 | 服务端存储路径 | 系统生成 |
 | `business_attachment` | `uploaded_by` | BIGINT | 否 | 无 | FK | 上传人 | 登录上下文 |
 | `business_attachment` | `uploaded_at` | DATETIME(3) | 否 | 无 | 无 | 上传时间 | 系统生成 |
+| `business_attachment` | `expires_at` | DATETIME(3) | 是 | NULL | 索引 | 临时附件过期时间 | TEMP 状态必填 |
 
 ## 3. 权限编码字典
 
@@ -265,7 +267,6 @@
 | 类型 | 编码 | 说明 |
 | --- | --- | --- |
 | 生命周期事件 | `BATTERY_REGISTERED` | 电池完成有效档案登记。 |
-| 生命周期事件 | `BATTERY_CANDIDATE_CREATED` | 疑似重复电池候选登记。 |
 | 生命周期事件 | `DUPLICATE_RESOLVED_SAME` | 核实为同一电池并使用原档案。 |
 | 生命周期事件 | `DUPLICATE_RESOLVED_DIFFERENT` | 核实为不同电池并创建新档案。 |
 | 生命周期事件 | `BATCH_SUBMITTED` | 批次提交验收。 |
@@ -279,6 +280,8 @@
 | 审计动作 | `FORBIDDEN_OPERATION` | 越权操作。 |
 | 审计动作 | `INBOUND_FAILED` | 入库失败。 |
 | 审计动作 | `DELETE_EFFECTIVE_RECORD_DENIED` | 删除已生效记录被拒绝。 |
+| 审计动作 | `BATTERY_CANDIDATE_CREATED` | 疑似重复候选创建，候选阶段无 `battery_id`，只写审计。 |
+| 审计动作 | `ATTACHMENT_BOUND` | 临时附件绑定到业务对象。 |
 | 审计动作 | `PERMISSION_CHANGED` | 权限配置变更。 |
 | 审计动作 | `IDEMPOTENCY_KEY_REUSED` | 幂等键被不同请求体复用。 |
 | 审计动作 | `CROSS_ENTERPRISE_ACCESS_DENIED` | 跨企业访问被拒绝。 |

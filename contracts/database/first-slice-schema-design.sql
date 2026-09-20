@@ -359,16 +359,24 @@ CREATE TABLE IF NOT EXISTS idempotency_record (
 CREATE TABLE IF NOT EXISTS business_attachment (
   id BIGINT PRIMARY KEY,
   enterprise_id BIGINT NOT NULL,
-  object_type VARCHAR(40) NOT NULL,
-  object_id BIGINT NOT NULL,
+  object_type VARCHAR(40) NULL,
+  object_id BIGINT NULL,
+  binding_status VARCHAR(20) NOT NULL,
   file_name VARCHAR(255) NOT NULL,
   file_ext VARCHAR(20) NOT NULL,
   file_size_bytes BIGINT NOT NULL,
   storage_path VARCHAR(500) NOT NULL,
   uploaded_by BIGINT NOT NULL,
   uploaded_at DATETIME(3) NOT NULL,
+  expires_at DATETIME(3) NULL,
   CONSTRAINT fk_attachment_enterprise FOREIGN KEY (enterprise_id) REFERENCES enterprise(id),
-  CONSTRAINT fk_attachment_user FOREIGN KEY (uploaded_by) REFERENCES sys_user(id)
+  CONSTRAINT fk_attachment_user FOREIGN KEY (uploaded_by) REFERENCES sys_user(id),
+  CONSTRAINT ck_attachment_binding_status CHECK (binding_status IN ('TEMP', 'BOUND')),
+  CONSTRAINT ck_attachment_binding_object CHECK (
+    (binding_status = 'TEMP' AND object_type IS NULL AND object_id IS NULL AND expires_at IS NOT NULL)
+    OR
+    (binding_status = 'BOUND' AND object_type IS NOT NULL AND object_id IS NOT NULL)
+  )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE INDEX idx_sys_user_enterprise ON sys_user (enterprise_id, enabled_status);
@@ -387,3 +395,4 @@ CREATE INDEX idx_event_battery_time ON lifecycle_event (battery_id, occurred_at)
 CREATE INDEX idx_audit_operator_time ON audit_log (operator_user_id, operated_at);
 CREATE INDEX idx_idempotency_expires ON idempotency_record (expires_at);
 CREATE INDEX idx_attachment_object ON business_attachment (object_type, object_id);
+CREATE INDEX idx_attachment_temp_expires ON business_attachment (binding_status, expires_at);

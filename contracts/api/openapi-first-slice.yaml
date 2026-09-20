@@ -73,6 +73,8 @@ paths:
                 $ref: '#/components/schemas/CurrentUserEnvelope'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /recycle-batches:
     post:
       tags: [RecycleBatch]
@@ -99,6 +101,8 @@ paths:
           $ref: '#/components/responses/BatchResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '400':
           $ref: '#/components/responses/BadRequest'
     get:
@@ -123,6 +127,8 @@ paths:
           $ref: '#/components/responses/BatchListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /recycle-batches/{id}:
     get:
       tags: [RecycleBatch]
@@ -143,6 +149,8 @@ paths:
           $ref: '#/components/responses/BatchResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
     put:
       tags: [RecycleBatch]
       summary: 修改草稿回收批次
@@ -169,6 +177,8 @@ paths:
           $ref: '#/components/responses/BatchResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /recycle-batches/{id}/submit:
     post:
       tags: [RecycleBatch]
@@ -189,6 +199,10 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/BatchResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
   /batteries:
@@ -205,7 +219,7 @@ paths:
         ui: [UI-C4-006]
         permission: battery:create
         module: MOD-BATTERY
-        db: [battery, lifecycle_event]
+        db: [battery, battery_registration_candidate, lifecycle_event, audit_log, idempotency_record]
       requestBody:
         required: true
         content:
@@ -214,7 +228,13 @@ paths:
               $ref: '#/components/schemas/BatteryCreateRequest'
       responses:
         '200':
-          $ref: '#/components/responses/BatteryResponse'
+          $ref: '#/components/responses/BatteryRegistrationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
   /batteries/duplicate-check:
@@ -245,6 +265,8 @@ paths:
                 $ref: '#/components/schemas/DuplicateCheckEnvelope'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /battery-registration-candidates/{id}/duplicate-resolution:
     post:
       tags: [Battery]
@@ -272,6 +294,10 @@ paths:
           $ref: '#/components/responses/BatteryResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /recycle-batches/{id}/batteries:
     post:
       tags: [RecycleBatch]
@@ -304,6 +330,8 @@ paths:
           $ref: '#/components/responses/BatchResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /acceptances/pending:
     get:
       tags: [Acceptance]
@@ -322,6 +350,8 @@ paths:
           $ref: '#/components/responses/BatteryListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /batteries/{id}/acceptances:
     post:
       tags: [Acceptance]
@@ -350,6 +380,10 @@ paths:
           $ref: '#/components/responses/AcceptanceResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
   /batteries/{id}/acceptance-supplements:
@@ -380,6 +414,8 @@ paths:
           $ref: '#/components/responses/BatteryResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /inbounds/pending:
     get:
       tags: [Inbound]
@@ -398,6 +434,8 @@ paths:
           $ref: '#/components/responses/BatteryListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /batteries/{id}/inbounds:
     post:
       tags: [Inbound]
@@ -424,6 +462,10 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/InboundResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
   /inventory:
@@ -449,6 +491,8 @@ paths:
           $ref: '#/components/responses/InventoryListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /batteries/{id}/trace:
     get:
       tags: [Inventory]
@@ -469,6 +513,8 @@ paths:
           $ref: '#/components/responses/TraceResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /audit-logs:
     get:
       tags: [System]
@@ -487,6 +533,8 @@ paths:
           $ref: '#/components/responses/AuditLogListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /roles:
     get:
       tags: [System]
@@ -505,6 +553,8 @@ paths:
           $ref: '#/components/responses/RoleListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /permissions:
     get:
       tags: [System]
@@ -523,6 +573,8 @@ paths:
           $ref: '#/components/responses/PermissionListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /warehouses:
     get:
       tags: [Inbound]
@@ -727,7 +779,7 @@ components:
     IdempotencyKey:
       name: Idempotency-Key
       in: header
-      required: false
+      required: true
       schema:
         type: string
         maxLength: 80
@@ -774,6 +826,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/BatteryEnvelope'
+    BatteryRegistrationResponse:
+      description: 电池登记结果响应
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BatteryRegistrationEnvelope'
     BatteryListResponse:
       description: 电池列表响应
       content:
@@ -1009,6 +1067,33 @@ components:
           properties:
             data:
               $ref: '#/components/schemas/Battery'
+    BatteryRegistrationEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/BatteryRegistrationResult'
+    BatteryRegistrationResult:
+      type: object
+      required: [resultType]
+      properties:
+        resultType:
+          type: string
+          enum: [BATTERY_CREATED, DUPLICATE_REVIEW_REQUIRED]
+        battery:
+          $ref: '#/components/schemas/Battery'
+        candidateId:
+          type: integer
+          format: int64
+        candidateStatus:
+          type: string
+          enum: [PENDING_REVIEW]
+        matchedBatteryIds:
+          type: array
+          items:
+            type: integer
+            format: int64
     BatteryListEnvelope:
       allOf:
         - $ref: '#/components/schemas/Envelope'
@@ -1053,9 +1138,6 @@ components:
                   items:
                     type: integer
                     format: int64
-                candidateId:
-                  type: integer
-                  format: int64
     DuplicateResolutionRequest:
       type: object
       required: [reviewResult]
@@ -1266,13 +1348,8 @@ components:
           type: string
     AttachmentUploadRequest:
       type: object
-      required: [objectType, objectId, file]
+      required: [file]
       properties:
-        objectType:
-          type: string
-        objectId:
-          type: integer
-          format: int64
         file:
           type: string
           format: binary
@@ -1296,6 +1373,12 @@ components:
         fileSizeBytes:
           type: integer
           format: int64
+        bindingStatus:
+          type: string
+          enum: [TEMP, BOUND]
+        expiresAt:
+          type: string
+          format: date-time
     UserRoleUpdateRequest:
       type: object
       required: [roleIds]
