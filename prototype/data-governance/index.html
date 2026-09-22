@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>数据治理低保真原型</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>数据治理低保真原型</h1>
+        <p>验证需求用，不是正式前端代码</p>
+      </div>
+      <button id="resetBtn" type="button">重置原型</button>
+    </header>
+
+    <main class="layout">
+      <nav class="nav" aria-label="原型页面">
+        <button class="nav-item active" data-view="rules" type="button">规则列表</button>
+        <button class="nav-item" data-view="run" type="button">发起检查</button>
+        <button class="nav-item" data-view="result" type="button">检查结果</button>
+        <button class="nav-item" data-view="issues" type="button">问题列表</button>
+        <button class="nav-item" data-view="detail" type="button">问题详情</button>
+        <button class="nav-item" data-view="dashboard" type="button">质量看板</button>
+      </nav>
+
+      <section class="content">
+        <section id="rules" class="view active">
+          <div class="toolbar">
+            <h2>数据质量规则</h2>
+            <span class="badge">固定规则，待评审</span>
+          </div>
+          <table>
+            <thead>
+              <tr><th>编号</th><th>规则</th><th>维度</th><th>状态</th></tr>
+            </thead>
+            <tbody id="ruleRows"></tbody>
+          </table>
+        </section>
+
+        <section id="run" class="view">
+          <h2>发起质量检查</h2>
+          <label>检查范围
+            <select id="scopeSelect">
+              <option>第一业务切片数据</option>
+              <option>电池档案和库存</option>
+              <option>验收和生命周期事件</option>
+            </select>
+          </label>
+          <button id="runCheckBtn" class="primary" type="button">发起检查</button>
+          <p id="runMessage" class="message">尚未发起检查。</p>
+        </section>
+
+        <section id="result" class="view">
+          <h2>检查结果</h2>
+          <div class="summary-grid">
+            <div><strong id="runStatus">未执行</strong><span>检查状态</span></div>
+            <div><strong id="issueCount">0</strong><span>发现问题</span></div>
+            <div><strong id="passCount">0</strong><span>通过规则</span></div>
+          </div>
+          <ul id="resultList" class="list"></ul>
+        </section>
+
+        <section id="issues" class="view">
+          <div class="toolbar">
+            <h2>质量问题</h2>
+            <button id="assignBtn" type="button">分配责任人</button>
+          </div>
+          <table>
+            <thead>
+              <tr><th>问题</th><th>规则</th><th>责任人</th><th>状态</th></tr>
+            </thead>
+            <tbody id="issueRows"></tbody>
+          </table>
+        </section>
+
+        <section id="detail" class="view">
+          <h2>问题详情</h2>
+          <div id="issueDetail" class="panel"></div>
+          <div class="actions">
+            <button id="submitFixBtn" type="button">提交处理</button>
+            <button id="recheckPassBtn" type="button">重新检查通过</button>
+            <button id="recheckFailBtn" type="button">重新检查失败</button>
+          </div>
+        </section>
+
+        <section id="dashboard" class="view">
+          <h2>数据质量看板</h2>
+          <div class="summary-grid">
+            <div><strong id="dashboardRuns">0</strong><span>检查次数</span></div>
+            <div><strong id="dashboardIssues">0</strong><span>问题数量</span></div>
+            <div><strong id="dashboardClosed">0%</strong><span>关闭率</span></div>
+            <div><strong id="dashboardOpen">0</strong><span>未关闭</span></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

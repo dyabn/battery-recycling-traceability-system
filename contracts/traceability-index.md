@@ -221,3 +221,39 @@ C4 已围绕第一条纵向业务切片建立需求、测试和低保真原型�
 | 有接口但没有权限定义 | 未发现；OpenAPI `x-traceability.permission` 已定义。 |
 | 有状态变化但没有事件记录 | 未发现；批次提交、验收、补充资料、入库均写生命周期事件。 |
 | 有测试但无法追踪到需求 | 未发现；TC-C4-001..017 均已映射技术验证。 |
+
+## 数据治理 V1.1 变更追踪草案
+
+当前状态：待评审。
+追踪链：`CR-DG -> UR-DG -> FR-DG -> AC-DG -> TC-DG -> UI-DG`。
+
+| 编号 | 类型 | 来源 | 状态 |
+| --- | --- | --- | --- |
+| CR-DG-001 | 数据治理能力变更请求 | `docs/change/CR-DG-001-data-governance-change-request.md` | 待评审 |
+| DG-BIZ-001 | 数据治理第一切片 | `docs/business/data-governance-first-slice.md` | 待评审 |
+| DG-REQ-001 | 数据治理需求规格 | `docs/requirements/data-governance-requirements.md` | 待评审 |
+| DG-TEST-001 | 数据治理测试设计 | `docs/testing/data-governance-test-design.md` | 待评审 |
+| DG-PROTO-001 | 数据治理原型规格 | `docs/prototype/data-governance-prototype-spec.md` | 待评审 |
+| DG-PROTO-002 | 数据治理低保真原型 | `prototype/data-governance/` | 待评审 |
+
+## 数据治理 UR -> FR -> AC -> TC -> UI 草案
+
+| UR | FR | AC | TC | UI |
+| --- | --- | --- | --- | --- |
+| UR-DG-001 | FR-DG-001、FR-DG-002 | AC-DG-001 | TC-DG-001 | UI-DG-001 |
+| UR-DG-002 | FR-DG-003 | AC-DG-002 | TC-DG-002 | UI-DG-002、UI-DG-003 |
+| UR-DG-003 | FR-DG-004、FR-DG-005 | AC-DG-003、AC-DG-004 | TC-DG-003、TC-DG-004、TC-DG-005 | UI-DG-003、UI-DG-004 |
+| UR-DG-004 | FR-DG-006、FR-DG-007、FR-DG-008 | AC-DG-005、AC-DG-006 | TC-DG-006、TC-DG-007、TC-DG-008 | UI-DG-004、UI-DG-005、UI-DG-006、UI-DG-007 |
+| UR-DG-005 | FR-DG-009 | AC-DG-007 | TC-DG-009 | UI-DG-008 |
+| UR-DG-006 | FR-DG-010 | AC-DG-008 | TC-DG-010、TC-DG-011 | UI-DG-005、UI-DG-007 |
+
+## 数据治理开放问题追踪
+
+| 问题 | 影响范围 | 当前处理 |
+| --- | --- | --- |
+| DG-Q-001 | 质量规则配置权限 | 待评审确认 |
+| DG-Q-002 | 质量问题责任人 | 待评审确认 |
+| DG-Q-003 | 检查触发方式 | 待评审确认 |
+| DG-Q-004 | 第一版规则范围 | 待评审确认 |
+| DG-Q-005 | 错误数据处理方式 | 待评审确认 |
+| DG-Q-006 | 问题关闭条件 | 待评审确认 |

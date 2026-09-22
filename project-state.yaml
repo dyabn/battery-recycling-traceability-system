@@ -5,8 +5,8 @@ project:
   architecture: frontend-backend-separated-monolith
 
 lifecycle:
-  current_stage: implementation-and-test
-  current_gate: 测试通过
+  current_stage: prototype-and-requirements
+  current_gate: V1.1变更评审
   completed_gate: 设计评审
   last_completed_stage: system-design
   baseline_version: V1.0
@@ -181,19 +181,70 @@ constraints:
   no_code_before_required_gates: true
 
 next_stage:
-  stage: implementation-and-test
-  gate: 测试通过
-  name: 编码与测试
+  stage: prototype-and-requirements
+  gate: V1.1变更评审
+  name: 数据治理变更需求与原型
   candidate_slice: recycle-acceptance-inbound-inventory
   focus:
-    - 前后端工程初始化
-    - Flyway 数据库迁移
-    - 第一切片业务代码实现
-    - 自动化测试
-    - 联调验证
+    - CR-DG-001 变更评审
+    - 数据治理需求 V1.1
+    - 数据治理低保真原型
+    - 数据治理验收标准和测试设计
+    - V1.1 技术设计影响分析
   prohibited_until_later_gates:
-    - 技术设计评审通过前不得编写正式前后端业务代码
-    - 技术设计评审通过前不得创建正式工程骨架
+    - CR-DG-001 未评审通过前不得冻结数据治理需求
+    - 数据治理需求和原型未评审通过前不得更新 V1.1 技术设计为 confirmed
+    - V1.1 技术设计未评审通过前不得创建正式实现分支
+    - V1.1 技术设计未评审通过前不得编写正式生产业务代码
+
+data_governance_change:
+  id: CR-DG-001
+  status: under-analysis
+  baseline_target: V1.1
+  document: docs/change/CR-DG-001-data-governance-change-request.md
+  branch: feature/data-governance-v1-1-design
+  requested_date: 2026-09-22
+  review_result: 待评审
+  scope:
+    - 数据标准
+    - 数据质量规则
+    - 质量检查任务
+    - 质量问题
+    - 问题处理与复核
+    - 数据质量看板
+  excluded_scope:
+    - 数据湖
+    - 大数据平台
+    - 复杂元数据平台
+    - 自动血缘解析
+    - AI自动修复
+    - 区块链
+    - 真实监管平台
+    - 自定义脚本规则引擎
+  open_questions:
+    - DG-Q-001
+    - DG-Q-002
+    - DG-Q-003
+    - DG-Q-004
+    - DG-Q-005
+    - DG-Q-006
+  prohibited_until_review:
+    - 正式前后端生产业务代码
+    - 正式数据库迁移实现
+    - 覆盖 V1.0 技术设计基线
+    - 创建 feature/first-slice-implementation
+  draft_outputs:
+    business_slice: docs/business/data-governance-first-slice.md
+    requirements: docs/requirements/data-governance-requirements.md
+    test_design: docs/testing/data-governance-test-design.md
+    prototype_spec: docs/prototype/data-governance-prototype-spec.md
+    prototype: prototype/data-governance/
+  draft_status:
+    version: V0.1
+    status: waiting-review
+    review_result: 待评审
+    technical_design_v1_1_started: false
+    implementation_branch_created: false
 
 technical_design_progress:
   status: completed

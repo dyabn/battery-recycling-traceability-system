@@ -38,3 +38,14 @@
 | TD-Q-010 | system-design | 幂等契约“支持/建议/必须”表述不一致。 | 已统一为业务写接口必须携带 `Idempotency-Key`，并明确成功、业务失败和系统异常的幂等记录事务方案。 | resolved |
 | TD-Q-011 | system-design | 跨文档旧内容残留。 | 已修订验收/入库唯一约束旧说法、模块和权限编码数量、OpenAPI 验证状态、401/403 响应和删除保护拦截说明。 | resolved |
 | TD-Q-012 | system-design | MySQL 8 实际建表验证未完成。 | GitHub Actions `First Slice Schema MySQL 8 Validation #1` 已使用 MySQL 8.4 建表并校验 21 张表通过。 | resolved |
+
+## 数据治理变更问题
+
+| 编号 | 阶段 | 问题 | 影响 | 状态 |
+| --- | --- | --- | --- | --- |
+| DG-Q-001 | data-governance-change | 谁负责配置质量规则？ | 影响权限和角色职责。 | open |
+| DG-Q-002 | data-governance-change | 谁负责处理质量问题？ | 影响问题分配、处理和复核流程。 | open |
+| DG-Q-003 | data-governance-change | 质量检查是实时还是手工执行？ | 影响检查任务触发方式和技术设计。 | open |
+| DG-Q-004 | data-governance-change | 哪些质量规则进入第一版？ | 影响需求范围、测试和原型。 | open |
+| DG-Q-005 | data-governance-change | 错误数据是否允许直接修改？ | 影响数据更正方式和审计要求。 | open |
+| DG-Q-006 | data-governance-change | 问题达到什么条件才能关闭？ | 影响质量问题状态机和验收标准。 | open |
