@@ -21,3 +21,20 @@
 | Q-C3-003 | C3 | 仓库和库位编码规则是什么？ | 已在 C4 需求规格中解决：仓库编码为 WH-{3位数字}，示例 WH-001；库位编码为 {仓库编码}-A{2位数字}-R{2位数字}-L{2位数字}，示例 WH-001-A01-R01-L01。 | resolved |
 | Q-C3-004 | C3 | 是否需要上传交接凭证和检测附件？ | 已解决：支持选填，附件缺失不阻止正常验收；待补充资料时可通过附件补充。 | resolved |
 | Q-C3-005 | C3 | 是否需要打印二维码标签？ | 已解决：第一切片支持展示电池追溯编码，不包含二维码标签打印。 | resolved |
+
+## 技术设计评审问题
+
+| 编号 | 阶段 | 问题 | 处理结果 | 状态 |
+| --- | --- | --- | --- | --- |
+| TD-Q-001 | system-design | 疑似重复原始编码直接创建第二份有效电池档案的风险。 | 已改为 `battery_registration_candidate` 候选登记模型，核实为不同电池后才创建新 `battery`。 | resolved |
+| TD-Q-002 | system-design | 幂等键缺少持久化实现。 | 已新增 `idempotency_record` 表和幂等处理规则。 | resolved |
+| TD-Q-003 | system-design | 验收防重复文档与 SQL 不一致。 | 已删除验收永久唯一约束说法，改为状态条件更新、乐观锁和幂等键。 | resolved |
+| TD-Q-004 | system-design | `inbound_record.battery_id` 唯一约束阻断后续生命周期。 | 已移除该唯一约束，改用状态条件、幂等记录和当前库存唯一约束。 | resolved |
+| TD-Q-005 | system-design | API 缺少仓库库位、附件、权限管理、删除保护和 operationId。 | 已补齐新增接口、附件字段、权限配置接口和 operationId。 | resolved |
+| TD-Q-006 | system-design | 企业数据隔离测试缺失，追溯接口不应返回完整审计。 | 已新增 TD-TC-023，追溯接口仅返回生命周期事件，审计由 `/audit-logs` 提供。 | resolved |
+| TD-Q-007 | system-design | 数据字典字段覆盖不足。 | 已扩展为 21 张表字段级数据字典，并补充主键生成、附件多态关联和 `updated_by` 策略。 | resolved |
+| TD-Q-008 | system-design | 候选登记模型与 API 响应没有闭环。 | 已将 `POST /batteries` 改为返回 `BatteryRegistrationResult`；重复检查只检查不建候选；候选创建只写审计。 | resolved |
+| TD-Q-009 | system-design | 附件上传存在先有业务对象还是先有附件的循环。 | 已改为临时上传后绑定模型，新增 `binding_status`、`expires_at` 和附件绑定安全规则。 | resolved |
+| TD-Q-010 | system-design | 幂等契约“支持/建议/必须”表述不一致。 | 已统一为业务写接口必须携带 `Idempotency-Key`，并明确成功、业务失败和系统异常的幂等记录事务方案。 | resolved |
+| TD-Q-011 | system-design | 跨文档旧内容残留。 | 已修订验收/入库唯一约束旧说法、模块和权限编码数量、OpenAPI 验证状态、401/403 响应和删除保护拦截说明。 | resolved |
+| TD-Q-012 | system-design | MySQL 8 实际建表验证未完成。 | GitHub Actions `First Slice Schema MySQL 8 Validation #1` 已使用 MySQL 8.4 建表并校验 21 张表通过。 | resolved |
