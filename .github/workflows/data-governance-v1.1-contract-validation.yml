@@ -1,0 +1,37 @@
+name: Data Governance V1.1 Contract Validation
+
+on:
+  push:
+    branches:
+      - feature/data-governance-v1-1-technical-design
+  workflow_dispatch:
+
+jobs:
+  contract-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Parse YAML files strictly
+        run: |
+          python -m pip install --disable-pip-version-check PyYAML==6.0.3
+          python - <<'PY'
+          import pathlib
+          import yaml
+
+          files = [
+              'project-state.yaml',
+              'contracts/api/openapi-data-governance-v1.1.yaml',
+          ]
+          for path in files:
+              with pathlib.Path(path).open('r', encoding='utf-8') as fh:
+                  yaml.safe_load(fh)
+              print(f'YAML_OK {path}')
+          PY
+      - name: Lint OpenAPI with Redocly
+        run: npx @redocly/cli lint contracts/api/openapi-data-governance-v1.1.yaml

@@ -265,6 +265,54 @@ data_governance_change:
     - NFR 追踪矩阵已补充
     - REVIEW-DG-001..014 实际评审记录已补充
 
+technical_design_v1_1:
+  status: paused-for-review
+  lifecycle_stage: system-design
+  review_gate: V1.1技术设计评审
+  review_result: 等待技术设计评审
+  baseline_target: V1.1
+  implementation_branch_created: false
+  scope: 数据治理 V1.1 增量技术设计
+  outputs:
+    impact_analysis: docs/design/data-governance-v1.1-impact-analysis.md
+    overall_design: docs/design/data-governance-v1.1-overall-design.md
+    architecture_design: docs/design/data-governance-v1.1-architecture-design.md
+    database_design: docs/database/data-governance-v1.1-database-design.md
+    data_dictionary: docs/database/data-governance-v1.1-data-dictionary.md
+    migration_sql: contracts/database/data-governance-v1.1-migration.sql
+    api_design: docs/api/data-governance-v1.1-api-design.md
+    openapi_contract: contracts/api/openapi-data-governance-v1.1.yaml
+    security_design: docs/security/data-governance-v1.1-security-design.md
+    deployment_design: docs/deployment/data-governance-v1.1-deployment-design.md
+    technical_test_design: docs/testing/data-governance-v1.1-technical-test-design.md
+    technical_review_record: docs/design/data-governance-v1.1-technical-review-record.md
+    mysql8_validation_workflow: .github/workflows/data-governance-v1.1-mysql8-validation.yml
+    contract_validation_workflow: .github/workflows/data-governance-v1.1-contract-validation.yml
+    review_package: data-governance-v1.1-technical-design-review.zip
+  design_decisions:
+    - 固定规则处理器 DQ-001..DQ-007 对齐 V1.0 SQL 和数据字典
+    - 新增 7 张数据治理表
+    - 新增 13 个数据治理 API 路径
+    - 新增 9 个数据治理权限编码
+    - 写接口必须携带 Idempotency-Key
+    - 规则启停、检查、问题、详情、审计和看板全部按企业隔离
+    - DQ-001 全系统唯一检查不泄露其他企业对象明细
+    - V1.1 不实现豁免流程
+    - 数据治理不得直接覆盖 V1.0 已生效业务数据
+  pending_items:
+    - 技术设计正式评审
+    - OpenAPI Redocly 严格解析结果确认
+    - MySQL 8.4 增量迁移验证结果确认
+    - SQL 与数据字典一致性复核
+    - 技术追踪矩阵复核
+  validation_results:
+    local_openapi_text_check: passed
+    local_sql_text_check: passed
+    git_diff_check: passed
+    yaml_parse: pending-github-actions
+    openapi_redocly: pending
+    mysql8_increment_validation: pending
+
 technical_design_progress:
   status: completed
   scope: 回收接收 -> 电池登记 -> 验收 -> 入库 -> 库存可见

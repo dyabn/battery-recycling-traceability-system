@@ -1,0 +1,47 @@
+name: Data Governance V1.1 MySQL 8 Validation
+
+on:
+  push:
+    branches:
+      - feature/data-governance-v1-1-technical-design
+  workflow_dispatch:
+
+jobs:
+  mysql8-validation:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: battery_traceability
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -uroot -proot && exit 0
+            sleep 2
+          done
+          exit 1
+      - name: Apply V1.0 schema
+        run: mysql -h 127.0.0.1 -uroot -proot battery_traceability < contracts/database/first-slice-schema-design.sql
+      - name: Apply V1.1 data governance increment
+        run: mysql -h 127.0.0.1 -uroot -proot battery_traceability < contracts/database/data-governance-v1.1-migration.sql
+      - name: Verify data governance table count
+        run: |
+          count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='battery_traceability' AND table_name LIKE 'dq\\_%';")
+          echo "dq_table_count=$count"
+          test "$count" = "7"
+      - name: Verify seed rule count
+        run: |
+          count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM dq_rule_definition;")
+          echo "dq_rule_count=$count"
+          test "$count" = "7"
