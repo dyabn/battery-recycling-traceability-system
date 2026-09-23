@@ -1,8 +1,8 @@
 # 追踪索引
 
-当前阶段：C4 原型与需求验证。
+当前阶段：数据治理 V1.1 变更需求与原型评审。
 
-C4 已围绕第一条纵向业务切片建立需求、测试和低保真原型追踪链。当前状态为已确认，C4 已关闭。后续进入 `system-design`，在技术设计评审前仍不得编写生产代码。
+当前状态：CR-DG-001 修改后复核，尚未批准。第一业务切片 C4 和系统设计 V1.0 已确认；数据治理 V1.1 仍处于变更需求与原型评审，不得进入技术设计 V1.1，不得创建实现分支，不得编写生产代码。
 
 ## 当前来源
 
@@ -229,23 +229,34 @@ C4 已围绕第一条纵向业务切片建立需求、测试和低保真原型�
 
 | 编号 | 类型 | 来源 | 状态 |
 | --- | --- | --- | --- |
-| CR-DG-001 | 数据治理能力变更请求 V0.2 | `docs/change/CR-DG-001-data-governance-change-request.md` | 修改后复核 |
-| DG-BIZ-001 | 数据治理第一切片 V0.2 | `docs/business/data-governance-first-slice.md` | 修改后复核 |
-| DG-REQ-001 | 数据治理需求规格 V0.2 | `docs/requirements/data-governance-requirements.md` | 修改后复核 |
-| DG-TEST-001 | 数据治理测试设计 V0.2 | `docs/testing/data-governance-test-design.md` | 修改后复核 |
-| DG-PROTO-001 | 数据治理原型规格 V0.2 | `docs/prototype/data-governance-prototype-spec.md` | 修改后复核 |
-| DG-PROTO-002 | 数据治理低保真原型 V0.2 | `prototype/data-governance/` | 修改后复核 |
+| CR-DG-001 | 数据治理能力变更请求 V0.3 | `docs/change/CR-DG-001-data-governance-change-request.md` | 修改后复核 |
+| DG-BIZ-001 | 数据治理第一切片 V0.3 | `docs/business/data-governance-first-slice.md` | 修改后复核 |
+| DG-REQ-001 | 数据治理需求规格 V0.3 | `docs/requirements/data-governance-requirements.md` | 修改后复核 |
+| DG-TEST-001 | 数据治理测试设计 V0.3 | `docs/testing/data-governance-test-design.md` | 修改后复核 |
+| DG-PROTO-001 | 数据治理原型规格 V0.3 | `docs/prototype/data-governance-prototype-spec.md` | 修改后复核 |
+| DG-PROTO-002 | 数据治理低保真原型 V0.3 | `prototype/data-governance/` | 修改后复核 |
+| DG-PROTO-003 | 数据治理原型实际评审记录 V0.3 | `docs/prototype/data-governance-prototype-review-record.md` | 修改后复核 |
 
 ## 数据治理 UR -> FR -> AC -> TC -> UI 草案
 
 | UR | FR | AC | TC | UI |
 | --- | --- | --- | --- | --- |
-| UR-DG-001 | FR-DG-001、002、003、018 | AC-DG-001、002、003 | TC-DG-001、002、003、023、024 | UI-DG-001 |
-| UR-DG-002 | FR-DG-004、005、006、018 | AC-DG-004、005、006 | TC-DG-004、005、006、022、023、024 | UI-DG-002、003 |
-| UR-DG-003 | FR-DG-007、008、009、010、018 | AC-DG-007、008、009、016 | TC-DG-007、008、009、023、025 | UI-DG-003、004、005、006 |
-| UR-DG-004 | FR-DG-010、011、012、013、018 | AC-DG-010、011、016 | TC-DG-010、011、012、013、014、017、023、024、026 | UI-DG-005、007 |
-| UR-DG-005 | FR-DG-010、014、015、016、018 | AC-DG-012、013、014、016 | TC-DG-015、016、017、018、019、020、023、024 | UI-DG-005、007 |
-| UR-DG-006 | FR-DG-017 | AC-DG-015 | TC-DG-021 | UI-DG-008 |
+| UR-DG-001 | FR-DG-001、002、003、018 | AC-DG-001、002、003 | TC-DG-001、002、003、023、024、027、029、032 | UI-DG-001 |
+| UR-DG-002 | FR-DG-004、005、006、018 | AC-DG-004、005、006 | TC-DG-004、005、006、022、023、024、027、032 | UI-DG-002、003 |
+| UR-DG-003 | FR-DG-007、008、009、010、018 | AC-DG-007、008、009、016 | TC-DG-007、008、009、023、025、028、031、032 | UI-DG-003、004、005、006 |
+| UR-DG-004 | FR-DG-010、011、012、013、018 | AC-DG-010、011、016 | TC-DG-010、011、012、013、014、017、023、024、026、030、031、032 | UI-DG-005、007 |
+| UR-DG-005 | FR-DG-010、014、015、016、018 | AC-DG-012、013、014、016 | TC-DG-015、016、017、018、019、020、023、024、030、031、032 | UI-DG-005、007 |
+| UR-DG-006 | FR-DG-017 | AC-DG-015 | TC-DG-021、028 | UI-DG-008 |
+
+## 数据治理 NFR 验证矩阵
+
+| NFR | 验证方式 |
+| --- | --- |
+| NFR-DG-001 | TC-DG-026 |
+| NFR-DG-002 | TC-DG-023、TC-DG-032 |
+| NFR-DG-003 | TC-DG-024、TC-DG-025、TC-DG-028 |
+| NFR-DG-004 | TC-DG-029 |
+| NFR-DG-005 | TC-DG-003、TC-DG-012、TC-DG-013、TC-DG-014、TC-DG-018、TC-DG-019、TC-DG-022、TC-DG-024、TC-DG-025、TC-DG-030、TC-DG-031 |
 
 ## 数据治理开放问题追踪
 

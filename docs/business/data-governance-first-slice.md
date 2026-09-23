@@ -1,4 +1,4 @@
-# 数据治理第一切片 V0.2
+# 数据治理第一切片 V0.3
 
 文档状态：修改后复核
 关联变更：CR-DG-001
@@ -61,13 +61,13 @@ DQ-001 至 DQ-007 进入 V1.1 第一版需求草案；DQ-008 延期，不进入�
 
 | 编号 | 名称 | 维度 | 检查对象 | 参与字段 | 适用范围 | 检查条件 | 通过条件 | 失败条件 | 严重程度 | 默认责任角色 | 整改方式 | 重新检查方式 | 允许豁免 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DQ-001 | 系统追溯编码必须唯一 | 唯一性 | 电池档案 | system_trace_code、enterprise_id | 当前企业电池档案 | 同一企业内按系统追溯编码分组统计 | 每个追溯编码只对应一条有效电池档案 | 同一追溯编码存在多条有效档案 | 严重 | 业务主管 | 通过业务更正保留一条有效档案并记录原因 | 重新统计追溯编码唯一性 | 否 |
-| DQ-002 | 电池核心字段必须完整 | 完整性 | 电池档案 | battery_type、battery_chemistry、lifecycle_status、responsible_enterprise_id | 当前企业有效电池档案 | 检查核心字段是否为空 | 必填核心字段均有值，其中电池体系允许为“未知” | 任一核心字段为空 | 一般 | 回收操作员 | 补充字段或提交无法补充说明 | 重新读取电池档案字段 | 否 |
-| DQ-003 | 原始编码重复必须完成核实 | 一致性 | 电池档案和候选登记 | original_code、candidate_status、duplicate_review_status | 存在原始编码的电池档案和候选记录 | 检查重复原始编码是否存在未完成核实 | 重复原始编码均有关联核实结果 | 重复原始编码存在未核实候选 | 严重 | 回收操作员 | 完成同一电池或不同电池核实并记录原因 | 重新读取候选登记和核实记录 | 否 |
-| DQ-004 | 未验收通过的电池不能入库 | 合法性 | 入库记录和电池档案 | battery_id、acceptance_status、battery_status、inbound_status | 当前企业入库记录 | 检查入库记录关联电池的验收结论和入库前状态 | 入库电池验收通过且入库前为已验收待入库 | 未通过、待补充资料或无验收结论的电池存在入库记录 | 严重 | 业务主管 | 发起业务更正或撤销错误入库记录，保留原记录 | 重新读取验收记录和入库记录 | 否 |
-| DQ-005 | 库位必须属于所选仓库 | 一致性 | 入库记录 | warehouse_id、location_id | 当前企业入库记录 | inbound_record.location_id 对应库位的 warehouse_id 必须等于 inbound_record.warehouse_id | 两者相等且库位存在 | 两者不相等或库位不存在 | 严重 | 仓库管理员 | 通过库存调整或入库更正记录修正库位关系 | 重新读取入库记录、仓库和库位关系 | 否 |
-| DQ-006 | 生命周期事件时间不能倒序 | 时序一致性 | 生命周期事件 | battery_id、event_time、event_type | 当前企业电池生命周期事件 | 按电池和事件时间排序检查关键事件顺序 | 事件时间符合登记、验收、入库等顺序 | 后置业务事件早于前置事件 | 一般 | 业务主管 | 发起事件时间更正说明并保留审计 | 重新读取生命周期事件顺序 | 是，需业务主管说明 |
-| DQ-007 | 当前库存责任企业必须一致 | 一致性 | 库存记录和电池档案 | inventory.enterprise_id、battery.responsible_enterprise_id、inventory_status | 当前企业有效库存 | 检查在库记录责任企业与电池当前责任企业 | 两者一致 | 两者不一致 | 严重 | 仓库管理员 | 通过库存或责任企业调整记录处理 | 重新读取库存和电池责任企业 | 否 |
+| DQ-001 | 系统追溯编码必须唯一 | 唯一性 | 电池档案 | battery.system_trace_code | 全系统电池档案；检查结果只向当前企业返回其有权查看的对象 | 按 `system_trace_code` 全系统分组统计 | 每个系统追溯编码只对应一条有效电池档案 | 同一系统追溯编码存在多条有效档案 | 严重 | 业务主管 | 通过业务更正保留一条有效档案并记录原因 | 重新按 `system_trace_code` 全系统统计，并按企业权限过滤结果 | 否 |
+| DQ-002 | 电池核心字段必须完整 | 完整性 | 电池档案 | battery_type、battery_chemistry、lifecycle_status、current_responsible_enterprise_id | 当前企业有效电池档案 | 检查核心字段是否为空 | 必填核心字段均有值，其中允许“未知”的字段按数据标准填写“未知” | 任一核心字段为空 | 一般 | 回收操作员 | 必须通过业务更正补齐字段；允许“未知”的字段按数据标准填写“未知”，不得仅凭说明关闭问题 | 重新读取电池档案字段 | 否 |
+| DQ-003 | 原始编码重复必须完成核实 | 一致性 | 电池档案、候选登记和重复核实 | original_code、battery_registration_candidate.candidate_status、duplicate_code_review.review_result | 存在原始编码的电池档案和候选记录 | 检查重复原始编码是否存在 `PENDING_REVIEW` 候选或缺失核实结果 | 重复原始编码均已关闭候选，并存在 `SAME_BATTERY` 或 `DIFFERENT_BATTERY` 核实结果 | 存在未关闭候选或缺失核实结果 | 严重 | 回收操作员 | 完成同一电池或不同电池核实并记录原因 | 重新读取 `battery_registration_candidate` 和 `duplicate_code_review` | 否 |
+| DQ-004 | 未验收通过的电池不能入库 | 合法性 | 验收记录、入库记录和生命周期事件 | acceptance_record.acceptance_result、battery.lifecycle_status、inbound_record.inbound_status、inbound_record.inbound_at、lifecycle_event.occurred_at | 当前企业入库记录 | 检查入库记录关联电池的验收结论、当前生命周期状态、入库记录状态和入库前生命周期事件 | 入库记录有效，电池验收结果为 `PASS`，当前生命周期状态为 `IN_STOCK`，且 `inbound_at` 前存在已验收待入库相关生命周期事件 | 未通过、待补充资料、无验收结论或生命周期事件不能证明入库前状态 | 严重 | 业务主管 | 发起业务更正或撤销错误入库记录，保留原记录 | 重新读取验收记录、入库记录、电池状态和生命周期事件 | 否 |
+| DQ-005 | 库位必须属于所选仓库 | 一致性 | 入库记录和库位 | inbound_record.warehouse_id、inbound_record.location_id、warehouse_location.warehouse_id | 当前企业入库记录 | 比较 `inbound_record.warehouse_id` 与该 `location_id` 对应的 `warehouse_location.warehouse_id` | 两者相等且库位存在 | 两者不相等或库位不存在 | 严重 | 仓库管理员 | 通过库存调整或入库更正记录修正库位关系 | 重新读取入库记录、仓库和库位关系 | 否 |
+| DQ-006 | 生命周期事件时间不能倒序 | 时序一致性 | 生命周期事件 | lifecycle_event.battery_id、event_type、occurred_at | 当前企业电池生命周期事件 | 按电池和 `occurred_at` 检查关键事件顺序 | 关键事件顺序满足登记或加入批次 <= 提交验收 <= 验收通过 <= 入库 | 后置业务事件的 `occurred_at` 早于前置业务事件 | 一般 | 业务主管 | 发起事件时间更正说明并保留审计，不允许豁免关闭 | 重新读取生命周期事件并按 `occurred_at` 排序 | 否 |
+| DQ-007 | 当前库存责任企业必须一致 | 一致性 | 当前库存记录和电池档案 | inventory.enterprise_id、inventory.is_current、battery.current_responsible_enterprise_id | 当前企业有效库存 | 检查 `inventory.is_current=1` 的库存记录责任企业与电池当前责任企业 | 当前库存企业等于电池当前责任企业 | `inventory.is_current=1` 且两者不一致 | 严重 | 仓库管理员 | 通过库存或责任企业调整记录处理 | 重新读取当前库存和电池当前责任企业 | 否 |
 
 延期规则：
 
@@ -149,7 +149,7 @@ RECHECKING -> REJECTED -> PROCESSING -> SUBMITTED
 | 未关闭问题 | 状态不为 `CLOSED` 的问题数。 |
 | 关闭率 | 已关闭问题数 / 已发现问题总数。 |
 
-所有指标按企业隔离。V1.1 第一版不提供趋势图，仅展示质量状态汇总。豁免问题如后续启用，默认不计入关闭率分子，需单独统计。
+所有指标按企业隔离。V1.1 第一版不提供趋势图，仅展示质量状态汇总。V1.1 不实现问题豁免；豁免能力登记为后续版本候选项，不进入当前基线。
 
 ## 10. 排除范围
 
@@ -163,4 +163,4 @@ RECHECKING -> REJECTED -> PROCESSING -> SUBMITTED
 
 ## 11. 当前结论
 
-本切片为 V0.2 修改后复核稿。CR-DG-001 尚未批准，不得进入 V1.1 技术设计确认，不得创建正式实现分支，不得编写生产业务代码。
+本切片为 V0.3 修改后复核稿。CR-DG-001 尚未批准，不得进入 V1.1 技术设计确认，不得创建正式实现分支，不得编写生产业务代码。
