@@ -3,16 +3,33 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>数据治理低保真原型</title>
+    <title>数据治理低保真原型 V0.2</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <header class="app-header">
       <div>
-        <h1>数据治理低保真原型</h1>
+        <h1>数据治理低保真原型 V0.2</h1>
         <p>验证需求用，不是正式前端代码</p>
       </div>
-      <button id="resetBtn" type="button">重置原型</button>
+      <div class="header-controls">
+        <label>当前角色
+          <select id="roleSelect">
+            <option value="businessSupervisor">业务主管</option>
+            <option value="systemAdmin">系统管理员</option>
+            <option value="recycleOperator">回收操作员</option>
+            <option value="warehouseKeeper">仓库管理员</option>
+            <option value="guest">无权限用户</option>
+          </select>
+        </label>
+        <label>当前企业
+          <select id="enterpriseSelect">
+            <option value="A">企业A</option>
+            <option value="B">企业B</option>
+          </select>
+        </label>
+        <button id="resetBtn" type="button">重置原型</button>
+      </div>
     </header>
 
     <main class="layout">
@@ -26,14 +43,22 @@
       </nav>
 
       <section class="content">
+        <div id="notice" class="notice">重置后没有质量问题，请先发起检查。</div>
+
         <section id="rules" class="view active">
           <div class="toolbar">
             <h2>数据质量规则</h2>
-            <span class="badge">固定规则，待评审</span>
+            <span class="badge">固定规则，修改后复核</span>
+          </div>
+          <div class="inline-form">
+            <label>启停原因
+              <input id="ruleReason" type="text" value="按评审场景验证规则启停">
+            </label>
+            <button id="toggleRuleBtn" type="button">启用/停用所选规则</button>
           </div>
           <table>
             <thead>
-              <tr><th>编号</th><th>规则</th><th>维度</th><th>状态</th></tr>
+              <tr><th>选择</th><th>编号</th><th>规则</th><th>维度</th><th>对象</th><th>状态</th></tr>
             </thead>
             <tbody id="ruleRows"></tbody>
           </table>
@@ -41,23 +66,36 @@
 
         <section id="run" class="view">
           <h2>发起质量检查</h2>
-          <label>检查范围
-            <select id="scopeSelect">
-              <option>第一业务切片数据</option>
-              <option>电池档案和库存</option>
-              <option>验收和生命周期事件</option>
-            </select>
-          </label>
-          <button id="runCheckBtn" class="primary" type="button">发起检查</button>
+          <div class="inline-form">
+            <label>检查范围
+              <select id="scopeSelect">
+                <option value="all">第一业务切片数据</option>
+                <option value="battery">电池档案</option>
+                <option value="inventory">库存和库位</option>
+                <option value="trace">生命周期事件</option>
+              </select>
+            </label>
+            <label>检查场景
+              <select id="scenarioSelect">
+                <option value="issues">发现问题</option>
+                <option value="clean">检查无问题</option>
+                <option value="failed">检查失败</option>
+                <option value="repeat">重复检查去重</option>
+                <option value="closedAgain">已关闭后再次违规</option>
+              </select>
+            </label>
+            <button id="runCheckBtn" class="primary" type="button">发起检查</button>
+          </div>
           <p id="runMessage" class="message">尚未发起检查。</p>
         </section>
 
         <section id="result" class="view">
           <h2>检查结果</h2>
           <div class="summary-grid">
-            <div><strong id="runStatus">未执行</strong><span>检查状态</span></div>
-            <div><strong id="issueCount">0</strong><span>发现问题</span></div>
+            <div><strong id="runStatus">未执行</strong><span>最近检查状态</span></div>
+            <div><strong id="issueCount">0</strong><span>当前问题</span></div>
             <div><strong id="passCount">0</strong><span>通过规则</span></div>
+            <div><strong id="lastScope">-</strong><span>检查范围</span></div>
           </div>
           <ul id="resultList" class="list"></ul>
         </section>
@@ -67,9 +105,37 @@
             <h2>质量问题</h2>
             <button id="assignBtn" type="button">分配责任人</button>
           </div>
+          <div class="inline-form">
+            <label>状态筛选
+              <select id="statusFilter">
+                <option value="ALL">全部</option>
+                <option value="OPEN">OPEN</option>
+                <option value="ASSIGNED">ASSIGNED</option>
+                <option value="PROCESSING">PROCESSING</option>
+                <option value="SUBMITTED">SUBMITTED</option>
+                <option value="RECHECKING">RECHECKING</option>
+                <option value="REJECTED">REJECTED</option>
+                <option value="CLOSED">CLOSED</option>
+              </select>
+            </label>
+            <label>规则筛选
+              <select id="ruleFilter">
+                <option value="ALL">全部</option>
+              </select>
+            </label>
+            <label>责任人筛选
+              <select id="ownerFilter">
+                <option value="ALL">全部</option>
+                <option value="未分配">未分配</option>
+                <option value="回收操作员">回收操作员</option>
+                <option value="仓库管理员">仓库管理员</option>
+                <option value="业务主管">业务主管</option>
+              </select>
+            </label>
+          </div>
           <table>
             <thead>
-              <tr><th>问题</th><th>规则</th><th>责任人</th><th>状态</th></tr>
+              <tr><th>选择</th><th>问题</th><th>规则</th><th>责任人</th><th>状态</th><th>企业</th></tr>
             </thead>
             <tbody id="issueRows"></tbody>
           </table>
@@ -78,17 +144,29 @@
         <section id="detail" class="view">
           <h2>问题详情</h2>
           <div id="issueDetail" class="panel"></div>
+          <div class="inline-form">
+            <label>处理说明
+              <textarea id="fixNote" rows="3">已补充字段并提交业务更正记录。</textarea>
+            </label>
+            <label>更正记录或证据
+              <input id="evidenceInput" type="text" value="CORR-DG-202609-001">
+            </label>
+          </div>
           <div class="actions">
+            <button id="startProcessBtn" type="button">开始处理</button>
             <button id="submitFixBtn" type="button">提交处理</button>
+            <button id="startRecheckBtn" type="button">开始重新检查</button>
             <button id="recheckPassBtn" type="button">重新检查通过</button>
             <button id="recheckFailBtn" type="button">重新检查失败</button>
+            <button id="editClosedBtn" type="button">尝试编辑已关闭问题</button>
           </div>
         </section>
 
         <section id="dashboard" class="view">
           <h2>数据质量看板</h2>
           <div class="summary-grid">
-            <div><strong id="dashboardRuns">0</strong><span>检查次数</span></div>
+            <div><strong id="dashboardRules">0</strong><span>启用规则</span></div>
+            <div><strong id="dashboardRuns">0</strong><span>完成检查</span></div>
             <div><strong id="dashboardIssues">0</strong><span>问题数量</span></div>
             <div><strong id="dashboardClosed">0%</strong><span>关闭率</span></div>
             <div><strong id="dashboardOpen">0</strong><span>未关闭</span></div>

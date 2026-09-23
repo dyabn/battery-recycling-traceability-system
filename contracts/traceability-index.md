@@ -224,36 +224,36 @@ C4 已围绕第一条纵向业务切片建立需求、测试和低保真原型�
 
 ## 数据治理 V1.1 变更追踪草案
 
-当前状态：待评审。
+当前状态：修改后复核。
 追踪链：`CR-DG -> UR-DG -> FR-DG -> AC-DG -> TC-DG -> UI-DG`。
 
 | 编号 | 类型 | 来源 | 状态 |
 | --- | --- | --- | --- |
-| CR-DG-001 | 数据治理能力变更请求 | `docs/change/CR-DG-001-data-governance-change-request.md` | 待评审 |
-| DG-BIZ-001 | 数据治理第一切片 | `docs/business/data-governance-first-slice.md` | 待评审 |
-| DG-REQ-001 | 数据治理需求规格 | `docs/requirements/data-governance-requirements.md` | 待评审 |
-| DG-TEST-001 | 数据治理测试设计 | `docs/testing/data-governance-test-design.md` | 待评审 |
-| DG-PROTO-001 | 数据治理原型规格 | `docs/prototype/data-governance-prototype-spec.md` | 待评审 |
-| DG-PROTO-002 | 数据治理低保真原型 | `prototype/data-governance/` | 待评审 |
+| CR-DG-001 | 数据治理能力变更请求 V0.2 | `docs/change/CR-DG-001-data-governance-change-request.md` | 修改后复核 |
+| DG-BIZ-001 | 数据治理第一切片 V0.2 | `docs/business/data-governance-first-slice.md` | 修改后复核 |
+| DG-REQ-001 | 数据治理需求规格 V0.2 | `docs/requirements/data-governance-requirements.md` | 修改后复核 |
+| DG-TEST-001 | 数据治理测试设计 V0.2 | `docs/testing/data-governance-test-design.md` | 修改后复核 |
+| DG-PROTO-001 | 数据治理原型规格 V0.2 | `docs/prototype/data-governance-prototype-spec.md` | 修改后复核 |
+| DG-PROTO-002 | 数据治理低保真原型 V0.2 | `prototype/data-governance/` | 修改后复核 |
 
 ## 数据治理 UR -> FR -> AC -> TC -> UI 草案
 
 | UR | FR | AC | TC | UI |
 | --- | --- | --- | --- | --- |
-| UR-DG-001 | FR-DG-001、FR-DG-002 | AC-DG-001 | TC-DG-001 | UI-DG-001 |
-| UR-DG-002 | FR-DG-003 | AC-DG-002 | TC-DG-002 | UI-DG-002、UI-DG-003 |
-| UR-DG-003 | FR-DG-004、FR-DG-005 | AC-DG-003、AC-DG-004 | TC-DG-003、TC-DG-004、TC-DG-005 | UI-DG-003、UI-DG-004 |
-| UR-DG-004 | FR-DG-006、FR-DG-007、FR-DG-008 | AC-DG-005、AC-DG-006 | TC-DG-006、TC-DG-007、TC-DG-008 | UI-DG-004、UI-DG-005、UI-DG-006、UI-DG-007 |
-| UR-DG-005 | FR-DG-009 | AC-DG-007 | TC-DG-009 | UI-DG-008 |
-| UR-DG-006 | FR-DG-010 | AC-DG-008 | TC-DG-010、TC-DG-011 | UI-DG-005、UI-DG-007 |
+| UR-DG-001 | FR-DG-001、002、003、018 | AC-DG-001、002、003 | TC-DG-001、002、003、023、024 | UI-DG-001 |
+| UR-DG-002 | FR-DG-004、005、006、018 | AC-DG-004、005、006 | TC-DG-004、005、006、022、023、024 | UI-DG-002、003 |
+| UR-DG-003 | FR-DG-007、008、009、010、018 | AC-DG-007、008、009、016 | TC-DG-007、008、009、023、025 | UI-DG-003、004、005、006 |
+| UR-DG-004 | FR-DG-010、011、012、013、018 | AC-DG-010、011、016 | TC-DG-010、011、012、013、014、017、023、024、026 | UI-DG-005、007 |
+| UR-DG-005 | FR-DG-010、014、015、016、018 | AC-DG-012、013、014、016 | TC-DG-015、016、017、018、019、020、023、024 | UI-DG-005、007 |
+| UR-DG-006 | FR-DG-017 | AC-DG-015 | TC-DG-021 | UI-DG-008 |
 
 ## 数据治理开放问题追踪
 
 | 问题 | 影响范围 | 当前处理 |
 | --- | --- | --- |
-| DG-Q-001 | 质量规则配置权限 | 待评审确认 |
-| DG-Q-002 | 质量问题责任人 | 待评审确认 |
-| DG-Q-003 | 检查触发方式 | 待评审确认 |
-| DG-Q-004 | 第一版规则范围 | 待评审确认 |
-| DG-Q-005 | 错误数据处理方式 | 待评审确认 |
-| DG-Q-006 | 问题关闭条件 | 待评审确认 |
+| DG-Q-001 | 质量规则配置权限 | 已解决：系统管理员可启停固定规则，不能修改算法或脚本，启停需原因和审计。 |
+| DG-Q-002 | 质量问题责任人 | 已解决：业务主管分配和复核，回收操作员和仓库管理员处理各自问题。 |
+| DG-Q-003 | 检查触发方式 | 已解决：V1.1 只支持手工质量检查。 |
+| DG-Q-004 | 第一版规则范围 | 已解决：DQ-001..DQ-007 纳入，DQ-008 延期。 |
+| DG-Q-005 | 错误数据处理方式 | 已解决：不得直接覆盖已生效数据，需关联更正记录或处理证据。 |
+| DG-Q-006 | 问题关闭条件 | 已解决：处理证据、同规则复查通过、主管复核和完整审计齐备后关闭。 |

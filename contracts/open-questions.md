@@ -43,9 +43,9 @@
 
 | 编号 | 阶段 | 问题 | 影响 | 状态 |
 | --- | --- | --- | --- | --- |
-| DG-Q-001 | data-governance-change | 谁负责配置质量规则？ | 影响权限和角色职责。 | open |
-| DG-Q-002 | data-governance-change | 谁负责处理质量问题？ | 影响问题分配、处理和复核流程。 | open |
-| DG-Q-003 | data-governance-change | 质量检查是实时还是手工执行？ | 影响检查任务触发方式和技术设计。 | open |
-| DG-Q-004 | data-governance-change | 哪些质量规则进入第一版？ | 影响需求范围、测试和原型。 | open |
-| DG-Q-005 | data-governance-change | 错误数据是否允许直接修改？ | 影响数据更正方式和审计要求。 | open |
-| DG-Q-006 | data-governance-change | 问题达到什么条件才能关闭？ | 影响质量问题状态机和验收标准。 | open |
+| DG-Q-001 | data-governance-change | 谁负责配置质量规则？ | 已解决：系统管理员可以查看、启用和停用固定规则；不能修改规则算法或编写脚本；启停必须填写原因并审计。 | resolved |
+| DG-Q-002 | data-governance-change | 谁负责处理质量问题？ | 已解决：业务主管分配问题；回收操作员和仓库管理员处理各自业务问题；业务主管重新检查并关闭；处理人不能自行关闭严重问题。 | resolved |
+| DG-Q-003 | data-governance-change | 质量检查是实时还是手工执行？ | 已解决：V1.1 只支持手工发起质量检查；原业务实时校验继续保留，但不作为治理检查任务。 | resolved |
+| DG-Q-004 | data-governance-change | 哪些质量规则进入第一版？ | 已解决：DQ-001 至 DQ-007 进入第一版；DQ-008 临时附件规则延期。 | resolved |
+| DG-Q-005 | data-governance-change | 错误数据是否允许直接修改？ | 已解决：已生效数据不得直接覆盖；必须通过业务更正或调整记录处理，并在质量问题中关联更正记录。 | resolved |
+| DG-Q-006 | data-governance-change | 问题达到什么条件才能关闭？ | 已解决：必须有整改证据、同一规则重新检查通过、业务主管复核和完整审计，问题才能关闭。 | resolved |
