@@ -3,13 +3,21 @@ info:
   title: Battery Recycling Traceability Data Governance API
   version: 1.1.0
   description: Data governance V1.1 technical design contract. Design artifact only.
+  license:
+    name: Course Project Internal Use
 servers:
   - url: /api/v1
+security:
+  - BearerAuth: []
 tags:
   - name: DataQualityRules
+    description: Fixed rule definition and enterprise-level rule toggle APIs.
   - name: DataQualityChecks
+    description: Manual quality check run and check result APIs.
   - name: DataQualityIssues
+    description: Quality issue workflow, remediation, and recheck APIs.
   - name: DataQualityDashboard
+    description: Current-enterprise data quality dashboard APIs.
 paths:
   /data-quality/rules:
     get:
@@ -399,6 +407,11 @@ paths:
         db: [dq_enterprise_rule_config, dq_check_run, dq_issue]
         module: MOD-DQ-DASHBOARD
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   parameters:
     Authorization:
       name: Authorization
