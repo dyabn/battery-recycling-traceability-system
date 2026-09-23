@@ -5,10 +5,10 @@ project:
   architecture: frontend-backend-separated-monolith
 
 lifecycle:
-  current_stage: implementation-and-test
-  current_gate: 测试通过
-  completed_gate: 设计评审
-  last_completed_stage: system-design
+  current_stage: system-design
+  current_gate: V1.1技术设计评审
+  completed_gate: V1.1变更评审
+  last_completed_stage: prototype-and-requirements
   baseline_version: V1.0
   status: in-progress
 
@@ -181,19 +181,83 @@ constraints:
   no_code_before_required_gates: true
 
 next_stage:
-  stage: implementation-and-test
-  gate: 测试通过
-  name: 编码与测试
+  stage: prototype-and-requirements
+  gate: V1.1变更评审
+  name: 数据治理变更需求与原型
   candidate_slice: recycle-acceptance-inbound-inventory
   focus:
-    - 前后端工程初始化
-    - Flyway 数据库迁移
-    - 第一切片业务代码实现
-    - 自动化测试
-    - 联调验证
+    - CR-DG-001 变更评审
+    - 数据治理需求 V1.1
+    - 数据治理低保真原型
+    - 数据治理验收标准和测试设计
+    - V1.1 技术设计影响分析
   prohibited_until_later_gates:
-    - 技术设计评审通过前不得编写正式前后端业务代码
-    - 技术设计评审通过前不得创建正式工程骨架
+    - CR-DG-001 未评审通过前不得冻结数据治理需求
+    - 数据治理需求和原型未评审通过前不得更新 V1.1 技术设计为 confirmed
+    - V1.1 技术设计未评审通过前不得创建正式实现分支
+    - V1.1 技术设计未评审通过前不得编写正式生产业务代码
+
+data_governance_change:
+  id: CR-DG-001
+  status: approved
+  baseline_target: V1.1
+  document: docs/change/CR-DG-001-data-governance-change-request.md
+  branch: feature/data-governance-v1-1-design
+  requested_date: 2026-09-22
+  review_result: 复核通过
+  approved_baseline: V1.1
+  scope:
+    - 固定规则及其数据标准元数据
+    - 数据质量规则
+    - 数据质量规则启用和停用
+    - 质量检查任务
+    - 质量问题
+    - 问题处理与复核
+    - 数据质量看板
+  excluded_scope:
+    - 数据湖
+    - 大数据平台
+    - 复杂元数据平台
+    - 自动血缘解析
+    - AI自动修复
+    - 区块链
+    - 真实监管平台
+    - 自定义脚本规则引擎
+  open_questions: []
+  prohibited_until_review:
+    - 正式前后端生产业务代码
+    - 正式数据库迁移实现
+    - 覆盖 V1.0 技术设计基线
+    - 创建 feature/first-slice-implementation
+  draft_outputs:
+    change_request: docs/change/CR-DG-001-data-governance-change-request.md
+    business_slice: docs/business/data-governance-first-slice.md
+    requirements: docs/requirements/data-governance-requirements.md
+    test_design: docs/testing/data-governance-test-design.md
+    prototype_spec: docs/prototype/data-governance-prototype-spec.md
+    prototype_review_record: docs/prototype/data-governance-prototype-review-record.md
+    prototype: prototype/data-governance/
+    review_package: data-governance-v0.3-review.zip
+  draft_status:
+    version: V1.1
+    status: confirmed
+    review_result: 复核通过
+    technical_design_v1_1_started: false
+    implementation_branch_created: false
+  resolved_questions:
+    DG-Q-001: 系统管理员可以查看、启用和停用固定规则；不能修改规则算法或编写脚本；启停必须填写原因并审计。
+    DG-Q-002: 业务主管分配问题；回收操作员和仓库管理员处理各自业务问题；业务主管重新检查并关闭；处理人不能自行关闭严重问题。
+    DG-Q-003: V1.1 只支持手工发起质量检查；原业务实时校验继续保留，但不作为治理检查任务。
+    DG-Q-004: DQ-001 至 DQ-007 进入第一版；DQ-008 临时附件规则延期。
+    DG-Q-005: 已生效数据不得直接覆盖；必须通过业务更正或调整记录处理，并在质量问题中关联更正记录。
+    DG-Q-006: 必须有整改证据、同一规则重新检查通过、业务主管复核和完整审计，问题才能关闭。
+  v0_3_review_blockers_addressed:
+    - DQ-001..DQ-007 已按 V1.0 SQL 和数据字典字段重新校对
+    - V1.1 不实现问题豁免，豁免能力延期
+    - 原型规则启停按企业保存，停用规则不参与检查
+    - 原型列表、结果、详情、审计和看板按企业隔离
+    - NFR 追踪矩阵已补充
+    - REVIEW-DG-001..014 实际评审记录已补充
 
 technical_design_progress:
   status: completed

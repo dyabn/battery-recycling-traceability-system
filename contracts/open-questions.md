@@ -38,3 +38,14 @@
 | TD-Q-010 | system-design | 幂等契约“支持/建议/必须”表述不一致。 | 已统一为业务写接口必须携带 `Idempotency-Key`，并明确成功、业务失败和系统异常的幂等记录事务方案。 | resolved |
 | TD-Q-011 | system-design | 跨文档旧内容残留。 | 已修订验收/入库唯一约束旧说法、模块和权限编码数量、OpenAPI 验证状态、401/403 响应和删除保护拦截说明。 | resolved |
 | TD-Q-012 | system-design | MySQL 8 实际建表验证未完成。 | GitHub Actions `First Slice Schema MySQL 8 Validation #1` 已使用 MySQL 8.4 建表并校验 21 张表通过。 | resolved |
+
+## 数据治理变更问题
+
+| 编号 | 阶段 | 问题 | 影响 | 状态 |
+| --- | --- | --- | --- | --- |
+| DG-Q-001 | data-governance-change | 谁负责配置质量规则？ | 已解决：系统管理员可以查看、启用和停用固定规则；不能修改规则算法或编写脚本；启停必须填写原因并审计。 | resolved |
+| DG-Q-002 | data-governance-change | 谁负责处理质量问题？ | 已解决：业务主管分配问题；回收操作员和仓库管理员处理各自业务问题；业务主管重新检查并关闭；处理人不能自行关闭严重问题。 | resolved |
+| DG-Q-003 | data-governance-change | 质量检查是实时还是手工执行？ | 已解决：V1.1 只支持手工发起质量检查；原业务实时校验继续保留，但不作为治理检查任务。 | resolved |
+| DG-Q-004 | data-governance-change | 哪些质量规则进入第一版？ | 已解决：DQ-001 至 DQ-007 进入第一版；DQ-008 临时附件规则延期。 | resolved |
+| DG-Q-005 | data-governance-change | 错误数据是否允许直接修改？ | 已解决：已生效数据不得直接覆盖；必须通过业务更正或调整记录处理，并在质量问题中关联更正记录。 | resolved |
+| DG-Q-006 | data-governance-change | 问题达到什么条件才能关闭？ | 已解决：必须有整改证据、同一规则重新检查通过、业务主管复核和完整审计，问题才能关闭。 | resolved |
