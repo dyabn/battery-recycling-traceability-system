@@ -2,7 +2,7 @@
 
 当前阶段：数据治理 V1.1 技术设计评审。
 
-当前状态：CR-DG-001 已复核通过，数据治理需求、测试和原型基线 V1.1 已确认。数据治理 V1.1 技术设计评审包已生成，OpenAPI 与 MySQL 8.4 自动验证通过，并暂停待技术评审；仍不得创建实现分支，不得编写生产代码。
+当前状态：CR-DG-001 已复核通过，数据治理需求、测试和原型基线 V1.1 已确认。数据治理 V1.1 技术设计按“修改后复核”结论修订中，已生成本轮待复核设计，仍不得创建实现分支，不得编写生产代码。
 
 ## 当前来源
 
@@ -283,15 +283,15 @@
 | FR | UI | API | DB | MODULE |
 | --- | --- | --- | --- | --- |
 | FR-DG-001 | UI-DG-001 | `GET /api/v1/data-quality/rules` | `dq_rule_definition`、`dq_enterprise_rule_config` | MOD-DQ-RULE |
-| FR-DG-002、FR-DG-003 | UI-DG-001 | `PATCH /api/v1/data-quality/rules/{ruleCode}/status` | `dq_enterprise_rule_config`、`audit_log`、`idempotency_record` | MOD-DQ-RULE、MOD-AUDIT、MOD-IDEMPOTENCY |
-| FR-DG-004..006 | UI-DG-002、UI-DG-003 | `POST /api/v1/data-quality/check-runs`、`GET /api/v1/data-quality/check-runs/{runId}` | `dq_check_run`、`dq_check_result`、`audit_log`、`idempotency_record` | MOD-DQ-CHECK |
+| FR-DG-002、FR-DG-003 | UI-DG-001 | `PATCH /api/v1/data-quality/rules/{ruleCode}/status` | `dq_enterprise_rule_config`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-RULE、MOD-DQ-AUDIT、MOD-IDEMPOTENCY |
+| FR-DG-004..006 | UI-DG-002、UI-DG-003 | `POST /api/v1/data-quality/check-runs`、`GET /api/v1/data-quality/check-runs/{runId}` | `dq_check_run`、`dq_check_result`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-CHECK |
 | FR-DG-007、FR-DG-008 | UI-DG-003、UI-DG-004 | `GET /api/v1/data-quality/check-runs/{runId}/results`、`GET /api/v1/data-quality/issues` | `dq_check_result`、`dq_issue` | MOD-DQ-CHECK、MOD-DQ-ISSUE |
-| FR-DG-009 | UI-DG-005 | `POST /api/v1/data-quality/issues/{issueId}/assign` | `dq_issue`、`audit_log`、`idempotency_record` | MOD-DQ-ISSUE |
-| FR-DG-010、FR-DG-011 | UI-DG-005 | `POST /api/v1/data-quality/issues/{issueId}/start-processing` | `dq_issue`、`audit_log`、`idempotency_record` | MOD-DQ-ISSUE |
-| FR-DG-012、FR-DG-013 | UI-DG-007 | `POST /api/v1/data-quality/issues/{issueId}/remediations` | `dq_remediation`、`business_attachment`、`dq_issue`、`audit_log`、`idempotency_record` | MOD-DQ-REMEDIATION |
-| FR-DG-014..016 | UI-DG-005、UI-DG-007 | `POST /api/v1/data-quality/issues/{issueId}/rechecks`、`PUT /api/v1/data-quality/issues/{issueId}/rechecks/{recheckId}/result` | `dq_recheck`、`dq_issue`、`audit_log`、`idempotency_record` | MOD-DQ-RECHECK |
+| FR-DG-009 | UI-DG-005 | `POST /api/v1/data-quality/issues/{issueId}/assign` | `dq_issue`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-ISSUE |
+| FR-DG-010、FR-DG-011 | UI-DG-005 | `POST /api/v1/data-quality/issues/{issueId}/start-processing` | `dq_issue`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-ISSUE |
+| FR-DG-012、FR-DG-013 | UI-DG-007 | `POST /api/v1/data-quality/issues/{issueId}/remediations` | `dq_remediation`、`business_attachment`、`dq_issue`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-REMEDIATION |
+| FR-DG-014..016 | UI-DG-005、UI-DG-007 | `POST /api/v1/data-quality/issues/{issueId}/rechecks` | `dq_recheck`、`dq_check_run`、`dq_check_result`、`dq_issue`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-RECHECK |
 | FR-DG-017 | UI-DG-008 | `GET /api/v1/data-quality/dashboard/summary` | `dq_enterprise_rule_config`、`dq_check_run`、`dq_issue` | MOD-DQ-DASHBOARD |
-| FR-DG-018 | UI-DG-001..008 | 全部写接口和拒绝路径 | `audit_log` | MOD-AUDIT |
+| FR-DG-018 | UI-DG-001..008 | 全部写接口和拒绝路径 | `dq_operation_audit` | MOD-DQ-AUDIT |
 
 ## 数据治理 V1.1 技术验证追踪
 
@@ -306,15 +306,16 @@
 | TD-DG-TC-022 | 失败状态不变 |
 | TD-DG-TC-023..024 | 幂等 |
 | TD-DG-TC-025 | 结构化审计 |
-| TD-DG-TC-026 | MySQL 8.4 增量 SQL 验证 |
+| TD-DG-TC-026 | MySQL 8.4 增量 SQL 验证和 8 张治理表断言 |
 | TD-DG-TC-027 | OpenAPI 严格解析 |
 | TD-DG-TC-028 | 完整追踪矩阵 |
+| TD-DG-TC-029..036 | 整改证据、机器复核、只读系统管理员、稳定对象去重、失败回滚和企业默认规则配置 |
 
 ## 数据治理开放问题追踪
 
 | 问题 | 影响范围 | 当前处理 |
 | --- | --- | --- |
-| DG-Q-001 | 质量规则配置权限 | 已解决：系统管理员可启停固定规则，不能修改算法或脚本，启停需原因和审计。 |
+| DG-Q-001 | 质量规则配置权限 | 已解决：V1.1 固定规则默认启用；系统管理员只读查看规则、问题、看板和审计，不执行规则配置、整改或复核。 |
 | DG-Q-002 | 质量问题责任人 | 已解决：业务主管分配和复核，回收操作员和仓库管理员处理各自问题。 |
 | DG-Q-003 | 检查触发方式 | 已解决：V1.1 只支持手工质量检查。 |
 | DG-Q-004 | 第一版规则范围 | 已解决：DQ-001..DQ-007 纳入，DQ-008 延期。 |

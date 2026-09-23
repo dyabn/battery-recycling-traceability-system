@@ -251,7 +251,7 @@ data_governance_change:
     technical_design_v1_1_started: true
     implementation_branch_created: false
   resolved_questions:
-    DG-Q-001: 系统管理员可以查看、启用和停用固定规则；不能修改规则算法或编写脚本；启停必须填写原因并审计。
+    DG-Q-001: V1.1 固定规则默认启用；系统管理员只读查看规则、问题、看板和审计，不执行规则配置、整改或复核。
     DG-Q-002: 业务主管分配问题；回收操作员和仓库管理员处理各自业务问题；业务主管重新检查并关闭；处理人不能自行关闭严重问题。
     DG-Q-003: V1.1 只支持手工发起质量检查；原业务实时校验继续保留，但不作为治理检查任务。
     DG-Q-004: DQ-001 至 DQ-007 进入第一版；DQ-008 临时附件规则延期。
@@ -269,7 +269,7 @@ technical_design_v1_1:
   status: paused-for-review
   lifecycle_stage: system-design
   review_gate: V1.1技术设计评审
-  review_result: 等待技术设计评审
+  review_result: 修改后复核
   baseline_target: V1.1
   implementation_branch_created: false
   scope: 数据治理 V1.1 增量技术设计
@@ -291,15 +291,20 @@ technical_design_v1_1:
     review_package: data-governance-v1.1-technical-design-review.zip
   design_decisions:
     - 固定规则处理器 DQ-001..DQ-007 对齐 V1.0 SQL 和数据字典
-    - 新增 7 张数据治理表
-    - 新增 13 个数据治理 API 路径
+    - 新增 8 张数据治理表
+    - 新增 12 个数据治理 API 路径
     - 新增 9 个数据治理权限编码
     - 写接口必须携带 Idempotency-Key
     - 规则启停、检查、问题、详情、审计和看板全部按企业隔离
     - DQ-001 全系统唯一检查不泄露其他企业对象明细
     - V1.1 不实现豁免流程
     - 数据治理不得直接覆盖 V1.0 已生效业务数据
+    - 治理审计使用 dq_operation_audit 保存结构化审计
+    - 复核结果由后端同规则同对象机器检查产生，客户端不得声明通过
+    - 整改必须存在附件证据或修正对象引用
   pending_items:
+    - 本轮 Contract Validation 重新验证
+    - 本轮 MySQL 8.4 增量迁移和约束断言重新验证
     - 技术设计正式评审
     - SQL 与数据字典一致性复核
     - 技术追踪矩阵复核
@@ -307,12 +312,12 @@ technical_design_v1_1:
     local_openapi_text_check: passed
     local_sql_text_check: passed
     git_diff_check: passed
-    yaml_parse: passed
-    openapi_redocly: passed
-    mysql8_increment_validation: passed
-    contract_validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35862825081
-    mysql8_validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35862825159
-    latest_validated_commit: 7c5af030b1190817ff32b246343f390a796e2472
+    yaml_parse: pending-rerun
+    openapi_redocly: pending-rerun
+    mysql8_increment_validation: pending-rerun
+    contract_validation_run: pending-rerun
+    mysql8_validation_run: pending-rerun
+    latest_validated_commit: pending-rerun
 
 technical_design_progress:
   status: completed

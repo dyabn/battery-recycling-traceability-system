@@ -10,9 +10,9 @@
 
 核心目标：
 
-- 固定规则可查看、可按企业启停，但不可在线修改算法或脚本。
+- 固定规则可查看；规则启停能力保留 API 和表结构设计，但 V1.1 暂不授予系统管理员，避免与已确认需求冲突。
 - 质量检查由业务主管手工发起。
-- 检查结果按企业隔离，问题按规则和对象去重。
+- 检查结果按企业隔离，问题按规则和稳定业务对象技术标识去重。
 - 问题处理不得直接覆盖原始业务数据。
 - 重新检查通过后才允许关闭问题。
 - 看板统计默认最近 30 天，全部按企业隔离。
@@ -29,7 +29,7 @@ PC Web 原型/未来前端
       -> CheckRunService
       -> IssueWorkflowService
       -> DashboardQueryService
-      -> AuditService / IdempotencyService
+      -> DataQualityAuditService / IdempotencyService
     -> MySQL 8.4
 ```
 
@@ -47,7 +47,7 @@ PC Web 原型/未来前端
 
 ## 3. 数据模型增量
 
-新增 7 张表：
+新增 8 张表：
 
 - `dq_rule_definition`
 - `dq_enterprise_rule_config`
@@ -56,6 +56,7 @@ PC Web 原型/未来前端
 - `dq_issue`
 - `dq_remediation`
 - `dq_recheck`
+- `dq_operation_audit`
 
 复用 V1.0 表：
 
@@ -64,7 +65,6 @@ PC Web 原型/未来前端
 - `sys_role`
 - `sys_permission`
 - `business_attachment`
-- `audit_log`
 - `idempotency_record`
 - `battery`
 - `battery_registration_candidate`
@@ -90,8 +90,8 @@ OPEN -> ASSIGNED -> PROCESSING -> SUBMITTED -> RECHECKING -> CLOSED
 - `OPEN` 只能由业务主管分配为 `ASSIGNED`。
 - `ASSIGNED` 只能由责任人开始处理为 `PROCESSING`。
 - `PROCESSING` 必须提交说明和证据后进入 `SUBMITTED`。
-- `SUBMITTED` 只能由业务主管发起重新检查进入 `RECHECKING`。
-- `RECHECKING` 通过后进入 `CLOSED`，失败后进入 `REJECTED`。
+- `SUBMITTED` 只能由业务主管发起后端机器重新检查进入 `RECHECKING`。
+- 重新检查必须使用原规则和原对象；机器检查通过后进入 `CLOSED`，失败后进入 `REJECTED`。
 - `CLOSED` 不允许编辑、分配、处理或复核。
 - 所有非法转换必须拒绝并保持原状态不变。
 
@@ -102,8 +102,9 @@ OPEN -> ASSIGNED -> PROCESSING -> SUBMITTED -> RECHECKING -> CLOSED
 成功流程：
 
 - 校验权限、企业、状态、必填字段和幂等键。
+- 校验整改证据、稳定对象标识、规则启用配置和复核前置条件。
 - 执行业务写入。
-- 写入审计。
+- 写入 `dq_operation_audit`。
 - 将幂等记录置为 `SUCCEEDED`。
 - 同一事务提交。
 
@@ -111,6 +112,7 @@ OPEN -> ASSIGNED -> PROCESSING -> SUBMITTED -> RECHECKING -> CLOSED
 
 - 业务校验失败时主事务不更新业务状态。
 - 使用独立事务记录 `FAILED` 幂等结果和拒绝审计。
+- 检查任务执行时采用全有或全无策略；任一规则发生致命失败，本轮检查结果和新问题全部回滚，再独立记录失败检查运行和审计。
 - 系统异常或超时留下 `PROCESSING` 时，由过期策略允许重试。
 - 同键同请求返回首次成功结果。
 - 同键不同请求返回 `IDEMPOTENCY_KEY_REUSED`。
@@ -130,12 +132,22 @@ OPEN -> ASSIGNED -> PROCESSING -> SUBMITTED -> RECHECKING -> CLOSED
 数据治理模块不直接修改 V1.0 已生效业务记录。处理质量问题时只允许：
 
 - 提交处理说明。
-- 上传或关联处理附件。
+- 上传或关联已绑定且属于当前企业的处理附件。
 - 关联已有业务更正记录或后续业务更正接口产生的记录。
 - 发起同规则重新检查。
 
 如当前 V1.0 尚无专门业务更正接口，`dq_remediation` 记录更正引用和证据；不得通过数据治理接口直接覆盖 `battery`、`acceptance_record`、`inbound_record`、`inventory` 或 `lifecycle_event`。
 
-## 8. 当前结论
+## 8. 企业规则默认启用
+
+V1.1 采用显式初始化方案：
+
+- 迁移时为现有企业写入 DQ-001..DQ-007 的启用配置。
+- 新企业创建时由企业创建流程同步初始化 7 条启用配置。
+- 检查任务只执行该企业配置为 `ENABLED` 的规则。
+- 缺少企业配置记录视为初始化异常，不采用 `COALESCE` 懒加载默认启用。
+- V1.1 不允许豁免规则。
+
+## 9. 当前结论
 
 本总体设计为待评审稿。评审通过前不得创建实现分支，不得编写生产代码，不得执行正式数据库迁移。

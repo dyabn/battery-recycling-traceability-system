@@ -19,7 +19,7 @@
 | TD-DG-TC-006 | DQ-006 | `LifecycleSequenceRule` | `lifecycle_event.occurred_at` 倒序。 | 生成 DQ-006 问题。 |
 | TD-DG-TC-007 | DQ-007 | `InventoryEnterpriseRule` | `inventory.is_current=1` 且企业不一致。 | 生成 DQ-007 问题。 |
 | TD-DG-TC-008 | FR-DG-001 | API/DB | 查询规则列表。 | 返回规则元数据和当前企业启停状态。 |
-| TD-DG-TC-009 | FR-DG-002 | API/DB | 系统管理员启停规则。 | 更新企业配置，写审计。 |
+| TD-DG-TC-009 | FR-DG-002 | API/DB | 未被授权的用户启停规则。 | 返回 403，企业配置保持不变，写治理审计。 |
 | TD-DG-TC-010 | FR-DG-003 | API | 尝试编辑算法或脚本。 | 无接口可用或返回 403/404，规则定义不变。 |
 | TD-DG-TC-011 | FR-DG-004..006 | API/DB | 发起质量检查。 | 创建 `dq_check_run` 和 `dq_check_result`。 |
 | TD-DG-TC-012 | FR-DG-006 | API/DB | 检查执行失败。 | 任务 `FAILED`，不生成问题。 |
@@ -35,20 +35,28 @@
 | TD-DG-TC-022 | NFR-DG-005 | API/DB | 失败操作状态保持。 | 业务状态和版本号不变。 |
 | TD-DG-TC-023 | 幂等 | API/DB | 同键同请求重复提交。 | 返回首次结果，不重复写入。 |
 | TD-DG-TC-024 | 幂等 | API/DB | 同键不同请求。 | 409 `IDEMPOTENCY_KEY_REUSED`。 |
-| TD-DG-TC-025 | 审计 | `audit_log` | 查询拒绝审计结构。 | 包含对象、前后状态、结果和原因。 |
-| TD-DG-TC-026 | SQL | MySQL 8.4 | 执行 V1.0 schema + V1.1 增量 SQL。 | 新增 7 张表成功，规则种子写入成功。 |
+| TD-DG-TC-025 | 审计 | `dq_operation_audit` | 查询拒绝审计结构。 | 包含对象、前后状态、结果、原因、操作者、时间、`trace_id` 和幂等键摘要。 |
+| TD-DG-TC-026 | SQL | MySQL 8.4 | 执行 V1.0 schema + V1.1 增量 SQL。 | 新增 8 张表成功，规则种子和企业规则配置初始化成功。 |
 | TD-DG-TC-027 | OpenAPI | Redocly | 严格解析 OpenAPI V1.1。 | 无断链，operationId 唯一。 |
 | TD-DG-TC-028 | 追踪 | 文档 | `UR->FR->AC->TC->UI->API->DB->MODULE`。 | 全链路完整。 |
+| TD-DG-TC-029 | FR-DG-012 | API/DB | 没有整改证据时提交处理。 | 数据库 CHECK 和 API 均拒绝，问题状态保持不变。 |
+| TD-DG-TC-030 | FR-DG-014..016 | API | 客户端尝试自行指定复核通过。 | OpenAPI 无 `passed` 字段和提交结果接口，服务端拒绝客户端判定。 |
+| TD-DG-TC-031 | FR-DG-014..016 | API/DB | 同规则、同对象机器复核通过才关闭。 | `dq_recheck` 关联 `dq_check_run` 和 `dq_check_result`；只有结果通过才关闭。 |
+| TD-DG-TC-032 | NFR-DG-003 | 权限 | 系统管理员只读看板和问题。 | 系统管理员可查看看板和问题，不能启停规则、处理整改或执行复核。 |
+| TD-DG-TC-033 | FR-DG-008 | DB | 未关闭问题并发生成。 | `enterprise_id + rule_code + object_type + object_identity` 规范化唯一约束只允许一条未关闭问题。 |
+| TD-DG-TC-034 | FR-DG-008、016 | DB | 问题关闭后同一对象再次违规。 | 已关闭问题不参与未关闭唯一键，可创建新问题。 |
+| TD-DG-TC-035 | FR-DG-006 | 事务 | 检查中途失败。 | 回滚本轮检查结果和质量问题，仅保留失败运行和审计。 |
+| TD-DG-TC-036 | FR-DG-001 | DB | 新企业默认规则配置。 | 企业获得 DQ-001..DQ-007 共 7 条启用配置，缺失配置视为初始化异常。 |
 
 ## 3. NFR 技术验证
 
 | NFR | 技术验证 |
 | --- | --- |
-| NFR-DG-001 | TD-DG-TC-015、TD-DG-TC-025 |
-| NFR-DG-002 | TD-DG-TC-014..019、TD-DG-TC-025 |
-| NFR-DG-003 | TD-DG-TC-009、TD-DG-TC-016、TD-DG-TC-021 |
+| NFR-DG-001 | TD-DG-TC-015、TD-DG-TC-025、TD-DG-TC-029 |
+| NFR-DG-002 | TD-DG-TC-014..019、TD-DG-TC-025、TD-DG-TC-031 |
+| NFR-DG-003 | TD-DG-TC-009、TD-DG-TC-016、TD-DG-TC-021、TD-DG-TC-032 |
 | NFR-DG-004 | TD-DG-TC-010 |
-| NFR-DG-005 | TD-DG-TC-011、TD-DG-TC-012、TD-DG-TC-020、TD-DG-TC-022 |
+| NFR-DG-005 | TD-DG-TC-011、TD-DG-TC-012、TD-DG-TC-020、TD-DG-TC-022、TD-DG-TC-033、TD-DG-TC-034、TD-DG-TC-035、TD-DG-TC-036 |
 
 ## 4. 自动检查要求
 

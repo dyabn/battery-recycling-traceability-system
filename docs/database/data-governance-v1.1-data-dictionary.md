@@ -14,7 +14,7 @@
 | object_type | VARCHAR(64) | NOT NULL | 适用对象。 |
 | handler_code | VARCHAR(64) | NOT NULL | 固定规则处理器。 |
 | severity | VARCHAR(16) | NOT NULL | `HIGH`、`MEDIUM`、`LOW`。 |
-| default_owner_role | VARCHAR(64) | NOT NULL | 默认责任角色。 |
+| default_owner_role_code | VARCHAR(64) | NOT NULL | 默认责任角色编码：`BUSINESS_SUPERVISOR`、`RECYCLE_OPERATOR`、`WAREHOUSE_ADMIN`、`SYSTEM_ADMIN`。 |
 | data_standard_metadata | JSON | NOT NULL | 数据标准元数据。 |
 | involved_fields | JSON | NOT NULL | 参与字段。 |
 | check_condition | TEXT | NOT NULL | 判断条件说明。 |
@@ -92,11 +92,12 @@
 | rule_code | VARCHAR(32) | NOT NULL, FK | 规则编号。 |
 | object_type | VARCHAR(64) | NOT NULL | 业务对象类型。 |
 | object_id | BIGINT | NULL | 业务对象 ID。 |
+| object_identity | VARCHAR(128) | NOT NULL | 稳定、规范化前的业务对象技术标识。 |
 | object_key | VARCHAR(128) | NOT NULL | 业务对象展示键或隔离键。 |
 | title | VARCHAR(128) | NOT NULL | 问题标题。 |
 | description | VARCHAR(1000) | NOT NULL | 问题描述。 |
 | severity | VARCHAR(16) | NOT NULL | 严重程度。 |
-| owner_role | VARCHAR(64) | NOT NULL | 默认责任角色。 |
+| owner_role_code | VARCHAR(64) | NOT NULL | 默认责任角色编码。 |
 | issue_status | VARCHAR(16) | NOT NULL | `OPEN`、`ASSIGNED`、`PROCESSING`、`SUBMITTED`、`RECHECKING`、`REJECTED`、`CLOSED`。 |
 | assigned_to_user_id | BIGINT | NULL, FK | 责任人。 |
 | assigned_by_user_id | BIGINT | NULL, FK | 分配人。 |
@@ -110,6 +111,8 @@
 | created_at | DATETIME(3) | NOT NULL | 创建时间。 |
 | updated_at | DATETIME(3) | NOT NULL | 更新时间。 |
 | version | INT | NOT NULL | 乐观锁版本。 |
+
+`open_issue_key` 使用 `rule_code + object_type + LOWER(TRIM(object_identity))` 生成，不使用展示字段 `object_key` 判重。
 
 ## dq_remediation
 
@@ -128,6 +131,12 @@
 | created_at | DATETIME(3) | NOT NULL | 创建时间。 |
 | version | INT | NOT NULL | 乐观锁版本。 |
 
+约束：
+
+- `remediation_note` 必填。
+- `evidence_attachment_id` 或 `correction_object_type + correction_object_id` 至少存在一种。
+- `correction_object_type` 和 `correction_object_id` 必须成对出现。
+
 ## dq_recheck
 
 | 字段 | 类型 | 约束 | 说明 |
@@ -136,13 +145,34 @@
 | enterprise_id | BIGINT | NOT NULL, FK | 企业。 |
 | issue_id | BIGINT | NOT NULL, FK | 质量问题。 |
 | recheck_status | VARCHAR(16) | NOT NULL | `RUNNING`、`PASSED`、`FAILED`。 |
-| linked_check_run_id | BIGINT | NULL, FK | 关联检查任务。 |
-| result_note | VARCHAR(1000) | NULL | 复核说明。 |
+| linked_check_run_id | BIGINT | NOT NULL, FK | 复核机器检查任务。 |
+| linked_check_result_id | BIGINT | NOT NULL, FK | 复核机器检查结果。 |
 | started_by | BIGINT | NOT NULL, FK | 复核人。 |
+| completed_by | BIGINT | NULL, FK | 复核完成人。 |
 | started_at | DATETIME(3) | NOT NULL | 开始时间。 |
 | completed_at | DATETIME(3) | NULL | 完成时间。 |
+| result | VARCHAR(16) | NULL | `PASSED`、`FAILED`。 |
+| result_reason | VARCHAR(1000) | NULL | 复核结果原因。 |
 | created_at | DATETIME(3) | NOT NULL | 创建时间。 |
 | version | INT | NOT NULL | 乐观锁版本。 |
+
+## dq_operation_audit
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | BIGINT | PK | 主键。 |
+| enterprise_id | BIGINT | NOT NULL, FK | 企业。 |
+| action_code | VARCHAR(80) | NOT NULL | 操作编码。 |
+| object_type | VARCHAR(64) | NOT NULL | 对象类型。 |
+| object_id | BIGINT | NULL | 对象 ID。 |
+| before_state | VARCHAR(64) | NULL | 变更前状态。 |
+| after_state | VARCHAR(64) | NULL | 变更后状态。 |
+| result | VARCHAR(20) | NOT NULL | `SUCCESS`、`FAILED`、`FORBIDDEN`、`CONFLICT`。 |
+| reason | VARCHAR(512) | NULL | 操作原因或拒绝原因。 |
+| operated_by | BIGINT | NULL, FK | 操作人。 |
+| operated_at | DATETIME(3) | NOT NULL | 操作时间。 |
+| trace_id | VARCHAR(64) | NULL | 链路 ID。 |
+| idempotency_key_hash | VARCHAR(128) | NULL | 幂等键摘要。 |
 
 ## 当前结论
 

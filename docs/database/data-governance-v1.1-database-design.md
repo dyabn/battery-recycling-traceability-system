@@ -11,7 +11,7 @@
 - 企业隔离由应用层上下文和数据库字段共同保证。
 - 已生效业务数据不得由数据治理表直接覆盖。
 - 写操作继续复用 `idempotency_record`。
-- 审计继续复用 `audit_log`。
+- 数据治理写操作和拒绝操作使用 `dq_operation_audit` 保存结构化治理审计；V1.0 `audit_log` 仍保留为通用审计表。
 
 ## 2. 新增表
 
@@ -24,6 +24,7 @@
 | `dq_issue` | 数据质量问题。 |
 | `dq_remediation` | 问题处理说明、证据和更正引用。 |
 | `dq_recheck` | 问题重新检查记录。 |
+| `dq_operation_audit` | 数据治理结构化操作审计。 |
 
 ## 3. 关键约束
 
@@ -33,23 +34,38 @@
 | 企业规则配置唯一 | `dq_enterprise_rule_config(enterprise_id, rule_code)` 唯一。 |
 | 检查任务编号唯一 | `dq_check_run.run_no` 唯一。 |
 | 检查结果唯一 | `dq_check_result(run_id, rule_code)` 唯一。 |
-| 未关闭问题去重 | `dq_issue(enterprise_id, open_issue_key)` 唯一；关闭问题生成列为 `NULL`，允许历史重复。 |
+| 未关闭问题去重 | `dq_issue(enterprise_id, open_issue_key)` 唯一；`open_issue_key` 使用规范化 `object_identity`，关闭问题生成列为 `NULL`，允许历史重复。 |
 | 问题状态保护 | 数据库保存状态，应用层以条件更新和乐观锁控制转换。 |
-| 更正不覆盖原始业务表 | `dq_remediation` 仅保存证据和更正引用。 |
+| 整改证据强制存在 | `dq_remediation` 要求附件证据或更正对象至少存在一种；更正对象类型和 ID 必须成对出现。 |
+| 复核结果机器生成 | `dq_recheck` 必须关联 `linked_check_run_id` 和 `linked_check_result_id`，客户端不得直接提交通过结果。 |
+| 结构化审计 | `dq_operation_audit` 保存操作对象、前后状态、结果、原因、操作者、时间、`trace_id` 和幂等键摘要。 |
+| 企业规则默认启用 | V1.1 迁移时为现有企业显式初始化 DQ-001..DQ-007 启用配置；新增企业创建时同步初始化 7 条配置。 |
 
 ## 4. 开放问题唯一键
 
-`dq_issue.open_issue_key` 是生成列：
+`dq_issue.open_issue_key` 是生成列。它不使用可展示、可变化的 `object_key`，而使用稳定、规范化的 `object_identity`：
 
 ```sql
 CASE
   WHEN issue_status <> 'CLOSED'
-  THEN CONCAT(rule_code, '#', object_type, '#', object_key)
+  THEN CONCAT(rule_code, '#', object_type, '#', LOWER(TRIM(object_identity)))
   ELSE NULL
 END
 ```
 
-MySQL 唯一索引允许多个 `NULL`，因此已关闭问题不参与未关闭问题去重；同一对象再次违规可创建新问题。
+MySQL 唯一索引允许多个 `NULL`，因此已关闭问题不参与未关闭问题去重；同一对象再次违规可创建新问题。大小写和前后空格差异不能绕过去重。
+
+对象标识口径：
+
+| 规则 | `object_identity` |
+| --- | --- |
+| DQ-001 | 电池技术 ID 或规范化冲突标识。 |
+| DQ-002 | `battery.id`。 |
+| DQ-003 | 重复候选记录 ID。 |
+| DQ-004 | `inbound_record.id`。 |
+| DQ-005 | `inbound_record.id`。 |
+| DQ-006 | `battery.id`。 |
+| DQ-007 | 库存记录 ID 或 `battery.id`。 |
 
 ## 5. V1.0 表复用
 
@@ -58,7 +74,7 @@ MySQL 唯一索引允许多个 `NULL`，因此已关闭问题不参与未关闭�
 | `enterprise` | 企业隔离外键。 |
 | `sys_user` | 发起人、责任人、处理人、复核人。 |
 | `business_attachment` | 处理证据附件。 |
-| `audit_log` | 操作、拒绝和跨企业访问审计。 |
+| `audit_log` | V1.0 通用审计。 |
 | `idempotency_record` | 写接口幂等。 |
 | `battery` | DQ-001、DQ-002、DQ-004、DQ-007。 |
 | `battery_registration_candidate` | DQ-003。 |
@@ -78,7 +94,20 @@ MySQL 唯一索引允许多个 `NULL`，因此已关闭问题不参与未关闭�
 - 问题使用 `issue_status`。
 - 处理和复核保留历史记录。
 
-## 7. 看板统计 SQL 口径
+## 7. 检查失败事务
+
+质量检查采用全有或全无策略：
+
+1. 创建检查任务并进入 `RUNNING`。
+2. 执行当前企业已启用的全部规则。
+3. 暂存检查结果和候选问题。
+4. 所有规则成功后，统一写入 `dq_check_result` 和 `dq_issue`。
+5. 任一规则发生致命失败时，回滚本轮产生的检查结果和质量问题。
+6. 使用独立事务将 `dq_check_run` 标记为 `FAILED`，记录失败原因和 `dq_operation_audit`。
+
+不得出现“运行状态为失败，但前几条规则已经生成质量问题”的中间状态。
+
+## 8. 看板统计 SQL 口径
 
 默认最近 30 天，按当前企业过滤：
 
@@ -118,6 +147,6 @@ WHERE enterprise_id = ?
   AND first_detected_at >= CURRENT_TIMESTAMP - INTERVAL 30 DAY;
 ```
 
-## 8. 当前结论
+## 9. 当前结论
 
 本数据库增量设计为待评审稿。评审通过前不得执行正式数据库迁移。
