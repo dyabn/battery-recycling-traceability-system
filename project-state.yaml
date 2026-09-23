@@ -5,10 +5,10 @@ project:
   architecture: frontend-backend-separated-monolith
 
 lifecycle:
-  current_stage: prototype-and-requirements
-  current_gate: V1.1变更评审
-  completed_gate: 设计评审
-  last_completed_stage: system-design
+  current_stage: system-design
+  current_gate: V1.1技术设计评审
+  completed_gate: V1.1变更评审
+  last_completed_stage: prototype-and-requirements
   baseline_version: V1.0
   status: in-progress
 
@@ -199,12 +199,13 @@ next_stage:
 
 data_governance_change:
   id: CR-DG-001
-  status: under-analysis
+  status: approved
   baseline_target: V1.1
   document: docs/change/CR-DG-001-data-governance-change-request.md
   branch: feature/data-governance-v1-1-design
   requested_date: 2026-09-22
-  review_result: 修改后复核
+  review_result: 复核通过
+  approved_baseline: V1.1
   scope:
     - 固定规则及其数据标准元数据
     - 数据质量规则
@@ -238,9 +239,9 @@ data_governance_change:
     prototype: prototype/data-governance/
     review_package: data-governance-v0.3-review.zip
   draft_status:
-    version: V0.3
-    status: waiting-review
-    review_result: 修改后复核
+    version: V1.1
+    status: confirmed
+    review_result: 复核通过
     technical_design_v1_1_started: false
     implementation_branch_created: false
   resolved_questions:

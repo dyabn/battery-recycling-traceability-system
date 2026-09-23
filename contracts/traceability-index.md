@@ -1,8 +1,8 @@
 # 追踪索引
 
-当前阶段：数据治理 V1.1 变更需求与原型评审。
+当前阶段：数据治理 V1.1 技术设计评审。
 
-当前状态：CR-DG-001 修改后复核，尚未批准。第一业务切片 C4 和系统设计 V1.0 已确认；数据治理 V1.1 仍处于变更需求与原型评审，不得进入技术设计 V1.1，不得创建实现分支，不得编写生产代码。
+当前状态：CR-DG-001 已复核通过，数据治理需求、测试和原型基线 V1.1 已确认。下一阶段进入数据治理 V1.1 技术设计评审；仍不得创建实现分支，不得编写生产代码。
 
 ## 当前来源
 
@@ -224,18 +224,18 @@
 
 ## 数据治理 V1.1 变更追踪草案
 
-当前状态：修改后复核。
+当前状态：已确认。
 追踪链：`CR-DG -> UR-DG -> FR-DG -> AC-DG -> TC-DG -> UI-DG`。
 
 | 编号 | 类型 | 来源 | 状态 |
 | --- | --- | --- | --- |
-| CR-DG-001 | 数据治理能力变更请求 V0.3 | `docs/change/CR-DG-001-data-governance-change-request.md` | 修改后复核 |
-| DG-BIZ-001 | 数据治理第一切片 V0.3 | `docs/business/data-governance-first-slice.md` | 修改后复核 |
-| DG-REQ-001 | 数据治理需求规格 V0.3 | `docs/requirements/data-governance-requirements.md` | 修改后复核 |
-| DG-TEST-001 | 数据治理测试设计 V0.3 | `docs/testing/data-governance-test-design.md` | 修改后复核 |
-| DG-PROTO-001 | 数据治理原型规格 V0.3 | `docs/prototype/data-governance-prototype-spec.md` | 修改后复核 |
-| DG-PROTO-002 | 数据治理低保真原型 V0.3 | `prototype/data-governance/` | 修改后复核 |
-| DG-PROTO-003 | 数据治理原型实际评审记录 V0.3 | `docs/prototype/data-governance-prototype-review-record.md` | 修改后复核 |
+| CR-DG-001 | 数据治理能力变更请求 V1.1 | `docs/change/CR-DG-001-data-governance-change-request.md` | 已确认 |
+| DG-BIZ-001 | 数据治理第一切片 V1.1 | `docs/business/data-governance-first-slice.md` | 已确认 |
+| DG-REQ-001 | 数据治理需求规格 V1.1 | `docs/requirements/data-governance-requirements.md` | 已确认 |
+| DG-TEST-001 | 数据治理测试设计 V1.1 | `docs/testing/data-governance-test-design.md` | 已确认 |
+| DG-PROTO-001 | 数据治理原型规格 V1.1 | `docs/prototype/data-governance-prototype-spec.md` | 已确认 |
+| DG-PROTO-002 | 数据治理低保真原型 V1.1 | `prototype/data-governance/` | 已确认 |
+| DG-PROTO-003 | 数据治理原型实际评审记录 V1.1 | `docs/prototype/data-governance-prototype-review-record.md` | 已确认 |
 
 ## 数据治理 UR -> FR -> AC -> TC -> UI 草案
 
