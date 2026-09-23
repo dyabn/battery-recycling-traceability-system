@@ -36,10 +36,10 @@
 
 | 验证 | 状态 | 结果 |
 | --- | --- | --- |
-| YAML 严格解析 | 待远端验证 | 本机缺少 PyYAML；已新增 GitHub Actions 契约验证工作流。 |
-| OpenAPI Redocly 严格解析 | 待远端验证 | 本机无 `npm`/`npx`；已新增 GitHub Actions 契约验证工作流。 |
+| YAML 严格解析 | 已通过 | GitHub Actions 契约验证通过：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35862825081`。 |
+| OpenAPI Redocly 严格解析 | 已通过 | GitHub Actions 契约验证通过：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35862825081`。 |
 | OpenAPI 文本结构检查 | 已通过 | 13 个路径、13 个 operationId、13 个唯一 operationId、104 个内部引用、0 个断链。 |
-| MySQL 8.4 增量建表验证 | 待远端验证 | 本机无 Docker 和 MySQL 8 服务；已新增 GitHub Actions MySQL 8.4 验证工作流。 |
+| MySQL 8.4 增量建表验证 | 已通过 | GitHub Actions MySQL 8.4 验证通过：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35862825159`；新增 7 张 `dq_` 表并校验 7 条规则种子。 |
 | SQL 文本检查 | 已通过 | 新增 7 张 `dq_` 表，7 条固定规则种子齐备。 |
 | `git diff --check` | 已通过 | 无空白错误；仅存在 Git 换行符提示。 |
 | 技术追踪矩阵检查 | 已完成待评审 | 已在 `contracts/traceability-index.md` 补充 V1.1 技术追踪。 |
@@ -50,8 +50,8 @@
 | --- | --- | --- |
 | C4/V1.0 需求、状态和规则准确落实 | 待评审 | 固定规则已对齐 V1.0 字段。 |
 | 7 张新增表字段、主外键、唯一约束、索引和删除规则 | 待评审 | 见数据库设计和 SQL。 |
-| SQL 与数据字典一致 | 待评审 | SQL 与数据字典均按 7 张新增表编写，需评审复核。 |
-| 13 个 API 路径与 OpenAPI 契约一致 | 待评审 | 本地文本检查通过，Redocly 待 GitHub Actions 验证。 |
+| SQL 与数据字典一致 | 待评审 | SQL 与数据字典均按 7 张新增表编写，MySQL 8.4 增量建表验证通过，需评审复核字段级一致性。 |
+| 13 个 API 路径与 OpenAPI 契约一致 | 待评审 | 本地文本检查和 Redocly 严格解析均通过。 |
 | API、数据库、权限、事务、审计和状态闭合 | 待评审 | 见总体、架构和安全设计。 |
 | 技术验证用例覆盖技术设计 | 待评审 | TD-DG-TC-001..028。 |
 | 追踪矩阵完整 | 待评审 | 已更新追踪索引草案。 |
@@ -60,5 +60,5 @@
 
 ## 5. 当前结论
 
-当前结论：等待技术设计评审。
+当前结论：自动验证通过，等待技术设计评审。
 不得创建 PR，不得创建实现分支，不得编写生产业务代码。
