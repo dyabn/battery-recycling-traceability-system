@@ -181,21 +181,26 @@ constraints:
   no_code_before_required_gates: true
 
 next_stage:
-  stage: prototype-and-requirements
-  gate: V1.1变更评审
-  name: 数据治理变更需求与原型
+  stage: system-design
+  gate: V1.1技术设计评审
+  name: 数据治理 V1.1 技术设计
   candidate_slice: recycle-acceptance-inbound-inventory
   focus:
-    - CR-DG-001 变更评审
-    - 数据治理需求 V1.1
-    - 数据治理低保真原型
-    - 数据治理验收标准和测试设计
-    - V1.1 技术设计影响分析
+    - V1.1 总体设计补充
+    - 数据治理模块架构设计
+    - V1.0 -> V1.1 数据库增量设计
+    - 数据字典增量
+    - MySQL 8 增量迁移 SQL
+    - 数据治理 API 设计
+    - OpenAPI V1.1 契约
+    - 权限、企业隔离、审计和状态机设计
+    - 看板统计口径及 SQL 设计
+    - 技术测试设计和技术评审记录
   prohibited_until_later_gates:
-    - CR-DG-001 未评审通过前不得冻结数据治理需求
-    - 数据治理需求和原型未评审通过前不得更新 V1.1 技术设计为 confirmed
     - V1.1 技术设计未评审通过前不得创建正式实现分支
     - V1.1 技术设计未评审通过前不得编写正式生产业务代码
+    - V1.1 技术设计未评审通过前不得执行正式数据库迁移
+    - V1.1 技术设计未评审通过前不得合并实现代码
 
 data_governance_change:
   id: CR-DG-001
@@ -203,6 +208,7 @@ data_governance_change:
   baseline_target: V1.1
   document: docs/change/CR-DG-001-data-governance-change-request.md
   branch: feature/data-governance-v1-1-design
+  technical_design_branch: feature/data-governance-v1-1-technical-design
   requested_date: 2026-09-22
   review_result: 复核通过
   approved_baseline: V1.1
@@ -242,7 +248,7 @@ data_governance_change:
     version: V1.1
     status: confirmed
     review_result: 复核通过
-    technical_design_v1_1_started: false
+    technical_design_v1_1_started: true
     implementation_branch_created: false
   resolved_questions:
     DG-Q-001: 系统管理员可以查看、启用和停用固定规则；不能修改规则算法或编写脚本；启停必须填写原因并审计。
