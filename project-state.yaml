@@ -303,8 +303,6 @@ technical_design_v1_1:
     - 复核结果由后端同规则同对象机器检查产生，客户端不得声明通过
     - 整改必须存在附件证据或修正对象引用
   pending_items:
-    - 本轮 Contract Validation 重新验证
-    - 本轮 MySQL 8.4 增量迁移和约束断言重新验证
     - 技术设计正式评审
     - SQL 与数据字典一致性复核
     - 技术追踪矩阵复核
@@ -312,12 +310,17 @@ technical_design_v1_1:
     local_openapi_text_check: passed
     local_sql_text_check: passed
     git_diff_check: passed
-    yaml_parse: pending-rerun
-    openapi_redocly: pending-rerun
-    mysql8_increment_validation: pending-rerun
-    contract_validation_run: pending-rerun
-    mysql8_validation_run: pending-rerun
-    latest_validated_commit: pending-rerun
+    yaml_parse: passed
+    openapi_redocly: passed
+    mysql8_increment_validation: passed
+    contract_validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35870814662
+    mysql8_validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35870814631
+    latest_validated_commit: f2db50ab3ebd7dda79dd2a2eb657f9462972bc43
+    path_count: 12
+    operation_count: 12
+    schema_count: 19
+    governance_table_count: 8
+    technical_test_count: 36
 
 technical_design_progress:
   status: completed

@@ -40,11 +40,11 @@
 
 | 验证 | 状态 | 结果 |
 | --- | --- | --- |
-| YAML 严格解析 | 待重新验证 | 本轮修改后需重新运行 GitHub Actions。 |
-| OpenAPI Redocly 严格解析 | 待重新验证 | 本轮修改后需重新运行 GitHub Actions。 |
-| OpenAPI 文本结构检查 | 待重新验证 | 本轮路径和 Schema 数量已变化。 |
-| MySQL 8.4 增量建表验证 | 待重新验证 | 本轮增量表变为 8 张，并新增强约束断言。 |
-| SQL 文本检查 | 待重新验证 | 新增 8 张 `dq_` 表、7 条固定规则种子和企业默认配置断言。 |
+| YAML 严格解析 | 已通过 | GitHub Actions 契约验证通过：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35870814662`。 |
+| OpenAPI Redocly 严格解析 | 已通过 | GitHub Actions 契约验证通过：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35870814662`。 |
+| OpenAPI 文本结构检查 | 已通过 | 12 个路径、12 个 operationId、12 个唯一 operationId、19 个 Schema、94 个内部引用、0 个断链。 |
+| MySQL 8.4 增量建表验证 | 已通过 | GitHub Actions MySQL 8.4 验证通过：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35870814631`；新增 8 张 `dq_` 表，校验 7 条规则种子、企业默认启用配置、问题去重、整改证据、审计字段和复核字段。 |
+| SQL 文本检查 | 已通过 | 新增 8 张 `dq_` 表，7 条固定规则种子和企业默认配置初始化齐备。 |
 | `git diff --check` | 已通过 | 无空白错误；仅存在 Git 换行符提示。 |
 | 技术追踪矩阵检查 | 已完成待评审 | 已在 `contracts/traceability-index.md` 补充 V1.1 技术追踪。 |
 
@@ -64,5 +64,5 @@
 
 ## 5. 当前结论
 
-当前结论：修改后复核，等待本轮自动验证和技术设计复核。
+当前结论：修改后复核；本轮自动验证已通过，等待技术设计复核。
 不得创建 PR，不得创建实现分支，不得编写生产业务代码。
