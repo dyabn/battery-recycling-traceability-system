@@ -201,7 +201,7 @@ baselines:
       - 完成 42 个技术验证用例
       - 完成 OpenAPI Redocly 严格解析
       - 完成 GitHub Actions MySQL 8.4 增量迁移验证
-      - 尚未创建实现分支，尚未编写生产业务代码
+      - 已确认进入实现与测试阶段，正式业务代码需按后续测试关口推进
 
 constraints:
   minimum_documents: 12
@@ -255,11 +255,10 @@ data_governance_change:
     - 真实监管平台
     - 自定义脚本规则引擎
   open_questions: []
-  prohibited_until_review:
-    - 正式前后端生产业务代码
-    - 正式数据库迁移实现
-    - 覆盖 V1.0 技术设计基线
-    - 创建 feature/first-slice-implementation
+  post_approval_constraints:
+    - 不得覆盖或破坏 V1.0 与 V1.1 已确认技术设计基线
+    - 未通过实现测试关口前不得合并正式业务实现
+    - 数据库迁移必须继续通过 MySQL 8.4 验证
   draft_outputs:
     change_request: docs/change/CR-DG-001-data-governance-change-request.md
     business_slice: docs/business/data-governance-first-slice.md
@@ -274,7 +273,7 @@ data_governance_change:
     status: confirmed
     review_result: 复核通过
     technical_design_v1_1_started: true
-    implementation_branch_created: false
+    implementation_branch_created: true
   resolved_questions:
     DG-Q-001: V1.1 固定规则默认启用；系统管理员只读查看规则、问题、看板和审计，不执行规则配置、整改或复核。
     DG-Q-002: 业务主管分配问题；回收操作员和仓库管理员处理各自业务问题；业务主管重新检查并关闭；处理人不能自行关闭严重问题。
@@ -296,7 +295,7 @@ technical_design_v1_1:
   review_gate: V1.1技术设计评审
   review_result: 复核通过
   baseline_target: V1.1
-  implementation_branch_created: false
+  implementation_branch_created: true
   confirmed_date: 2026-09-24
   scope: 数据治理 V1.1 增量技术设计
   outputs:
@@ -344,6 +343,32 @@ technical_design_v1_1:
     schema_count: 21
     governance_table_count: 8
     technical_test_count: 42
+
+implementation_progress:
+  status: in-progress
+  branch: feature/first-slice-implementation
+  current_step: 工程初始化
+  scope: 第一切片和数据治理 V1.1 的可运行工程骨架
+  outputs:
+    backend: backend/
+    frontend: frontend/
+    docker_compose: docker-compose.yml
+    ci_workflow: .github/workflows/implementation-ci.yml
+  completed_items:
+    - 创建 Spring Boot 3 后端工程骨架
+    - 创建 Vue 3 + TypeScript + Vite 前端工程骨架
+    - 接入 Flyway V1.0 和 V1.1 迁移脚本
+    - 提供健康检查端点
+    - 提供 Swagger UI 入口
+    - 提供 MySQL 8.4 本地运行配置
+    - 提供基础 CI 编译和构建入口
+  pending_items:
+    - 登录、JWT、角色权限和企业隔离实现
+    - 第一切片业务接口实现
+    - 数据治理规则处理器和质量问题闭环实现
+    - 正式前端页面实现
+    - 集成测试、权限测试和端到端测试
+  review_result: not-reviewed
 
 technical_design_progress:
   status: completed

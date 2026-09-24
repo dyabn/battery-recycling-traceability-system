@@ -2,20 +2,12 @@
 
 本仓库用于保存软件工程课程项目的全流程成果，包括业务分析、阶段确认、需求追踪、原型、接口、数据库设计、代码、测试和交付材料。
 
-当前状态：已完成项目骨架和 `business-system-development` Skill V0.1 初始化，尚未进入数据库、前端或后端编码阶段。
+当前状态：已确认业务基线、需求、原型、第一切片技术设计和数据治理 V1.1 技术设计，正在 `feature/first-slice-implementation` 分支进行可运行工程初始化。
 
 ## 当前阶段
 
 ```text
-L0 项目材料整理与 Skill V0.1 初始化
-```
-
-下一步：
-
-```text
-生成《动力电池回收流转与追溯业务定位说明 V0.1》
-    ↓
-C1 业务定位确认
+implementation-and-test / 测试通过
 ```
 
 ## 项目结构
@@ -29,10 +21,42 @@ battery-recycling-traceability-system/
 ├── tests/
 ├── frontend/
 ├── backend/
-├── database/
+├── docker-compose.yml
 ├── project-state.yaml
 ├── README.md
 └── .gitignore
+```
+
+## 本地启动
+
+启动 MySQL 8.4：
+
+```powershell
+docker compose up -d mysql
+```
+
+启动后端：
+
+```powershell
+cd backend
+mvn spring-boot:run
+```
+
+启动前端：
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+常用地址：
+
+```text
+前端：http://localhost:5173
+后端：http://localhost:8080
+健康检查：http://localhost:8080/actuator/health
+Swagger：http://localhost:8080/swagger-ui.html
 ```
 
 ## Skill 说明
