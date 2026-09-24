@@ -41,3 +41,7 @@ pnpm-debug.log*
 # Build outputs
 build/
 out/
+
+# Review packages
+*-review.zip
+*-review*.zip

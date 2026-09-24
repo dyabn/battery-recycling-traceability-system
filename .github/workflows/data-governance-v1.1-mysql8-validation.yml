@@ -1,0 +1,145 @@
+name: Data Governance V1.1 MySQL 8 Validation
+
+on:
+  push:
+    branches:
+      - feature/data-governance-v1-1-technical-design
+  workflow_dispatch:
+
+jobs:
+  mysql8-validation:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: battery_traceability
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -uroot -proot && exit 0
+            sleep 2
+          done
+          exit 1
+      - name: Apply V1.0 schema
+        run: mysql -h 127.0.0.1 -uroot -proot battery_traceability < contracts/database/first-slice-schema-design.sql
+      - name: Seed V1.0 fixture enterprise and user
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability <<'SQL'
+          INSERT INTO enterprise (id, name, unified_social_credit_code, enabled_status, created_at, updated_at)
+          VALUES (9001, '数据治理验证企业', '91310000DGVALIDATION', 'ENABLED', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3));
+          INSERT INTO sys_user (id, enterprise_id, username, password_hash, display_name, enabled_status, created_at, updated_at)
+          VALUES (9001, 9001, 'dq-supervisor', 'not-a-real-password', '数据治理验证用户', 'ENABLED', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3));
+          SQL
+      - name: Apply V1.1 data governance increment
+        run: mysql -h 127.0.0.1 -uroot -proot battery_traceability < contracts/database/data-governance-v1.1-migration.sql
+      - name: Verify data governance table count
+        run: |
+          count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='battery_traceability' AND table_name LIKE 'dq\\_%';")
+          echo "dq_table_count=$count"
+          test "$count" = "8"
+      - name: Verify seed rule count
+        run: |
+          count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM dq_rule_definition;")
+          echo "dq_rule_count=$count"
+          test "$count" = "7"
+      - name: Verify non-exempt rules and enterprise defaults
+        run: |
+          non_exempt=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM dq_rule_definition WHERE allow_exemption = 0;")
+          echo "non_exempt_rule_count=$non_exempt"
+          test "$non_exempt" = "7"
+          config_count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM dq_enterprise_rule_config WHERE enterprise_id = 9001 AND enabled_status = 'ENABLED';")
+          echo "enterprise_enabled_rule_count=$config_count"
+          test "$config_count" = "7"
+      - name: Verify issue uniqueness and remediation constraints
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability <<'SQL'
+          INSERT INTO dq_check_run (enterprise_id, run_no, run_scope, run_status, executed_rule_codes, checked_object_count, checked_rule_count, issue_count, started_by, completed_at)
+          VALUES (9001, 'RUN-ASSERT-001', 'ALL', 'COMPLETED', JSON_ARRAY('DQ-002'), 1, 1, 1, 9001, CURRENT_TIMESTAMP(3));
+          SET @run_id = LAST_INSERT_ID();
+          INSERT INTO dq_check_result (enterprise_id, run_id, rule_code, check_status, checked_object_count, violation_count, rule_snapshot, completed_at)
+          VALUES (9001, @run_id, 'DQ-002', 'VIOLATION', 1, 1, JSON_OBJECT('ruleCode', 'DQ-002'), CURRENT_TIMESTAMP(3));
+          SET @result_id = LAST_INSERT_ID();
+          INSERT INTO dq_issue (
+            enterprise_id, issue_no, rule_code, object_type, object_id, object_identity, object_key,
+            title, description, severity, owner_role_code, issue_status, discovered_run_id, discovered_result_id
+          ) VALUES (
+            9001, 'ISS-ASSERT-001', 'DQ-002', 'battery', 1001, ' Battery-001 ', 'BAT-001',
+            '核心字段缺失', '验证未关闭问题唯一约束', 'MEDIUM', 'RECYCLE_OPERATOR', 'OPEN', @run_id, @result_id
+          );
+          SQL
+          set +e
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability -e "INSERT INTO dq_issue (enterprise_id, issue_no, rule_code, object_type, object_id, object_identity, object_key, title, description, severity, owner_role_code, issue_status, discovered_run_id, discovered_result_id) VALUES (9001, 'ISS-ASSERT-001-DUP', 'DQ-002', 'battery', 1001, 'battery-001', 'BAT-001', '重复问题', '应被唯一约束拒绝', 'MEDIUM', 'RECYCLE_OPERATOR', 'OPEN', (SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001'), (SELECT id FROM dq_check_result WHERE run_id=(SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001') AND rule_code='DQ-002'));"
+          duplicate_rc=$?
+          set -e
+          test "$duplicate_rc" != "0"
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability -e "UPDATE dq_issue SET issue_status='CLOSED', closed_at=CURRENT_TIMESTAMP(3) WHERE issue_no='ISS-ASSERT-001';"
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability -e "INSERT INTO dq_issue (enterprise_id, issue_no, rule_code, object_type, object_id, object_identity, object_key, title, description, severity, owner_role_code, issue_status, discovered_run_id, discovered_result_id) VALUES (9001, 'ISS-ASSERT-002', 'DQ-002', 'battery', 1001, 'battery-001', 'BAT-001', '关闭后再次违规', '关闭后允许新问题', 'MEDIUM', 'RECYCLE_OPERATOR', 'PROCESSING', (SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001'), (SELECT id FROM dq_check_result WHERE run_id=(SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001') AND rule_code='DQ-002'));"
+          set +e
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability -e "INSERT INTO dq_remediation (enterprise_id, issue_id, remediation_note, remediation_status, submitted_by) VALUES (9001, (SELECT id FROM dq_issue WHERE issue_no='ISS-ASSERT-002'), '只有说明没有证据', 'SUBMITTED', 9001);"
+          no_evidence_rc=$?
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability -e "INSERT INTO dq_remediation (enterprise_id, issue_id, remediation_note, correction_object_type, remediation_status, submitted_by) VALUES (9001, (SELECT id FROM dq_issue WHERE issue_no='ISS-ASSERT-002'), '只有修正对象类型', 'BUSINESS_CORRECTION', 'SUBMITTED', 9001);"
+          missing_pair_rc=$?
+          set -e
+          test "$no_evidence_rc" != "0"
+          test "$missing_pair_rc" != "0"
+      - name: Verify audit and recheck required fields
+        run: |
+          for column in id enterprise_id action_code object_type object_id before_state after_state result reason operated_by operated_at trace_id idempotency_key_hash; do
+            count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='battery_traceability' AND table_name='dq_operation_audit' AND column_name='$column';")
+            echo "audit_column_${column}=$count"
+            test "$count" = "1"
+          done
+          for column in linked_check_run_id linked_check_result_id completed_by result result_reason; do
+            count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='battery_traceability' AND table_name='dq_recheck' AND column_name='$column';")
+            echo "recheck_column_${column}=$count"
+            test "$count" = "1"
+          done
+      - name: Verify recheck completion constraints
+        run: |
+          set +e
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability -e "INSERT INTO dq_recheck (enterprise_id, issue_id, recheck_status, linked_check_run_id, linked_check_result_id, started_by) VALUES (9001, (SELECT id FROM dq_issue WHERE issue_no='ISS-ASSERT-002'), 'PASSED', (SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001'), (SELECT id FROM dq_check_result WHERE run_id=(SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001') AND rule_code='DQ-002'), 9001);"
+          passed_without_completion_rc=$?
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability -e "INSERT INTO dq_recheck (enterprise_id, issue_id, recheck_status, linked_check_run_id, linked_check_result_id, started_by, completed_by, completed_at, result) VALUES (9001, (SELECT id FROM dq_issue WHERE issue_no='ISS-ASSERT-002'), 'FAILED', (SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001'), (SELECT id FROM dq_check_result WHERE run_id=(SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001') AND rule_code='DQ-002'), 9001, 9001, CURRENT_TIMESTAMP(3), 'FAILED');"
+          failed_without_reason_rc=$?
+          set -e
+          test "$passed_without_completion_rc" != "0"
+          test "$failed_without_reason_rc" != "0"
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability -e "INSERT INTO dq_recheck (enterprise_id, issue_id, recheck_status, linked_check_run_id, linked_check_result_id, started_by, completed_by, completed_at, result) VALUES (9001, (SELECT id FROM dq_issue WHERE issue_no='ISS-ASSERT-002'), 'PASSED', (SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001'), (SELECT id FROM dq_check_result WHERE run_id=(SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001') AND rule_code='DQ-002'), 9001, 9001, CURRENT_TIMESTAMP(3), 'PASSED');"
+      - name: Verify idempotent migration preserves rule config
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability -e "UPDATE dq_enterprise_rule_config SET enabled_status='DISABLED', toggled_reason='workflow validation', updated_at=CURRENT_TIMESTAMP(3) WHERE enterprise_id=9001 AND rule_code='DQ-002';"
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability < contracts/database/data-governance-v1.1-migration.sql
+          disabled_count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM dq_enterprise_rule_config WHERE enterprise_id=9001 AND rule_code='DQ-002' AND enabled_status='DISABLED';")
+          echo "dq_002_disabled_after_rerun=$disabled_count"
+          test "$disabled_count" = "1"
+      - name: Verify permission and role mapping initialization
+        run: |
+          permission_count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM sys_permission WHERE permission_code LIKE 'dq:%';")
+          echo "dq_permission_count=$permission_count"
+          test "$permission_count" = "10"
+          rule_toggle_assignments=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM sys_role_permission rp JOIN sys_permission p ON p.id=rp.permission_id WHERE p.permission_code='dq:rule:toggle';")
+          echo "dq_rule_toggle_assignment_count=$rule_toggle_assignments"
+          test "$rule_toggle_assignments" = "0"
+          system_admin_count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM sys_role_permission rp JOIN sys_role r ON r.id=rp.role_id JOIN sys_permission p ON p.id=rp.permission_id WHERE r.role_code='SYSTEM_ADMIN' AND p.permission_code LIKE 'dq:%';")
+          supervisor_count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM sys_role_permission rp JOIN sys_role r ON r.id=rp.role_id JOIN sys_permission p ON p.id=rp.permission_id WHERE r.role_code='BUSINESS_SUPERVISOR' AND p.permission_code LIKE 'dq:%';")
+          recycle_count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM sys_role_permission rp JOIN sys_role r ON r.id=rp.role_id JOIN sys_permission p ON p.id=rp.permission_id WHERE r.role_code='RECYCLE_OPERATOR' AND p.permission_code LIKE 'dq:%';")
+          warehouse_count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM sys_role_permission rp JOIN sys_role r ON r.id=rp.role_id JOIN sys_permission p ON p.id=rp.permission_id WHERE r.role_code='WAREHOUSE_ADMIN' AND p.permission_code LIKE 'dq:%';")
+          echo "system_admin_dq_permission_count=$system_admin_count"
+          echo "business_supervisor_dq_permission_count=$supervisor_count"
+          echo "recycle_operator_dq_permission_count=$recycle_count"
+          echo "warehouse_admin_dq_permission_count=$warehouse_count"
+          test "$system_admin_count" = "4"
+          test "$supervisor_count" = "8"
+          test "$recycle_count" = "2"
+          test "$warehouse_count" = "2"

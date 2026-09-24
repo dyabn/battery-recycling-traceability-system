@@ -2,7 +2,7 @@
 
 当前阶段：数据治理 V1.1 技术设计评审。
 
-当前状态：CR-DG-001 已复核通过，数据治理需求、测试和原型基线 V1.1 已确认。下一阶段进入数据治理 V1.1 技术设计评审；仍不得创建实现分支，不得编写生产代码。
+当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。数据治理 V1.1 技术设计已通过 OpenAPI 与 MySQL 8.4 验证；尚未创建实现分支，尚未编写生产代码。
 
 ## 当前来源
 
@@ -258,11 +258,65 @@
 | NFR-DG-004 | TC-DG-029 |
 | NFR-DG-005 | TC-DG-003、TC-DG-012、TC-DG-013、TC-DG-014、TC-DG-018、TC-DG-019、TC-DG-022、TC-DG-024、TC-DG-025、TC-DG-030、TC-DG-031 |
 
+## 数据治理 V1.1 技术设计追踪项
+
+当前技术设计状态：已确认。
+追踪链扩展为：`CR-DG -> UR-DG -> FR-DG -> AC-DG -> TC-DG -> UI-DG -> API-DG -> DB-DG -> MODULE`。
+
+| 编号 | 类型 | 来源 | 状态 |
+| --- | --- | --- | --- |
+| DG-TD-001 | 影响分析 | `docs/design/data-governance-v1.1-impact-analysis.md` | 已确认 |
+| DG-TD-002 | 总体设计 | `docs/design/data-governance-v1.1-overall-design.md` | 已确认 |
+| DG-TD-003 | 架构设计 | `docs/design/data-governance-v1.1-architecture-design.md` | 已确认 |
+| DG-TD-004 | 数据库设计 | `docs/database/data-governance-v1.1-database-design.md` | 已确认 |
+| DG-TD-005 | 数据字典 | `docs/database/data-governance-v1.1-data-dictionary.md` | 已确认 |
+| DG-TD-006 | 增量 SQL | `contracts/database/data-governance-v1.1-migration.sql` | 已确认 |
+| DG-TD-007 | API 设计 | `docs/api/data-governance-v1.1-api-design.md` | 已确认 |
+| DG-TD-008 | OpenAPI 契约 | `contracts/api/openapi-data-governance-v1.1.yaml` | 已确认 |
+| DG-TD-009 | 安全设计 | `docs/security/data-governance-v1.1-security-design.md` | 已确认 |
+| DG-TD-010 | 部署设计 | `docs/deployment/data-governance-v1.1-deployment-design.md` | 已确认 |
+| DG-TD-011 | 技术测试设计 | `docs/testing/data-governance-v1.1-technical-test-design.md` | 已确认 |
+| DG-TD-012 | 技术评审记录 | `docs/design/data-governance-v1.1-technical-review-record.md` | 已确认 |
+
+## 数据治理 V1.1 FR -> API -> DB -> MODULE 追踪摘要
+
+| FR | UI | API | DB | MODULE |
+| --- | --- | --- | --- | --- |
+| FR-DG-001 | UI-DG-001 | `GET /api/v1/data-quality/rules` | `dq_rule_definition`、`dq_enterprise_rule_config` | MOD-DQ-RULE |
+| FR-DG-002、FR-DG-003 | UI-DG-001 | `PATCH /api/v1/data-quality/rules/{ruleCode}/status` | `dq_enterprise_rule_config`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-RULE、MOD-DQ-AUDIT、MOD-IDEMPOTENCY |
+| FR-DG-004..006 | UI-DG-002、UI-DG-003 | `POST /api/v1/data-quality/check-runs`、`GET /api/v1/data-quality/check-runs/{runId}` | `dq_check_run`、`dq_check_result`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-CHECK |
+| FR-DG-007、FR-DG-008 | UI-DG-003、UI-DG-004 | `GET /api/v1/data-quality/check-runs/{runId}/results`、`GET /api/v1/data-quality/issues` | `dq_check_result`、`dq_issue` | MOD-DQ-CHECK、MOD-DQ-ISSUE |
+| FR-DG-009 | UI-DG-005 | `POST /api/v1/data-quality/issues/{issueId}/assign` | `dq_issue`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-ISSUE |
+| FR-DG-010、FR-DG-011 | UI-DG-005 | `POST /api/v1/data-quality/issues/{issueId}/start-processing` | `dq_issue`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-ISSUE |
+| FR-DG-012、FR-DG-013 | UI-DG-007 | `POST /api/v1/data-quality/issues/{issueId}/remediations` | `dq_remediation`、`business_attachment`、`dq_issue`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-REMEDIATION |
+| FR-DG-014..016 | UI-DG-005、UI-DG-007 | `POST /api/v1/data-quality/issues/{issueId}/rechecks` | `dq_recheck`、`dq_check_run`、`dq_check_result`、`dq_issue`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-RECHECK |
+| FR-DG-017 | UI-DG-008 | `GET /api/v1/data-quality/dashboard/summary` | `dq_enterprise_rule_config`、`dq_check_run`、`dq_issue` | MOD-DQ-DASHBOARD |
+| FR-DG-018 | UI-DG-001..008 | `GET /api/v1/data-quality/audit-logs`、全部写接口和拒绝路径 | `dq_operation_audit` | MOD-DQ-AUDIT |
+
+## 数据治理 V1.1 技术验证追踪
+
+| 技术验证 | 覆盖 |
+| --- | --- |
+| TD-DG-TC-001..007 | DQ-001..DQ-007 固定规则处理器 |
+| TD-DG-TC-008..012 | 规则、检查任务和失败处理 |
+| TD-DG-TC-013 | 未关闭问题唯一约束 |
+| TD-DG-TC-014..019 | 问题状态机 |
+| TD-DG-TC-020 | 最近 30 天看板 SQL |
+| TD-DG-TC-021 | 企业隔离 |
+| TD-DG-TC-022 | 失败状态不变 |
+| TD-DG-TC-023..024 | 幂等 |
+| TD-DG-TC-025 | 结构化审计 |
+| TD-DG-TC-026 | MySQL 8.4 增量 SQL 验证和 8 张治理表断言 |
+| TD-DG-TC-027 | OpenAPI 严格解析 |
+| TD-DG-TC-028 | 完整追踪矩阵 |
+| TD-DG-TC-029..036 | 整改证据、机器复核、只读系统管理员、稳定对象去重、失败回滚和企业默认规则配置 |
+| TD-DG-TC-037..042 | 治理审计查询、规则元数据完整性、复核状态约束、迁移幂等和权限角色初始化 |
+
 ## 数据治理开放问题追踪
 
 | 问题 | 影响范围 | 当前处理 |
 | --- | --- | --- |
-| DG-Q-001 | 质量规则配置权限 | 已解决：系统管理员可启停固定规则，不能修改算法或脚本，启停需原因和审计。 |
+| DG-Q-001 | 质量规则配置权限 | 已解决：V1.1 固定规则默认启用；系统管理员只读查看规则、问题、看板和审计，不执行规则配置、整改或复核。 |
 | DG-Q-002 | 质量问题责任人 | 已解决：业务主管分配和复核，回收操作员和仓库管理员处理各自问题。 |
 | DG-Q-003 | 检查触发方式 | 已解决：V1.1 只支持手工质量检查。 |
 | DG-Q-004 | 第一版规则范围 | 已解决：DQ-001..DQ-007 纳入，DQ-008 延期。 |

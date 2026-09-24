@@ -5,11 +5,11 @@ project:
   architecture: frontend-backend-separated-monolith
 
 lifecycle:
-  current_stage: system-design
-  current_gate: V1.1技术设计评审
-  completed_gate: V1.1变更评审
-  last_completed_stage: prototype-and-requirements
-  baseline_version: V1.0
+  current_stage: implementation-and-test
+  current_gate: 测试通过
+  completed_gate: V1.1技术设计评审
+  last_completed_stage: system-design
+  baseline_version: V1.1
   status: in-progress
 
 confirmed:
@@ -171,6 +171,37 @@ baselines:
       - 完成 Redocly OpenAPI 严格解析
       - 完成 GitHub Actions MySQL 8.4 实际建表验证并校验 21 张表
       - 尚未创建正式前后端工程，尚未编写生产业务代码
+  data_governance_v1_1_system_design:
+    name: 数据治理 V1.1 技术设计基线
+    version: V1.1
+    status: confirmed
+    confirmed_date: 2026-09-24
+    review_result: 复核通过
+    scope: 数据治理 V1.1 增量技术设计
+    documents:
+      impact_analysis: docs/design/data-governance-v1.1-impact-analysis.md
+      overall_design: docs/design/data-governance-v1.1-overall-design.md
+      architecture_design: docs/design/data-governance-v1.1-architecture-design.md
+      database_design: docs/database/data-governance-v1.1-database-design.md
+      data_dictionary: docs/database/data-governance-v1.1-data-dictionary.md
+      api_design: docs/api/data-governance-v1.1-api-design.md
+      security_design: docs/security/data-governance-v1.1-security-design.md
+      deployment_design: docs/deployment/data-governance-v1.1-deployment-design.md
+      technical_test_design: docs/testing/data-governance-v1.1-technical-test-design.md
+      technical_review_record: docs/design/data-governance-v1.1-technical-review-record.md
+    contracts:
+      openapi: contracts/api/openapi-data-governance-v1.1.yaml
+      migration_sql: contracts/database/data-governance-v1.1-migration.sql
+      contract_validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35962853054
+      mysql8_validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35962852976
+    summary:
+      - 完成 8 张数据治理表增量设计
+      - 完成 13 个数据治理 API 路径、13 个唯一 operationId 和 21 个 Schema
+      - 完成 10 个数据治理权限编码和 4 类角色映射设计
+      - 完成 42 个技术验证用例
+      - 完成 OpenAPI Redocly 严格解析
+      - 完成 GitHub Actions MySQL 8.4 增量迁移验证
+      - 尚未创建实现分支，尚未编写生产业务代码
 
 constraints:
   minimum_documents: 12
@@ -181,21 +212,20 @@ constraints:
   no_code_before_required_gates: true
 
 next_stage:
-  stage: prototype-and-requirements
-  gate: V1.1变更评审
-  name: 数据治理变更需求与原型
+  stage: implementation-and-test
+  gate: 测试通过
+  name: 数据治理 V1.1 实现与测试
   candidate_slice: recycle-acceptance-inbound-inventory
   focus:
-    - CR-DG-001 变更评审
-    - 数据治理需求 V1.1
-    - 数据治理低保真原型
-    - 数据治理验收标准和测试设计
-    - V1.1 技术设计影响分析
+    - 创建独立实现分支
+    - 初始化正式工程或模块骨架
+    - 按 V1.1 技术设计实现数据治理增量
+    - 执行单元测试、接口测试和数据库迁移验证
+    - 保持 BSR/UR/FR/AC/TC/UI/API/DB/MODULE/CODE 追踪
   prohibited_until_later_gates:
-    - CR-DG-001 未评审通过前不得冻结数据治理需求
-    - 数据治理需求和原型未评审通过前不得更新 V1.1 技术设计为 confirmed
-    - V1.1 技术设计未评审通过前不得创建正式实现分支
-    - V1.1 技术设计未评审通过前不得编写正式生产业务代码
+    - 实现代码未通过测试前不得合并到 main
+    - 数据库迁移未通过 MySQL 8.4 验证前不得作为正式迁移发布
+    - 未完成测试与追踪更新前不得关闭实现关口
 
 data_governance_change:
   id: CR-DG-001
@@ -203,6 +233,7 @@ data_governance_change:
   baseline_target: V1.1
   document: docs/change/CR-DG-001-data-governance-change-request.md
   branch: feature/data-governance-v1-1-design
+  technical_design_branch: feature/data-governance-v1-1-technical-design
   requested_date: 2026-09-22
   review_result: 复核通过
   approved_baseline: V1.1
@@ -242,10 +273,10 @@ data_governance_change:
     version: V1.1
     status: confirmed
     review_result: 复核通过
-    technical_design_v1_1_started: false
+    technical_design_v1_1_started: true
     implementation_branch_created: false
   resolved_questions:
-    DG-Q-001: 系统管理员可以查看、启用和停用固定规则；不能修改规则算法或编写脚本；启停必须填写原因并审计。
+    DG-Q-001: V1.1 固定规则默认启用；系统管理员只读查看规则、问题、看板和审计，不执行规则配置、整改或复核。
     DG-Q-002: 业务主管分配问题；回收操作员和仓库管理员处理各自业务问题；业务主管重新检查并关闭；处理人不能自行关闭严重问题。
     DG-Q-003: V1.1 只支持手工发起质量检查；原业务实时校验继续保留，但不作为治理检查任务。
     DG-Q-004: DQ-001 至 DQ-007 进入第一版；DQ-008 临时附件规则延期。
@@ -258,6 +289,61 @@ data_governance_change:
     - 原型列表、结果、详情、审计和看板按企业隔离
     - NFR 追踪矩阵已补充
     - REVIEW-DG-001..014 实际评审记录已补充
+
+technical_design_v1_1:
+  status: completed
+  lifecycle_stage: system-design
+  review_gate: V1.1技术设计评审
+  review_result: 复核通过
+  baseline_target: V1.1
+  implementation_branch_created: false
+  confirmed_date: 2026-09-24
+  scope: 数据治理 V1.1 增量技术设计
+  outputs:
+    impact_analysis: docs/design/data-governance-v1.1-impact-analysis.md
+    overall_design: docs/design/data-governance-v1.1-overall-design.md
+    architecture_design: docs/design/data-governance-v1.1-architecture-design.md
+    database_design: docs/database/data-governance-v1.1-database-design.md
+    data_dictionary: docs/database/data-governance-v1.1-data-dictionary.md
+    migration_sql: contracts/database/data-governance-v1.1-migration.sql
+    api_design: docs/api/data-governance-v1.1-api-design.md
+    openapi_contract: contracts/api/openapi-data-governance-v1.1.yaml
+    security_design: docs/security/data-governance-v1.1-security-design.md
+    deployment_design: docs/deployment/data-governance-v1.1-deployment-design.md
+    technical_test_design: docs/testing/data-governance-v1.1-technical-test-design.md
+    technical_review_record: docs/design/data-governance-v1.1-technical-review-record.md
+    mysql8_validation_workflow: .github/workflows/data-governance-v1.1-mysql8-validation.yml
+    contract_validation_workflow: .github/workflows/data-governance-v1.1-contract-validation.yml
+    review_package: data-governance-v1.1-technical-design-review.zip
+  design_decisions:
+    - 固定规则处理器 DQ-001..DQ-007 对齐 V1.0 SQL 和数据字典
+    - 新增 8 张数据治理表
+    - 新增 13 个数据治理 API 路径
+    - 新增 10 个数据治理权限编码
+    - 写接口必须携带 Idempotency-Key
+    - 规则启停、检查、问题、详情、审计和看板全部按企业隔离
+    - DQ-001 全系统唯一检查不泄露其他企业对象明细
+    - V1.1 不实现豁免流程
+    - 数据治理不得直接覆盖 V1.0 已生效业务数据
+    - 治理审计使用 dq_operation_audit 保存结构化审计
+    - 复核结果由后端同规则同对象机器检查产生，客户端不得声明通过
+    - 整改必须存在附件证据或修正对象引用
+  pending_items: []
+  validation_results:
+    local_openapi_text_check: passed
+    local_sql_text_check: passed
+    git_diff_check: passed
+    yaml_parse: passed
+    openapi_redocly: passed
+    mysql8_increment_validation: passed
+    contract_validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35962853054
+    mysql8_validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35962852976
+    latest_validated_commit: 235d9ebaf7f9f6aa62be5a39442272bf3b3bcf5b
+    path_count: 13
+    operation_count: 13
+    schema_count: 21
+    governance_table_count: 8
+    technical_test_count: 42
 
 technical_design_progress:
   status: completed
