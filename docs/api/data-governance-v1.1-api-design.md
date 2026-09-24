@@ -27,6 +27,7 @@
 | `dq:issue:process` | 开始处理和提交处理。 |
 | `dq:issue:recheck` | 发起后端机器重新检查并关闭或退回问题。 |
 | `dq:dashboard:read` | 查看质量看板。 |
+| `dq:audit:read` | 查看治理审计。 |
 
 ## 3. API 清单
 
@@ -44,6 +45,7 @@
 | `/issues/{issueId}/remediations` | POST | `dq:issue:process` | 是 | 提交处理说明，且必须提供附件证据或更正对象引用。 |
 | `/issues/{issueId}/rechecks` | POST | `dq:issue:recheck` | 是 | 后端使用原规则、原对象执行机器复核，并关闭或退回问题。 |
 | `/dashboard/summary` | GET | `dq:dashboard:read` | 否 | 查询最近 30 天看板汇总。 |
+| `/audit-logs` | GET | `dq:audit:read` | 否 | 查询当前企业治理审计。 |
 
 ## 4. 状态与错误
 
@@ -79,9 +81,11 @@
 2. 校验问题已有整改说明，且存在绑定附件证据或修正对象引用。
 3. 使用原问题的 `rule_code`、`object_type` 和 `object_identity` 执行同一规则检查。
 4. 生成 `dq_check_run` 和 `dq_check_result`。
-5. 机器检查通过时写入 `dq_recheck.result=PASSED` 并关闭问题。
-6. 机器检查未通过时写入 `dq_recheck.result=FAILED` 并将问题退回 `REJECTED`。
+5. 机器检查通过时写入 `dq_recheck.recheck_status=PASSED`、`dq_recheck.result=PASSED` 并关闭问题。
+6. 机器检查未通过时写入 `dq_recheck.recheck_status=FAILED`、`dq_recheck.result=FAILED`、`result_reason` 并将问题退回 `REJECTED`。
 7. 问题状态、复核记录、检查结果和 `dq_operation_audit` 在同一事务中保存。
+
+同步接口返回的 `RecheckResponse.result` 必填，`recheckStatus` 只能返回 `PASSED` 或 `FAILED`；`RUNNING` 仅作为数据库执行过程中的中间状态，不暴露为成功响应。
 
 ## 7. 整改证据约束
 
@@ -92,7 +96,28 @@
 
 只填写说明、只填更正对象类型或只填更正对象 ID 均返回 400，问题状态保持不变并记录治理审计。
 
-## 8. 技术追踪
+## 8. 规则元数据返回
+
+`GET /rules` 和规则状态更新后的 `RuleResponse` 必须返回完整规则元数据，至少包括：
+
+- `dataStandardMetadata`
+- `involvedFields`
+- `checkCondition`
+- `remediationGuidance`
+
+上述字段由 `dq_rule_definition` 提供，只读展示，不提供在线编辑接口。
+
+## 9. 治理审计查询
+
+`GET /audit-logs` 查询 `dq_operation_audit`，企业 ID 只能来自登录上下文，不接受请求参数传入。接口支持分页，并支持按 `actionCode`、`objectType`、`result`、`operatedFrom` 和 `operatedTo` 过滤。
+
+权限要求：
+
+- 系统管理员和业务主管允许查询本企业治理审计。
+- 回收操作员、仓库管理员和无权限用户返回 403。
+- 跨企业按 ID 或条件访问返回 403，并记录拒绝审计。
+
+## 10. 技术追踪
 
 | FR | API |
 | --- | --- |
@@ -105,8 +130,8 @@
 | FR-DG-012、013 | POST `/issues/{issueId}/remediations` |
 | FR-DG-014、015、016 | POST `/issues/{issueId}/rechecks` |
 | FR-DG-017 | GET `/dashboard/summary` |
-| FR-DG-018 | 全部写接口和拒绝场景 |
+| FR-DG-018 | GET `/audit-logs`，全部写接口和拒绝场景 |
 
-## 9. 当前结论
+## 11. 当前结论
 
 API 设计待评审。评审通过前不生成正式后端代码。

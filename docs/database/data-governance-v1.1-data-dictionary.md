@@ -156,6 +156,13 @@
 | created_at | DATETIME(3) | NOT NULL | 创建时间。 |
 | version | INT | NOT NULL | 乐观锁版本。 |
 
+约束：
+
+- `RUNNING` 状态下 `result`、`completed_by`、`completed_at` 必须为空。
+- `PASSED` 状态下 `result` 必须为 `PASSED`，且 `completed_by`、`completed_at` 必须存在。
+- `FAILED` 状态下 `result` 必须为 `FAILED`，且 `completed_by`、`completed_at`、`result_reason` 必须存在。
+- 同步复核 API 成功响应只返回最终 `PASSED` 或 `FAILED`，不返回 `RUNNING`。
+
 ## dq_operation_audit
 
 | 字段 | 类型 | 约束 | 说明 |

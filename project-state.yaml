@@ -292,8 +292,8 @@ technical_design_v1_1:
   design_decisions:
     - 固定规则处理器 DQ-001..DQ-007 对齐 V1.0 SQL 和数据字典
     - 新增 8 张数据治理表
-    - 新增 12 个数据治理 API 路径
-    - 新增 9 个数据治理权限编码
+    - 新增 13 个数据治理 API 路径
+    - 新增 10 个数据治理权限编码
     - 写接口必须携带 Idempotency-Key
     - 规则启停、检查、问题、详情、审计和看板全部按企业隔离
     - DQ-001 全系统唯一检查不泄露其他企业对象明细
@@ -307,20 +307,20 @@ technical_design_v1_1:
     - SQL 与数据字典一致性复核
     - 技术追踪矩阵复核
   validation_results:
-    local_openapi_text_check: passed
-    local_sql_text_check: passed
-    git_diff_check: passed
-    yaml_parse: passed
-    openapi_redocly: passed
-    mysql8_increment_validation: passed
-    contract_validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35870814662
-    mysql8_validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/35870814631
-    latest_validated_commit: f2db50ab3ebd7dda79dd2a2eb657f9462972bc43
-    path_count: 12
-    operation_count: 12
-    schema_count: 19
+    local_openapi_text_check: pending-rerun
+    local_sql_text_check: pending-rerun
+    git_diff_check: pending-rerun
+    yaml_parse: pending-rerun
+    openapi_redocly: pending-rerun
+    mysql8_increment_validation: pending-rerun
+    contract_validation_run: pending-rerun
+    mysql8_validation_run: pending-rerun
+    latest_validated_commit: pending-rerun
+    path_count: 13
+    operation_count: 13
+    schema_count: 21
     governance_table_count: 8
-    technical_test_count: 36
+    technical_test_count: 42
 
 technical_design_progress:
   status: completed

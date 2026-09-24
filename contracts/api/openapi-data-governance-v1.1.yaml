@@ -18,6 +18,8 @@ tags:
     description: Quality issue workflow, remediation, and recheck APIs.
   - name: DataQualityDashboard
     description: Current-enterprise data quality dashboard APIs.
+  - name: DataQualityAudit
+    description: Current-enterprise data governance audit query APIs.
 paths:
   /data-quality/rules:
     get:
@@ -371,6 +373,73 @@ paths:
         ui: [UI-DG-008]
         db: [dq_enterprise_rule_config, dq_check_run, dq_issue]
         module: MOD-DQ-DASHBOARD
+  /data-quality/audit-logs:
+    get:
+      tags: [DataQualityAudit]
+      operationId: listDataQualityAuditLogs
+      summary: List current-enterprise data governance audit logs.
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: actionCode
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: objectType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: result
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [SUCCESS, FAILED, FORBIDDEN, CONFLICT]
+        - name: operatedFrom
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: operatedTo
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceAuditLogListResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+      x-traceability:
+        permission: dq:audit:read
+        fr: [FR-DG-018]
+        ac: [AC-DG-016]
+        tc: [TC-DG-023, TC-DG-024, TC-DG-025, TC-DG-037, TC-DG-038]
+        ui: [UI-DG-008]
+        db: [dq_operation_audit]
+        module: MOD-DQ-AUDIT
 components:
   securitySchemes:
     BearerAuth:
@@ -466,7 +535,7 @@ components:
       enum: [OPEN, ASSIGNED, PROCESSING, SUBMITTED, RECHECKING, REJECTED, CLOSED]
     Rule:
       type: object
-      required: [ruleCode, ruleName, dimension, objectType, handlerCode, severity, defaultOwnerRoleCode, allowExemption, enabledStatus]
+      required: [ruleCode, ruleName, dimension, objectType, handlerCode, severity, defaultOwnerRoleCode, dataStandardMetadata, involvedFields, checkCondition, remediationGuidance, allowExemption, enabledStatus]
       properties:
         ruleCode: { type: string }
         ruleName: { type: string }
@@ -616,15 +685,42 @@ components:
         correctionObjectId: { type: integer, format: int64 }
     RecheckResponse:
       type: object
-      required: [id, issueId, recheckStatus, linkedCheckRunId, linkedCheckResultId]
+      required: [id, issueId, recheckStatus, linkedCheckRunId, linkedCheckResultId, result]
       properties:
         id: { type: integer, format: int64 }
         issueId: { type: integer, format: int64 }
-        recheckStatus: { type: string, enum: [RUNNING, PASSED, FAILED] }
+        recheckStatus: { type: string, enum: [PASSED, FAILED] }
         linkedCheckRunId: { type: integer, format: int64 }
         linkedCheckResultId: { type: integer, format: int64 }
         result: { type: string, enum: [PASSED, FAILED] }
         resultReason: { type: string }
+    GovernanceAuditLog:
+      type: object
+      required: [id, actionCode, objectType, result, operatedAt]
+      properties:
+        id: { type: integer, format: int64 }
+        actionCode: { type: string }
+        objectType: { type: string }
+        objectId: { type: integer, format: int64 }
+        beforeState: { type: string }
+        afterState: { type: string }
+        result: { type: string, enum: [SUCCESS, FAILED, FORBIDDEN, CONFLICT] }
+        reason: { type: string }
+        operatedBy: { type: integer, format: int64 }
+        operatedAt: { type: string, format: date-time }
+        traceId: { type: string }
+        idempotencyKeyHash: { type: string }
+    GovernanceAuditLogListResponse:
+      type: object
+      required: [items, page, size, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernanceAuditLog'
+        page: { type: integer }
+        size: { type: integer }
+        total: { type: integer }
     DashboardSummaryResponse:
       type: object
       required: [enabledRuleCount, completedCheckRunCount, issueCount, openIssueCount, closeRate, days]

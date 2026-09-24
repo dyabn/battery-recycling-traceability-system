@@ -291,7 +291,7 @@
 | FR-DG-012、FR-DG-013 | UI-DG-007 | `POST /api/v1/data-quality/issues/{issueId}/remediations` | `dq_remediation`、`business_attachment`、`dq_issue`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-REMEDIATION |
 | FR-DG-014..016 | UI-DG-005、UI-DG-007 | `POST /api/v1/data-quality/issues/{issueId}/rechecks` | `dq_recheck`、`dq_check_run`、`dq_check_result`、`dq_issue`、`dq_operation_audit`、`idempotency_record` | MOD-DQ-RECHECK |
 | FR-DG-017 | UI-DG-008 | `GET /api/v1/data-quality/dashboard/summary` | `dq_enterprise_rule_config`、`dq_check_run`、`dq_issue` | MOD-DQ-DASHBOARD |
-| FR-DG-018 | UI-DG-001..008 | 全部写接口和拒绝路径 | `dq_operation_audit` | MOD-DQ-AUDIT |
+| FR-DG-018 | UI-DG-001..008 | `GET /api/v1/data-quality/audit-logs`、全部写接口和拒绝路径 | `dq_operation_audit` | MOD-DQ-AUDIT |
 
 ## 数据治理 V1.1 技术验证追踪
 
@@ -310,6 +310,7 @@
 | TD-DG-TC-027 | OpenAPI 严格解析 |
 | TD-DG-TC-028 | 完整追踪矩阵 |
 | TD-DG-TC-029..036 | 整改证据、机器复核、只读系统管理员、稳定对象去重、失败回滚和企业默认规则配置 |
+| TD-DG-TC-037..042 | 治理审计查询、规则元数据完整性、复核状态约束、迁移幂等和权限角色初始化 |
 
 ## 数据治理开放问题追踪
 

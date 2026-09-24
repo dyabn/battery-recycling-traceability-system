@@ -13,7 +13,7 @@
 | MOD-DQ-REMEDIATION | 处理说明、附件、业务更正引用和证据校验。 | MOD-ATTACHMENT、MOD-DQ-AUDIT |
 | MOD-DQ-RECHECK | 重新检查、关闭或退回问题。 | MOD-DQ-CHECK、MOD-DQ-ISSUE |
 | MOD-DQ-DASHBOARD | 最近 30 天质量状态汇总。 | MOD-DQ-CHECK、MOD-DQ-ISSUE |
-| MOD-DQ-AUDIT | 数据治理结构化审计。 | MOD-AUTH |
+| MOD-DQ-AUDIT | 数据治理结构化审计写入和本企业审计查询。 | MOD-AUTH |
 
 ## 2. 固定规则执行器
 
@@ -71,6 +71,8 @@
 - 原因或拒绝原因。
 
 数据治理使用 `dq_operation_audit` 保存结构化审计，字段包括 `action_code`、`object_type`、`object_id`、`before_state`、`after_state`、`result`、`reason`、`operated_by`、`operated_at`、`trace_id` 和 `idempotency_key_hash`；不得省略拒绝审计。
+
+`GET /api/v1/data-quality/audit-logs` 只查询当前登录企业的 `dq_operation_audit`，支持分页和动作、对象类型、结果、时间范围过滤；系统管理员和业务主管允许访问，普通业务角色和跨企业访问返回 403 并记录拒绝审计。
 
 ## 6. 机器复核闭环
 

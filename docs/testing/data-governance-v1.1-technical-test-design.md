@@ -47,16 +47,22 @@
 | TD-DG-TC-034 | FR-DG-008、016 | DB | 问题关闭后同一对象再次违规。 | 已关闭问题不参与未关闭唯一键，可创建新问题。 |
 | TD-DG-TC-035 | FR-DG-006 | 事务 | 检查中途失败。 | 回滚本轮检查结果和质量问题，仅保留失败运行和审计。 |
 | TD-DG-TC-036 | FR-DG-001 | DB | 新企业默认规则配置。 | 企业获得 DQ-001..DQ-007 共 7 条启用配置，缺失配置视为初始化异常。 |
+| TD-DG-TC-037 | FR-DG-018 | API/权限 | 系统管理员和业务主管查询本企业治理审计。 | `GET /data-quality/audit-logs` 返回本企业 `dq_operation_audit`，支持分页和过滤。 |
+| TD-DG-TC-038 | FR-DG-018、NFR-DG-003 | API/权限 | 普通操作员、无权限用户和跨企业访问治理审计。 | 返回 403，跨企业拒绝写入治理审计，不能泄露其他企业审计记录。 |
+| TD-DG-TC-039 | FR-DG-001 | OpenAPI/API | `Rule` 响应完整规则元数据。 | `dataStandardMetadata`、`involvedFields`、`checkCondition`、`remediationGuidance` 均为必填返回字段。 |
+| TD-DG-TC-040 | FR-DG-014..016 | DB | 非法复核状态与结果组合。 | MySQL CHECK 拒绝 `PASSED` 但 `result/completed_by/completed_at` 为空等非法组合。 |
+| TD-DG-TC-041 | FR-DG-003 | DB/迁移 | 重复执行迁移不覆盖企业规则配置。 | 企业已停用的 DQ-002 在再次执行 V1.1 迁移后仍保持 `DISABLED`。 |
+| TD-DG-TC-042 | NFR-DG-003 | DB/权限 | 10 个权限编码及角色映射初始化。 | 权限可重复初始化且不重复；系统管理员只读，业务主管可检查分配复核看板审计，操作员和仓管仅本人相关问题读取处理；`dq:rule:toggle` 不分配。 |
 
 ## 3. NFR 技术验证
 
 | NFR | 技术验证 |
 | --- | --- |
-| NFR-DG-001 | TD-DG-TC-015、TD-DG-TC-025、TD-DG-TC-029 |
-| NFR-DG-002 | TD-DG-TC-014..019、TD-DG-TC-025、TD-DG-TC-031 |
-| NFR-DG-003 | TD-DG-TC-009、TD-DG-TC-016、TD-DG-TC-021、TD-DG-TC-032 |
+| NFR-DG-001 | TD-DG-TC-015、TD-DG-TC-025、TD-DG-TC-029、TD-DG-TC-037、TD-DG-TC-038 |
+| NFR-DG-002 | TD-DG-TC-014..019、TD-DG-TC-025、TD-DG-TC-031、TD-DG-TC-040 |
+| NFR-DG-003 | TD-DG-TC-009、TD-DG-TC-016、TD-DG-TC-021、TD-DG-TC-032、TD-DG-TC-037、TD-DG-TC-038、TD-DG-TC-042 |
 | NFR-DG-004 | TD-DG-TC-010 |
-| NFR-DG-005 | TD-DG-TC-011、TD-DG-TC-012、TD-DG-TC-020、TD-DG-TC-022、TD-DG-TC-033、TD-DG-TC-034、TD-DG-TC-035、TD-DG-TC-036 |
+| NFR-DG-005 | TD-DG-TC-011、TD-DG-TC-012、TD-DG-TC-020、TD-DG-TC-022、TD-DG-TC-033、TD-DG-TC-034、TD-DG-TC-035、TD-DG-TC-036、TD-DG-TC-039、TD-DG-TC-041 |
 
 ## 4. 自动检查要求
 

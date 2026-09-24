@@ -199,7 +199,30 @@ CREATE TABLE IF NOT EXISTS dq_recheck (
   CONSTRAINT fk_dq_recheck_started_by FOREIGN KEY (started_by) REFERENCES sys_user(id),
   CONSTRAINT fk_dq_recheck_completed_by FOREIGN KEY (completed_by) REFERENCES sys_user(id),
   CONSTRAINT ck_dq_recheck_status CHECK (recheck_status IN ('RUNNING', 'PASSED', 'FAILED')),
-  CONSTRAINT ck_dq_recheck_result CHECK (result IS NULL OR result IN ('PASSED', 'FAILED'))
+  CONSTRAINT ck_dq_recheck_result CHECK (result IS NULL OR result IN ('PASSED', 'FAILED')),
+  CONSTRAINT ck_dq_recheck_completion CHECK (
+    (
+      recheck_status = 'RUNNING'
+      AND result IS NULL
+      AND completed_by IS NULL
+      AND completed_at IS NULL
+    )
+    OR
+    (
+      recheck_status = 'PASSED'
+      AND result = 'PASSED'
+      AND completed_by IS NOT NULL
+      AND completed_at IS NOT NULL
+    )
+    OR
+    (
+      recheck_status = 'FAILED'
+      AND result = 'FAILED'
+      AND completed_by IS NOT NULL
+      AND completed_at IS NOT NULL
+      AND result_reason IS NOT NULL
+    )
+  )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS dq_operation_audit (
@@ -276,5 +299,52 @@ FROM enterprise e
 CROSS JOIN dq_rule_definition r
 WHERE r.rule_code IN ('DQ-001', 'DQ-002', 'DQ-003', 'DQ-004', 'DQ-005', 'DQ-006', 'DQ-007')
 ON DUPLICATE KEY UPDATE
-  enabled_status = VALUES(enabled_status),
+  enabled_status = enabled_status,
+  updated_at = updated_at;
+
+INSERT INTO sys_permission (id, permission_code, permission_name, created_at, updated_at)
+VALUES
+(9201, 'dq:rule:read', '数据治理规则查看', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)),
+(9202, 'dq:rule:toggle', '数据治理规则启停', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)),
+(9203, 'dq:check:execute', '数据质量检查执行', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)),
+(9204, 'dq:check:read', '数据质量检查查看', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)),
+(9205, 'dq:issue:read', '数据质量问题查看', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)),
+(9206, 'dq:issue:assign', '数据质量问题分配', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)),
+(9207, 'dq:issue:process', '数据质量问题处理', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)),
+(9208, 'dq:issue:recheck', '数据质量问题复核', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)),
+(9209, 'dq:dashboard:read', '数据质量看板查看', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)),
+(9210, 'dq:audit:read', '数据治理审计查看', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
+ON DUPLICATE KEY UPDATE
+  permission_name = VALUES(permission_name),
   updated_at = VALUES(updated_at);
+
+INSERT INTO sys_role (id, role_code, role_name, created_at, updated_at)
+VALUES
+(9101, 'SYSTEM_ADMIN', '系统管理员', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)),
+(9102, 'BUSINESS_SUPERVISOR', '业务主管', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)),
+(9103, 'RECYCLE_OPERATOR', '回收操作员', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)),
+(9104, 'WAREHOUSE_ADMIN', '仓库管理员', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
+ON DUPLICATE KEY UPDATE
+  role_name = VALUES(role_name),
+  updated_at = VALUES(updated_at);
+
+INSERT INTO sys_role_permission (id, role_id, permission_id, created_at)
+VALUES
+(9301, (SELECT id FROM sys_role WHERE role_code = 'SYSTEM_ADMIN'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:rule:read'), CURRENT_TIMESTAMP(3)),
+(9302, (SELECT id FROM sys_role WHERE role_code = 'SYSTEM_ADMIN'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:issue:read'), CURRENT_TIMESTAMP(3)),
+(9303, (SELECT id FROM sys_role WHERE role_code = 'SYSTEM_ADMIN'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:dashboard:read'), CURRENT_TIMESTAMP(3)),
+(9304, (SELECT id FROM sys_role WHERE role_code = 'SYSTEM_ADMIN'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:audit:read'), CURRENT_TIMESTAMP(3)),
+(9311, (SELECT id FROM sys_role WHERE role_code = 'BUSINESS_SUPERVISOR'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:rule:read'), CURRENT_TIMESTAMP(3)),
+(9312, (SELECT id FROM sys_role WHERE role_code = 'BUSINESS_SUPERVISOR'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:check:execute'), CURRENT_TIMESTAMP(3)),
+(9313, (SELECT id FROM sys_role WHERE role_code = 'BUSINESS_SUPERVISOR'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:check:read'), CURRENT_TIMESTAMP(3)),
+(9314, (SELECT id FROM sys_role WHERE role_code = 'BUSINESS_SUPERVISOR'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:issue:read'), CURRENT_TIMESTAMP(3)),
+(9315, (SELECT id FROM sys_role WHERE role_code = 'BUSINESS_SUPERVISOR'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:issue:assign'), CURRENT_TIMESTAMP(3)),
+(9316, (SELECT id FROM sys_role WHERE role_code = 'BUSINESS_SUPERVISOR'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:issue:recheck'), CURRENT_TIMESTAMP(3)),
+(9317, (SELECT id FROM sys_role WHERE role_code = 'BUSINESS_SUPERVISOR'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:dashboard:read'), CURRENT_TIMESTAMP(3)),
+(9318, (SELECT id FROM sys_role WHERE role_code = 'BUSINESS_SUPERVISOR'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:audit:read'), CURRENT_TIMESTAMP(3)),
+(9321, (SELECT id FROM sys_role WHERE role_code = 'RECYCLE_OPERATOR'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:issue:read'), CURRENT_TIMESTAMP(3)),
+(9322, (SELECT id FROM sys_role WHERE role_code = 'RECYCLE_OPERATOR'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:issue:process'), CURRENT_TIMESTAMP(3)),
+(9331, (SELECT id FROM sys_role WHERE role_code = 'WAREHOUSE_ADMIN'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:issue:read'), CURRENT_TIMESTAMP(3)),
+(9332, (SELECT id FROM sys_role WHERE role_code = 'WAREHOUSE_ADMIN'), (SELECT id FROM sys_permission WHERE permission_code = 'dq:issue:process'), CURRENT_TIMESTAMP(3))
+ON DUPLICATE KEY UPDATE
+  created_at = created_at;

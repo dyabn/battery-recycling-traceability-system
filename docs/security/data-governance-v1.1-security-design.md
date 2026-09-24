@@ -34,7 +34,20 @@
 | `dq:dashboard:read` | 查看看板。 |
 | `dq:audit:read` | 查看治理审计。 |
 
-## 3. 企业隔离
+权限由 V1.1 增量迁移 SQL 初始化，必须可重复执行且不能产生重复权限。10 个权限编码均写入 `sys_permission`，其中 `dq:rule:toggle` 在 V1.1 不分配给任何角色，只保留为后续受控启停能力的权限占位。
+
+## 3. 角色授权落地
+
+| 角色 | V1.1 授权 |
+| --- | --- |
+| 系统管理员 | `dq:rule:read`、`dq:issue:read`、`dq:dashboard:read`、`dq:audit:read` |
+| 业务主管 | `dq:rule:read`、`dq:check:execute`、`dq:check:read`、`dq:issue:read`、`dq:issue:assign`、`dq:issue:recheck`、`dq:dashboard:read`、`dq:audit:read` |
+| 回收操作员 | `dq:issue:read`、`dq:issue:process`，且只能访问本人相关问题 |
+| 仓库管理员 | `dq:issue:read`、`dq:issue:process`，且只能访问本人相关问题 |
+
+业务主管承担检查、分配、复核、看板和治理审计职责；系统管理员只读治理结果和审计，不代替业务角色处理数据质量问题。
+
+## 4. 企业隔离
 
 - 所有查询由登录上下文注入 `enterprise_id`。
 - 禁止客户端提交 `enterprise_id`。
@@ -42,7 +55,7 @@
 - 跨企业拒绝必须写审计，审计原因使用 `CROSS_ENTERPRISE_ACCESS_DENIED`。
 - DQ-001 全系统唯一检查不得泄露其他企业电池明细。
 
-## 4. 幂等安全
+## 5. 幂等安全
 
 所有写接口强制 `Idempotency-Key`：
 
@@ -51,7 +64,7 @@
 - 成功写入和幂等成功状态同事务提交。
 - 业务失败回滚主事务，再独立记录失败幂等和拒绝审计。
 
-## 5. 审计安全
+## 6. 审计安全
 
 审计使用 `dq_operation_audit` 记录数据治理结构化操作；V1.0 `audit_log` 继续保留为通用审计。审计范围：
 
@@ -73,7 +86,7 @@
 - `trace_id`。
 - 幂等键摘要。
 
-## 6. 规则保护
+## 7. 规则保护
 
 V1.1 不提供以下能力：
 
@@ -85,6 +98,6 @@ V1.1 不提供以下能力：
 
 系统管理员只能查看规则、质量问题、质量看板和治理审计；不得启停规则、发起检查、分配问题、提交整改或执行复核。业务主管负责治理业务动作。
 
-## 7. 当前结论
+## 8. 当前结论
 
 安全设计待评审。评审通过前不得开放生产实现。

@@ -105,3 +105,41 @@ jobs:
             echo "recheck_column_${column}=$count"
             test "$count" = "1"
           done
+      - name: Verify recheck completion constraints
+        run: |
+          set +e
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability -e "INSERT INTO dq_recheck (enterprise_id, issue_id, recheck_status, linked_check_run_id, linked_check_result_id, started_by) VALUES (9001, (SELECT id FROM dq_issue WHERE issue_no='ISS-ASSERT-002'), 'PASSED', (SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001'), (SELECT id FROM dq_check_result WHERE run_id=(SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001') AND rule_code='DQ-002'), 9001);"
+          passed_without_completion_rc=$?
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability -e "INSERT INTO dq_recheck (enterprise_id, issue_id, recheck_status, linked_check_run_id, linked_check_result_id, started_by, completed_by, completed_at, result) VALUES (9001, (SELECT id FROM dq_issue WHERE issue_no='ISS-ASSERT-002'), 'FAILED', (SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001'), (SELECT id FROM dq_check_result WHERE run_id=(SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001') AND rule_code='DQ-002'), 9001, 9001, CURRENT_TIMESTAMP(3), 'FAILED');"
+          failed_without_reason_rc=$?
+          set -e
+          test "$passed_without_completion_rc" != "0"
+          test "$failed_without_reason_rc" != "0"
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability -e "INSERT INTO dq_recheck (enterprise_id, issue_id, recheck_status, linked_check_run_id, linked_check_result_id, started_by, completed_by, completed_at, result) VALUES (9001, (SELECT id FROM dq_issue WHERE issue_no='ISS-ASSERT-002'), 'PASSED', (SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001'), (SELECT id FROM dq_check_result WHERE run_id=(SELECT id FROM dq_check_run WHERE run_no='RUN-ASSERT-001') AND rule_code='DQ-002'), 9001, 9001, CURRENT_TIMESTAMP(3), 'PASSED');"
+      - name: Verify idempotent migration preserves rule config
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability -e "UPDATE dq_enterprise_rule_config SET enabled_status='DISABLED', toggled_reason='workflow validation', updated_at=CURRENT_TIMESTAMP(3) WHERE enterprise_id=9001 AND rule_code='DQ-002';"
+          mysql -h 127.0.0.1 -uroot -proot battery_traceability < contracts/database/data-governance-v1.1-migration.sql
+          disabled_count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM dq_enterprise_rule_config WHERE enterprise_id=9001 AND rule_code='DQ-002' AND enabled_status='DISABLED';")
+          echo "dq_002_disabled_after_rerun=$disabled_count"
+          test "$disabled_count" = "1"
+      - name: Verify permission and role mapping initialization
+        run: |
+          permission_count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM sys_permission WHERE permission_code LIKE 'dq:%';")
+          echo "dq_permission_count=$permission_count"
+          test "$permission_count" = "10"
+          rule_toggle_assignments=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM sys_role_permission rp JOIN sys_permission p ON p.id=rp.permission_id WHERE p.permission_code='dq:rule:toggle';")
+          echo "dq_rule_toggle_assignment_count=$rule_toggle_assignments"
+          test "$rule_toggle_assignments" = "0"
+          system_admin_count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM sys_role_permission rp JOIN sys_role r ON r.id=rp.role_id JOIN sys_permission p ON p.id=rp.permission_id WHERE r.role_code='SYSTEM_ADMIN' AND p.permission_code LIKE 'dq:%';")
+          supervisor_count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM sys_role_permission rp JOIN sys_role r ON r.id=rp.role_id JOIN sys_permission p ON p.id=rp.permission_id WHERE r.role_code='BUSINESS_SUPERVISOR' AND p.permission_code LIKE 'dq:%';")
+          recycle_count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM sys_role_permission rp JOIN sys_role r ON r.id=rp.role_id JOIN sys_permission p ON p.id=rp.permission_id WHERE r.role_code='RECYCLE_OPERATOR' AND p.permission_code LIKE 'dq:%';")
+          warehouse_count=$(mysql -N -h 127.0.0.1 -uroot -proot battery_traceability -e "SELECT COUNT(*) FROM sys_role_permission rp JOIN sys_role r ON r.id=rp.role_id JOIN sys_permission p ON p.id=rp.permission_id WHERE r.role_code='WAREHOUSE_ADMIN' AND p.permission_code LIKE 'dq:%';")
+          echo "system_admin_dq_permission_count=$system_admin_count"
+          echo "business_supervisor_dq_permission_count=$supervisor_count"
+          echo "recycle_operator_dq_permission_count=$recycle_count"
+          echo "warehouse_admin_dq_permission_count=$warehouse_count"
+          test "$system_admin_count" = "4"
+          test "$supervisor_count" = "8"
+          test "$recycle_count" = "2"
+          test "$warehouse_count" = "2"
