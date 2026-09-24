@@ -2,7 +2,7 @@
 
 当前阶段：数据治理 V1.1 技术设计评审。
 
-当前状态：CR-DG-001 已复核通过，数据治理需求、测试和原型基线 V1.1 已确认。数据治理 V1.1 技术设计已按“修改后复核”结论修订，OpenAPI 与 MySQL 8.4 增强验证通过，仍不得创建实现分支，不得编写生产代码。
+当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。数据治理 V1.1 技术设计已通过 OpenAPI 与 MySQL 8.4 验证；尚未创建实现分支，尚未编写生产代码。
 
 ## 当前来源
 
@@ -260,23 +260,23 @@
 
 ## 数据治理 V1.1 技术设计追踪项
 
-当前技术设计状态：待评审。
+当前技术设计状态：已确认。
 追踪链扩展为：`CR-DG -> UR-DG -> FR-DG -> AC-DG -> TC-DG -> UI-DG -> API-DG -> DB-DG -> MODULE`。
 
 | 编号 | 类型 | 来源 | 状态 |
 | --- | --- | --- | --- |
-| DG-TD-001 | 影响分析 | `docs/design/data-governance-v1.1-impact-analysis.md` | 待评审 |
-| DG-TD-002 | 总体设计 | `docs/design/data-governance-v1.1-overall-design.md` | 待评审 |
-| DG-TD-003 | 架构设计 | `docs/design/data-governance-v1.1-architecture-design.md` | 待评审 |
-| DG-TD-004 | 数据库设计 | `docs/database/data-governance-v1.1-database-design.md` | 待评审 |
-| DG-TD-005 | 数据字典 | `docs/database/data-governance-v1.1-data-dictionary.md` | 待评审 |
-| DG-TD-006 | 增量 SQL | `contracts/database/data-governance-v1.1-migration.sql` | 待评审 |
-| DG-TD-007 | API 设计 | `docs/api/data-governance-v1.1-api-design.md` | 待评审 |
-| DG-TD-008 | OpenAPI 契约 | `contracts/api/openapi-data-governance-v1.1.yaml` | 待评审 |
-| DG-TD-009 | 安全设计 | `docs/security/data-governance-v1.1-security-design.md` | 待评审 |
-| DG-TD-010 | 部署设计 | `docs/deployment/data-governance-v1.1-deployment-design.md` | 待评审 |
-| DG-TD-011 | 技术测试设计 | `docs/testing/data-governance-v1.1-technical-test-design.md` | 待评审 |
-| DG-TD-012 | 技术评审记录 | `docs/design/data-governance-v1.1-technical-review-record.md` | 待评审 |
+| DG-TD-001 | 影响分析 | `docs/design/data-governance-v1.1-impact-analysis.md` | 已确认 |
+| DG-TD-002 | 总体设计 | `docs/design/data-governance-v1.1-overall-design.md` | 已确认 |
+| DG-TD-003 | 架构设计 | `docs/design/data-governance-v1.1-architecture-design.md` | 已确认 |
+| DG-TD-004 | 数据库设计 | `docs/database/data-governance-v1.1-database-design.md` | 已确认 |
+| DG-TD-005 | 数据字典 | `docs/database/data-governance-v1.1-data-dictionary.md` | 已确认 |
+| DG-TD-006 | 增量 SQL | `contracts/database/data-governance-v1.1-migration.sql` | 已确认 |
+| DG-TD-007 | API 设计 | `docs/api/data-governance-v1.1-api-design.md` | 已确认 |
+| DG-TD-008 | OpenAPI 契约 | `contracts/api/openapi-data-governance-v1.1.yaml` | 已确认 |
+| DG-TD-009 | 安全设计 | `docs/security/data-governance-v1.1-security-design.md` | 已确认 |
+| DG-TD-010 | 部署设计 | `docs/deployment/data-governance-v1.1-deployment-design.md` | 已确认 |
+| DG-TD-011 | 技术测试设计 | `docs/testing/data-governance-v1.1-technical-test-design.md` | 已确认 |
+| DG-TD-012 | 技术评审记录 | `docs/design/data-governance-v1.1-technical-review-record.md` | 已确认 |
 
 ## 数据治理 V1.1 FR -> API -> DB -> MODULE 追踪摘要
 

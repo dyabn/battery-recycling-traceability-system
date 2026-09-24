@@ -1,6 +1,6 @@
 # 数据治理 V1.1 数据字典增量
 
-文档状态：待评审
+文档状态：已确认
 关联变更：CR-DG-001
 
 ## dq_rule_definition
@@ -183,4 +183,4 @@
 
 ## 当前结论
 
-数据字典增量待评审。字段以 `contracts/database/data-governance-v1.1-migration.sql` 为准。
+数据字典增量已确认。字段以 `contracts/database/data-governance-v1.1-migration.sql` 为准。
