@@ -299,8 +299,8 @@ FROM enterprise e
 CROSS JOIN dq_rule_definition r
 WHERE r.rule_code IN ('DQ-001', 'DQ-002', 'DQ-003', 'DQ-004', 'DQ-005', 'DQ-006', 'DQ-007')
 ON DUPLICATE KEY UPDATE
-  enabled_status = enabled_status,
-  updated_at = updated_at;
+  enabled_status = dq_enterprise_rule_config.enabled_status,
+  updated_at = dq_enterprise_rule_config.updated_at;
 
 INSERT INTO sys_permission (id, permission_code, permission_name, created_at, updated_at)
 VALUES
