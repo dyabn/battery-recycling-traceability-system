@@ -34,6 +34,7 @@
 | CHG-030 | 2026-09-24 | 数据治理 V1.1 小范围复核修订 | 新增治理审计查询 API，补齐规则元数据必填契约、复核完成态约束、迁移幂等不覆盖规则配置、10 个权限编码及角色映射初始化，并新增 TD-DG-TC-037..042。 | V1.1 技术设计文档、OpenAPI、SQL、GitHub Actions、追踪索引、`project-state.yaml` | 否 |
 | CHG-031 | 2026-09-24 | 数据治理 V1.1 技术设计复核通过 | Contract Validation 和 MySQL 8.4 Validation 均通过，确认数据治理 V1.1 技术设计基线，关闭 V1.1 技术设计评审；尚未创建实现分支、尚未编写生产代码。 | 技术评审记录、追踪索引、`project-state.yaml`、V1.1 技术设计文档 | 否 |
 | CHG-032 | 2026-09-24 | 用户确认 | 合并数据治理 V1.1 技术设计基线，创建 `feature/first-slice-implementation`，初始化 Spring Boot 后端、Vue 前端、MySQL 8.4、Flyway 迁移和基础 CI；仍不实现正式业务代码。 | `backend/`、`frontend/`、`docker-compose.yml`、`.github/workflows/implementation-ci.yml`、`project-state.yaml`、追踪索引、README | 否 |
+| CHG-033 | 2026-09-28 | I0 骨架验证 | Implementation CI 验证通过，确认后端测试、前端构建、MySQL 8.4、Flyway V1/V2 迁移、29 张业务表和 Spring Boot 数据库连接；下一增量进入 I1 身份、权限和企业隔离。 | `.github/workflows/implementation-ci.yml`、`frontend/`、`project-state.yaml`、追踪索引 | 否 |
 
 ## C3 第一条业务切片确认
 

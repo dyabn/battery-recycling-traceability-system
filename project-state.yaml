@@ -347,8 +347,12 @@ technical_design_v1_1:
 implementation_progress:
   status: in-progress
   branch: feature/first-slice-implementation
-  current_step: 工程初始化
+  current_step: I1身份、权限和企业隔离
+  current_increment: I1-auth-tenant-rbac
   scope: 第一切片和数据治理 V1.1 的可运行工程骨架
+  skeleton_initialized: true
+  skeleton_ci_passed: true
+  business_code_started: false
   outputs:
     backend: backend/
     frontend: frontend/
@@ -362,13 +366,27 @@ implementation_progress:
     - 提供 Swagger UI 入口
     - 提供 MySQL 8.4 本地运行配置
     - 提供基础 CI 编译和构建入口
+    - GitHub Actions 验证后端测试、前端构建、MySQL 8.4、Flyway V1/V2 迁移、29 张业务表和 Spring Boot 数据库连接通过
   pending_items:
     - 登录、JWT、角色权限和企业隔离实现
     - 第一切片业务接口实现
     - 数据治理规则处理器和质量问题闭环实现
     - 正式前端页面实现
     - 集成测试、权限测试和端到端测试
-  review_result: not-reviewed
+  ci_validation:
+    workflow: Implementation CI
+    run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/36376193802
+    commit: d34336e
+    result: passed
+    verified_items:
+      - 后端 mvn test 通过
+      - 前端 npm install 通过
+      - 前端 npm run build 通过
+      - MySQL 8.4 启动成功
+      - Flyway 依次执行 V1 和 V2 成功
+      - V1.0 21 张表与 V1.1 8 张表合计 29 张业务表存在
+      - Spring Boot 连接迁移后的数据库成功
+  review_result: I0 工程骨架验证通过
 
 technical_design_progress:
   status: completed
