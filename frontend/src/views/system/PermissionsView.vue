@@ -22,13 +22,16 @@ interface Permission {
   permissionName: string;
 }
 
+interface ApiEnvelope<T> {
+  data: T;
+}
+
 const permissions = ref<Permission[]>([]);
 
 async function load() {
-  const response = await http.get<Permission[]>('/permissions');
-  permissions.value = response.data;
+  const response = await http.get<ApiEnvelope<Permission[]>>('/permissions');
+  permissions.value = response.data.data;
 }
 
 onMounted(load);
 </script>
-

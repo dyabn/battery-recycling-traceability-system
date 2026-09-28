@@ -18,19 +18,21 @@ OpenAPI 文件：`contracts/api/openapi-first-slice.yaml`
 
 ```json
 {
-  "code": "SUCCESS",
-  "message": "操作成功",
-  "data": {},
-  "traceId": "..."
+  "code": "OK",
+  "message": "success",
+  "traceId": "...",
+  "data": {}
 }
 ```
+
+I1 实现阶段将登录、当前用户、用户列表、角色、权限和审计接口统一为 DTO Envelope；错误响应保留 `code`、`message`、`traceId`、`timestamp` 和 `data=null`。
 
 ### 1.3 认证和权限
 
 - 除登录接口外，所有接口必须携带 `Authorization: Bearer <jwt>`。
 - 写操作必须进行方法级权限校验。
 - 越权操作返回 `FORBIDDEN_OPERATION` 并写入审计日志。
-- 业务写操作必须携带 `Idempotency-Key`，防止重复提交；缺少时返回 400。
+- 业务写操作必须携带 `Idempotency-Key`，长度 8 到 128 个字符，防止重复提交；缺少或长度不合法时返回 400。
 
 ### 1.4 重点错误码
 
@@ -55,7 +57,7 @@ OpenAPI 文件：`contracts/api/openapi-first-slice.yaml`
 | 接口 | 权限 | FR | AC | TC | UI | 模块 | 主要表 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `POST /auth/login` | 匿名 | FR-C4-020、021 | AC-013 | TC-C4-012、017 | UI-C4-001 | MOD-AUTH | `sys_user`、`audit_log` |
-| `GET /auth/current-user` | 登录 | FR-C4-021 | AC-013 | TC-C4-017 | UI-C4-002 | MOD-AUTH | `sys_user`、权限表 |
+| `GET /auth/current-user`、`GET /auth/me` | 登录 | FR-C4-021 | AC-013 | TC-C4-017 | UI-C4-002 | MOD-AUTH | `sys_user`、权限表 |
 | `POST /recycle-batches` | `batch:create` | FR-C4-001..003 | AC-001 | TC-C4-001、015 | UI-C4-004 | MOD-BATCH | `recycle_batch` |
 | `GET /recycle-batches` | `batch:read` | FR-C4-001 | AC-001 | TC-C4-001 | UI-C4-003 | MOD-BATCH | `recycle_batch` |
 | `GET /recycle-batches/{id}` | `batch:read` | FR-C4-008..010 | AC-004 | TC-C4-003、006 | UI-C4-005 | MOD-BATCH | `recycle_batch`、`battery` |
@@ -150,7 +152,7 @@ OpenAPI 文件：`contracts/api/openapi-first-slice.yaml`
 | 上传附件 | 必须携带幂等键 + 文件摘要，避免重复临时元数据。 |
 | 权限配置 | 幂等键 + 请求体摘要，避免重复写入权限关系。 |
 
-幂等记录持久化到 `idempotency_record`。所有业务写接口必须携带 `Idempotency-Key`。相同键、相同请求体返回首次成功结果；相同键、不同请求体返回 `IDEMPOTENCY_KEY_REUSED`。成功时业务数据与 `SUCCEEDED` 幂等记录在同一事务提交；业务失败时主事务回滚，再用独立事务记录 `FAILED`；系统异常或超时留下 `PROCESSING` 时，由过期策略允许重试。
+幂等记录持久化到 `idempotency_record`。所有业务写接口必须携带长度 8 到 128 个字符的 `Idempotency-Key`。服务端对规范化请求内容计算 SHA-256，保存 64 位十六进制 `request_hash`。相同键、相同请求体返回首次成功结果；相同键、不同请求体返回 `IDEMPOTENCY_KEY_REUSED`。成功时业务数据与 `SUCCEEDED` 幂等记录在同一事务提交；业务失败时主事务回滚，再用独立事务记录 `FAILED`；系统异常或超时留下 `PROCESSING` 时，由过期策略允许重试。
 
 ## 6. 删除保护接口约定
 

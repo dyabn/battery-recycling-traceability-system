@@ -30,11 +30,15 @@ interface AuditLog {
   operatedAt: string;
 }
 
+interface ApiEnvelope<T> {
+  data: T;
+}
+
 const logs = ref<AuditLog[]>([]);
 
 async function load() {
-  const response = await http.get<AuditLog[]>('/audit-logs');
-  logs.value = response.data;
+  const response = await http.get<ApiEnvelope<AuditLog[]>>('/audit-logs');
+  logs.value = response.data.data;
 }
 
 onMounted(load);

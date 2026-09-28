@@ -23,13 +23,16 @@ import { onMounted, ref } from 'vue';
 import { http } from '../../api/http';
 import type { CurrentUser } from '../../stores/auth';
 
+interface ApiEnvelope<T> {
+  data: T;
+}
+
 const users = ref<CurrentUser[]>([]);
 
 async function load() {
-  const response = await http.get<CurrentUser[]>('/users');
-  users.value = response.data;
+  const response = await http.get<ApiEnvelope<CurrentUser[]>>('/users');
+  users.value = response.data.data;
 }
 
 onMounted(load);
 </script>
-

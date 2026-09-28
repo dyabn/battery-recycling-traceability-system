@@ -26,8 +26,8 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { useAuthStore } from '../stores/auth';
 
-const username = ref('admin');
-const password = ref('password');
+const username = ref(import.meta.env.DEV ? 'admin' : '');
+const password = ref(import.meta.env.DEV ? 'password' : '');
 const loading = ref(false);
 const authStore = useAuthStore();
 const router = useRouter();
@@ -44,4 +44,3 @@ async function submit() {
   }
 }
 </script>
-

@@ -26,13 +26,16 @@ interface Role {
   permissions: string[];
 }
 
+interface ApiEnvelope<T> {
+  data: T;
+}
+
 const roles = ref<Role[]>([]);
 
 async function load() {
-  const response = await http.get<Role[]>('/roles');
-  roles.value = response.data;
+  const response = await http.get<ApiEnvelope<Role[]>>('/roles');
+  roles.value = response.data.data;
 }
 
 onMounted(load);
 </script>
-

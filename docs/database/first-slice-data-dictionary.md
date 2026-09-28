@@ -220,7 +220,7 @@
 | `idempotency_record` | `enterprise_id` | BIGINT | 否 | 无 | FK, UNIQUE 组合 | 企业 | 登录上下文 |
 | `idempotency_record` | `operator_user_id` | BIGINT | 否 | 无 | FK, UNIQUE 组合 | 操作人 | 登录上下文 |
 | `idempotency_record` | `operation_code` | VARCHAR(80) | 否 | 无 | UNIQUE 组合 | 操作编码 | 接口定义 |
-| `idempotency_record` | `idempotency_key` | VARCHAR(80) | 否 | 无 | UNIQUE 组合 | 幂等键 | 请求头 |
+| `idempotency_record` | `idempotency_key` | VARCHAR(128) | 否 | 无 | UNIQUE 组合 | 幂等键；V4 迁移由 80 扩展到 128 | 请求头 |
 | `idempotency_record` | `request_hash` | VARCHAR(128) | 否 | 无 | 无 | 请求体摘要 | 系统生成 |
 | `idempotency_record` | `process_status` | VARCHAR(20) | 否 | 无 | CHECK | 处理状态 | 系统维护 |
 | `idempotency_record` | `response_code` | VARCHAR(80) | 是 | NULL | 无 | 首次响应码 | 系统维护 |
