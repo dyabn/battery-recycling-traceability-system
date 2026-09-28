@@ -15,3 +15,14 @@ declare namespace Temporal {
   type PlainYearMonth = unknown;
   type ZonedDateTime = unknown;
 }
+
+declare const Temporal: {
+  Duration: unknown;
+  Instant: unknown;
+  PlainDate: unknown;
+  PlainDateTime: unknown;
+  PlainMonthDay: unknown;
+  PlainTime: unknown;
+  PlainYearMonth: unknown;
+  ZonedDateTime: unknown;
+};
