@@ -6,6 +6,7 @@ import com.batteryrecycling.traceability.common.exception.ApiException;
 import com.batteryrecycling.traceability.common.security.CurrentUser;
 import com.batteryrecycling.traceability.idempotency.IdempotencyService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,7 +38,7 @@ public class RoleService {
                         rs.getLong("id"),
                         rs.getString("role_code"),
                         rs.getString("role_name"),
-                        permissionsByRoleId(rs.getLong("id"))
+                        new ArrayList<>(permissionsByRoleId(rs.getLong("id")))
                 ));
     }
 
@@ -76,7 +77,7 @@ public class RoleService {
                         rs.getLong("id"),
                         rs.getString("role_code"),
                         rs.getString("role_name"),
-                        permissionsByRoleId(rs.getLong("id"))
+                        new ArrayList<>(permissionsByRoleId(rs.getLong("id")))
                 ),
                 roleId);
         if (roles.isEmpty()) {
@@ -103,4 +104,3 @@ public class RoleService {
         return ids.get(0);
     }
 }
-

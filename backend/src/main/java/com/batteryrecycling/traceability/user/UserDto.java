@@ -1,6 +1,6 @@
 package com.batteryrecycling.traceability.user;
 
-import java.util.Set;
+import java.util.List;
 
 public record UserDto(
         Long id,
@@ -8,8 +8,7 @@ public record UserDto(
         String username,
         String displayName,
         String enabledStatus,
-        Set<String> roles,
-        Set<String> permissions
+        List<String> roles,
+        List<String> permissions
 ) {
 }
-

@@ -9,6 +9,7 @@ import com.batteryrecycling.traceability.role.RoleDto;
 import jakarta.servlet.http.HttpServletRequest;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -68,7 +69,7 @@ public class UserService {
 
     public UserDto toDto(Long userId) {
         UserAccount account = findAccountById(userId);
-        return new UserDto(account.id(), account.enterpriseId(), account.username(), account.displayName(), account.enabledStatus(), roles(userId), permissions(userId));
+        return new UserDto(account.id(), account.enterpriseId(), account.username(), account.displayName(), account.enabledStatus(), new ArrayList<>(roles(userId)), new ArrayList<>(permissions(userId)));
     }
 
     public List<UserDto> listUsers(CurrentUser currentUser, Long requestedEnterpriseId, HttpServletRequest request) {
