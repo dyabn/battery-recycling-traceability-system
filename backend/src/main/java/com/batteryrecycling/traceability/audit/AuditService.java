@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuditService {
@@ -16,6 +18,7 @@ public class AuditService {
         this.idGenerator = idGenerator;
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(
             Long enterpriseId,
             Long operatorUserId,
@@ -54,4 +57,3 @@ public class AuditService {
         );
     }
 }
-

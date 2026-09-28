@@ -16,7 +16,6 @@ import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserService {
@@ -90,13 +89,13 @@ public class UserService {
         return idempotencyService.execute("UPDATE_USER_ROLES", idempotencyKey, requestHash, UserDto.class, () -> updateUserRolesInTransaction(currentUser, userId, roleCodes, request));
     }
 
-    @Transactional
     public UserDto updateUserRolesInTransaction(CurrentUser currentUser, Long userId, Set<String> roleCodes, HttpServletRequest request) {
         UserAccount target = findAccountById(userId);
         if (!target.enterpriseId().equals(currentUser.enterpriseId())) {
             auditService.record(currentUser.enterpriseId(), currentUser.id(), "USER_ROLE_CROSS_ENTERPRISE_DENIED", "SYS_USER", userId, "FORBIDDEN", "拒绝跨企业修改用户角色", request);
             throw ApiException.forbidden("CROSS_ENTERPRISE_ACCESS_DENIED", "不能修改其他企业的用户");
         }
+        validateRoleBoundary(currentUser, target, roleCodes, request);
         Set<String> before = roles(userId);
         jdbcTemplate.update("DELETE FROM sys_user_role WHERE user_id = ?", userId);
         for (String roleCode : roleCodes) {
@@ -109,6 +108,31 @@ public class UserService {
         UserDto updated = toDto(userId);
         auditService.record(currentUser.enterpriseId(), currentUser.id(), "USER_ROLE_UPDATE", "SYS_USER", userId, "SUCCESS", "before=" + before + "; after=" + updated.roles(), request);
         return updated;
+    }
+
+    private void validateRoleBoundary(CurrentUser currentUser, UserAccount target, Set<String> roleCodes, HttpServletRequest request) {
+        if (roleCodes.contains("SYSTEM_ADMIN") && roleCodes.size() > 1) {
+            auditService.record(currentUser.enterpriseId(), currentUser.id(), "USER_ROLE_UPDATE_DENIED", "SYS_USER", target.id(), "FORBIDDEN", "系统管理员角色不得与业务角色混用", request);
+            throw ApiException.forbidden("FORBIDDEN", "系统管理员角色不得与业务角色混用");
+        }
+        Set<String> before = roles(target.id());
+        if (before.contains("SYSTEM_ADMIN") && !roleCodes.contains("SYSTEM_ADMIN") && enabledPermissionAdminCount() <= 1) {
+            auditService.record(currentUser.enterpriseId(), currentUser.id(), "LAST_PERMISSION_ADMIN_REMOVAL_DENIED", "SYS_USER", target.id(), "FORBIDDEN", "不能移除最后一个有效权限管理员", request);
+            throw ApiException.forbidden("FORBIDDEN", "不能移除最后一个有效权限管理员");
+        }
+    }
+
+    private int enabledPermissionAdminCount() {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT COUNT(DISTINCT u.id)
+                FROM sys_user u
+                JOIN sys_user_role ur ON ur.user_id = u.id
+                JOIN sys_role_permission rp ON rp.role_id = ur.role_id
+                JOIN sys_permission p ON p.id = rp.permission_id
+                WHERE u.enabled_status = 'ENABLED'
+                  AND p.permission_code = 'permission:manage'
+                """, Integer.class);
+        return count == null ? 0 : count;
     }
 
     public Set<String> roles(Long userId) {

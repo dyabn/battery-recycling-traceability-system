@@ -93,6 +93,6 @@ public class SecurityConfig {
     private void writeError(HttpServletResponse response, int status, String code, String message) throws java.io.IOException {
         response.setStatus(status);
         response.setContentType("application/json;charset=UTF-8");
-        objectMapper.writeValue(response.getWriter(), new ApiErrorResponse(code, message, UUID.randomUUID().toString(), OffsetDateTime.now()));
+        objectMapper.writeValue(response.getWriter(), new ApiErrorResponse(code, message, UUID.randomUUID().toString(), OffsetDateTime.now(), null));
     }
 }

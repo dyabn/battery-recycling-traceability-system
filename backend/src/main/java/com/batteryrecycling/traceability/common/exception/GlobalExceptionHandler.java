@@ -41,7 +41,6 @@ public class GlobalExceptionHandler {
             traceId = UUID.randomUUID().toString();
         }
         return ResponseEntity.status(status)
-                .body(new ApiErrorResponse(code, message, traceId, OffsetDateTime.now()));
+                .body(new ApiErrorResponse(code, message, traceId, OffsetDateTime.now(), null));
     }
 }
-

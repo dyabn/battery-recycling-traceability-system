@@ -1,5 +1,6 @@
 package com.batteryrecycling.traceability.audit;
 
+import com.batteryrecycling.traceability.common.api.ApiResponse;
 import com.batteryrecycling.traceability.common.security.CurrentUser;
 import com.batteryrecycling.traceability.common.security.CurrentUserService;
 import java.util.List;
@@ -21,10 +22,10 @@ public class AuditController {
 
     @GetMapping("/api/v1/audit-logs")
     @PreAuthorize("hasAuthority('audit:read')")
-    public List<AuditLogDto> listAuditLogs(@RequestParam(defaultValue = "50") int size) {
+    public ApiResponse<List<AuditLogDto>> listAuditLogs(@RequestParam(defaultValue = "50") int size) {
         CurrentUser user = currentUserService.requireCurrentUser();
         int limit = Math.max(1, Math.min(size, 100));
-        return jdbcTemplate.query("""
+        return ApiResponse.ok(jdbcTemplate.query("""
                 SELECT id, enterprise_id, operator_user_id, action_code, object_type, object_id,
                        result, reject_reason, operated_at
                 FROM audit_log
@@ -45,7 +46,6 @@ public class AuditController {
                 ),
                 user.enterpriseId(),
                 limit
-        );
+        ));
     }
 }
-

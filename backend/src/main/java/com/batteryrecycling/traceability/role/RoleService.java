@@ -16,6 +16,16 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class RoleService {
+    private static final Set<String> SYSTEM_ADMIN_ALLOWED_PERMISSIONS = Set.of(
+            "authenticated",
+            "permission:manage",
+            "audit:read",
+            "dq:rule:read",
+            "dq:issue:read",
+            "dq:dashboard:read",
+            "dq:audit:read"
+    );
+
     private final JdbcTemplate jdbcTemplate;
     private final IdGenerator idGenerator;
     private final AuditService auditService;
@@ -53,6 +63,14 @@ public class RoleService {
         if (permissionCodes.contains("dq:rule:toggle")) {
             auditService.record(currentUser.enterpriseId(), currentUser.id(), "ROLE_PERMISSION_UPDATE_DENIED", "SYS_ROLE", roleId, "FORBIDDEN", "V1.1 不分配 dq:rule:toggle", request);
             throw ApiException.forbidden("FORBIDDEN", "V1.1 不允许分配 dq:rule:toggle 权限");
+        }
+        if ("SYSTEM_ADMIN".equals(before.roleCode()) && !SYSTEM_ADMIN_ALLOWED_PERMISSIONS.containsAll(permissionCodes)) {
+            auditService.record(currentUser.enterpriseId(), currentUser.id(), "SYSTEM_ADMIN_BUSINESS_PERMISSION_DENIED", "SYS_ROLE", roleId, "FORBIDDEN", "系统管理员不得被授予业务执行权限", request);
+            throw ApiException.forbidden("FORBIDDEN", "系统管理员不得被授予业务执行权限");
+        }
+        if ("SYSTEM_ADMIN".equals(before.roleCode()) && !permissionCodes.contains("permission:manage")) {
+            auditService.record(currentUser.enterpriseId(), currentUser.id(), "LAST_PERMISSION_ADMIN_REMOVAL_DENIED", "SYS_ROLE", roleId, "FORBIDDEN", "不能移除最后一个有效权限管理员", request);
+            throw ApiException.forbidden("FORBIDDEN", "不能移除最后一个有效权限管理员");
         }
         jdbcTemplate.update("DELETE FROM sys_role_permission WHERE role_id = ?", roleId);
         for (String permissionCode : permissionCodes) {
