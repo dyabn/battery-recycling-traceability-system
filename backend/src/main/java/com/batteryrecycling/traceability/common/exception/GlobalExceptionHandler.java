@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<ApiErrorResponse> handleDenied(AccessDeniedException exception, HttpServletRequest request) {
-        currentUserService.currentUser().ifPresent(user -> auditService.record(
+        currentUserService.currentUser().ifPresent(user -> auditService.recordRejected(
                 user.enterpriseId(),
                 user.id(),
                 request.getMethod() + " " + request.getRequestURI(),

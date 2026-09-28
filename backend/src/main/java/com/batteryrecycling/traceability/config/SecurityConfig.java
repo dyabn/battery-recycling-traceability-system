@@ -56,7 +56,7 @@ public class SecurityConfig {
                             writeError(response, HttpServletResponse.SC_UNAUTHORIZED, code, message);
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            currentUserService.currentUser().ifPresent(user -> auditService.record(
+                            currentUserService.currentUser().ifPresent(user -> auditService.recordRejected(
                                     user.enterpriseId(),
                                     user.id(),
                                     request.getMethod() + " " + request.getRequestURI(),

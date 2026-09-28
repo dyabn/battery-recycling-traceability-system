@@ -60,7 +60,7 @@ jobs:
           DB_PASSWORD: root
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-development-secret-for-i1-tests-32bytes' }}
         run: mvn -B test
-      - name: Run Flyway V1.0, V1.1 and I1 V3/V4 migrations on MySQL 8.4
+      - name: Run Flyway V1.0, V1.1 and I1 V3/V4/V5 migrations on MySQL 8.4
         working-directory: backend
         run: >
           mvn -B
@@ -80,13 +80,25 @@ jobs:
           PERMISSION_COUNT=$(mysql -h 127.0.0.1 -uroot -proot -N -B battery_traceability -e "SELECT COUNT(*) FROM sys_permission;")
           TOGGLE_ASSIGNMENTS=$(mysql -h 127.0.0.1 -uroot -proot -N -B battery_traceability -e "SELECT COUNT(*) FROM sys_role_permission rp JOIN sys_permission p ON p.id = rp.permission_id WHERE p.permission_code = 'dq:rule:toggle';")
           IDEMPOTENCY_KEY_LENGTH=$(mysql -h 127.0.0.1 -uroot -proot -N -B -e "SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.columns WHERE table_schema='battery_traceability' AND table_name='idempotency_record' AND column_name='idempotency_key';")
+          SYSTEM_ADMIN_PERMS=$(mysql -h 127.0.0.1 -uroot -proot -N -B battery_traceability -e "SELECT GROUP_CONCAT(p.permission_code ORDER BY p.permission_code SEPARATOR ',') FROM sys_role r JOIN sys_role_permission rp ON rp.role_id = r.id JOIN sys_permission p ON p.id = rp.permission_id WHERE r.role_code = 'SYSTEM_ADMIN';")
+          BUSINESS_SUPERVISOR_PERMS=$(mysql -h 127.0.0.1 -uroot -proot -N -B battery_traceability -e "SELECT GROUP_CONCAT(p.permission_code ORDER BY p.permission_code SEPARATOR ',') FROM sys_role r JOIN sys_role_permission rp ON rp.role_id = r.id JOIN sys_permission p ON p.id = rp.permission_id WHERE r.role_code = 'BUSINESS_SUPERVISOR';")
+          RECYCLE_OPERATOR_PERMS=$(mysql -h 127.0.0.1 -uroot -proot -N -B battery_traceability -e "SELECT GROUP_CONCAT(p.permission_code ORDER BY p.permission_code SEPARATOR ',') FROM sys_role r JOIN sys_role_permission rp ON rp.role_id = r.id JOIN sys_permission p ON p.id = rp.permission_id WHERE r.role_code = 'RECYCLE_OPERATOR';")
+          WAREHOUSE_ADMIN_PERMS=$(mysql -h 127.0.0.1 -uroot -proot -N -B battery_traceability -e "SELECT GROUP_CONCAT(p.permission_code ORDER BY p.permission_code SEPARATOR ',') FROM sys_role r JOIN sys_role_permission rp ON rp.role_id = r.id JOIN sys_permission p ON p.id = rp.permission_id WHERE r.role_code = 'WAREHOUSE_ADMIN';")
           echo "role_count=${ROLE_COUNT}"
           echo "permission_count=${PERMISSION_COUNT}"
           echo "dq_rule_toggle_assignments=${TOGGLE_ASSIGNMENTS}"
           echo "idempotency_key_length=${IDEMPOTENCY_KEY_LENGTH}"
+          echo "system_admin_permissions=${SYSTEM_ADMIN_PERMS}"
+          echo "business_supervisor_permissions=${BUSINESS_SUPERVISOR_PERMS}"
+          echo "recycle_operator_permissions=${RECYCLE_OPERATOR_PERMS}"
+          echo "warehouse_admin_permissions=${WAREHOUSE_ADMIN_PERMS}"
           if [ "${ROLE_COUNT}" != "4" ] || [ "${PERMISSION_COUNT}" != "26" ] || [ "${TOGGLE_ASSIGNMENTS}" != "0" ] || [ "${IDEMPOTENCY_KEY_LENGTH}" != "128" ]; then
             exit 1
           fi
+          if [ "${SYSTEM_ADMIN_PERMS}" != "audit:read,authenticated,dq:audit:read,dq:dashboard:read,dq:issue:read,dq:rule:read,permission:manage" ]; then exit 1; fi
+          if [ "${BUSINESS_SUPERVISOR_PERMS}" != "attachment:read,authenticated,batch:read,dq:audit:read,dq:check:execute,dq:check:read,dq:dashboard:read,dq:issue:assign,dq:issue:read,dq:issue:recheck,dq:rule:read,inventory:read,trace:read" ]; then exit 1; fi
+          if [ "${RECYCLE_OPERATOR_PERMS}" != "acceptance:create,acceptance:supplement,attachment:read,attachment:upload,authenticated,batch:create,batch:read,batch:submit,battery:create,battery:duplicate:resolve,dq:issue:process,dq:issue:read,trace:read" ]; then exit 1; fi
+          if [ "${WAREHOUSE_ADMIN_PERMS}" != "attachment:read,attachment:upload,authenticated,batch:read,dq:issue:process,dq:issue:read,inbound:create,inventory:read,trace:read,warehouse:read" ]; then exit 1; fi
           mysql -h 127.0.0.1 -uroot -proot -e "SHOW TABLES FROM battery_traceability;"
       - name: Verify Spring Boot connects to migrated database
         working-directory: backend
@@ -125,9 +137,9 @@ jobs:
           node-version: '22'
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm install
+        run: npm ci
       - name: Validate first-slice OpenAPI
-        run: npx --yes @redocly/cli@latest lint contracts/api/openapi-first-slice.yaml
+        run: npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml
       - name: Run frontend tests
         working-directory: frontend
         run: npm run test

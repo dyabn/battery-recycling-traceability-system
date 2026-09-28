@@ -29,6 +29,46 @@ public class AuditService {
             String reason,
             HttpServletRequest request
     ) {
+        insertAudit(enterpriseId, operatorUserId, actionCode, objectType, objectId, result, reason, request);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordRejected(
+            Long enterpriseId,
+            Long operatorUserId,
+            String actionCode,
+            String objectType,
+            Long objectId,
+            String result,
+            String reason,
+            HttpServletRequest request
+    ) {
+        insertAudit(enterpriseId, operatorUserId, actionCode, objectType, objectId, result, reason, request);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void recordSuccess(
+            Long enterpriseId,
+            Long operatorUserId,
+            String actionCode,
+            String objectType,
+            Long objectId,
+            String reason,
+            HttpServletRequest request
+    ) {
+        insertAudit(enterpriseId, operatorUserId, actionCode, objectType, objectId, "SUCCESS", reason, request);
+    }
+
+    private void insertAudit(
+            Long enterpriseId,
+            Long operatorUserId,
+            String actionCode,
+            String objectType,
+            Long objectId,
+            String result,
+            String reason,
+            HttpServletRequest request
+    ) {
         String ip = request == null ? null : request.getRemoteAddr();
         String userAgent = request == null ? null : request.getHeader("User-Agent");
         String traceId = request == null ? null : request.getHeader("X-Trace-Id");

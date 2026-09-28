@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -16,14 +17,58 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class RoleService {
-    private static final Set<String> SYSTEM_ADMIN_ALLOWED_PERMISSIONS = Set.of(
-            "authenticated",
-            "permission:manage",
-            "audit:read",
-            "dq:rule:read",
-            "dq:issue:read",
-            "dq:dashboard:read",
-            "dq:audit:read"
+    private static final Map<String, Set<String>> PROTECTED_ROLE_PERMISSION_BOUNDARIES = Map.of(
+            "SYSTEM_ADMIN", Set.of(
+                    "authenticated",
+                    "permission:manage",
+                    "audit:read",
+                    "dq:rule:read",
+                    "dq:issue:read",
+                    "dq:dashboard:read",
+                    "dq:audit:read"
+            ),
+            "BUSINESS_SUPERVISOR", Set.of(
+                    "authenticated",
+                    "batch:read",
+                    "inventory:read",
+                    "trace:read",
+                    "attachment:read",
+                    "dq:rule:read",
+                    "dq:check:execute",
+                    "dq:check:read",
+                    "dq:issue:read",
+                    "dq:issue:assign",
+                    "dq:issue:recheck",
+                    "dq:dashboard:read",
+                    "dq:audit:read"
+            ),
+            "RECYCLE_OPERATOR", Set.of(
+                    "authenticated",
+                    "batch:create",
+                    "batch:read",
+                    "batch:submit",
+                    "battery:create",
+                    "battery:duplicate:resolve",
+                    "acceptance:create",
+                    "acceptance:supplement",
+                    "attachment:upload",
+                    "attachment:read",
+                    "trace:read",
+                    "dq:issue:read",
+                    "dq:issue:process"
+            ),
+            "WAREHOUSE_ADMIN", Set.of(
+                    "authenticated",
+                    "batch:read",
+                    "inbound:create",
+                    "inventory:read",
+                    "warehouse:read",
+                    "attachment:upload",
+                    "attachment:read",
+                    "trace:read",
+                    "dq:issue:read",
+                    "dq:issue:process"
+            )
     );
 
     private final JdbcTemplate jdbcTemplate;
@@ -61,15 +106,18 @@ public class RoleService {
     public RoleDto updateRolePermissionsInTransaction(CurrentUser currentUser, Long roleId, Set<String> permissionCodes, HttpServletRequest request) {
         RoleDto before = roleById(roleId);
         if (permissionCodes.contains("dq:rule:toggle")) {
-            auditService.record(currentUser.enterpriseId(), currentUser.id(), "ROLE_PERMISSION_UPDATE_DENIED", "SYS_ROLE", roleId, "FORBIDDEN", "V1.1 不分配 dq:rule:toggle", request);
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "ROLE_PERMISSION_UPDATE_DENIED", "SYS_ROLE", roleId, "FORBIDDEN", "V1.1 不分配 dq:rule:toggle", request);
             throw ApiException.forbidden("FORBIDDEN", "V1.1 不允许分配 dq:rule:toggle 权限");
         }
-        if ("SYSTEM_ADMIN".equals(before.roleCode()) && !SYSTEM_ADMIN_ALLOWED_PERMISSIONS.containsAll(permissionCodes)) {
-            auditService.record(currentUser.enterpriseId(), currentUser.id(), "SYSTEM_ADMIN_BUSINESS_PERMISSION_DENIED", "SYS_ROLE", roleId, "FORBIDDEN", "系统管理员不得被授予业务执行权限", request);
-            throw ApiException.forbidden("FORBIDDEN", "系统管理员不得被授予业务执行权限");
+        Set<String> allowedPermissions = PROTECTED_ROLE_PERMISSION_BOUNDARIES.get(before.roleCode());
+        if (allowedPermissions != null && !allowedPermissions.containsAll(permissionCodes)) {
+            Set<String> forbiddenPermissions = new LinkedHashSet<>(permissionCodes);
+            forbiddenPermissions.removeAll(allowedPermissions);
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "ROLE_PERMISSION_BOUNDARY_DENIED", "SYS_ROLE", roleId, "FORBIDDEN", "内置角色不允许授予权限: " + forbiddenPermissions, request);
+            throw ApiException.forbidden("FORBIDDEN", "内置角色不允许被授予超出基线的权限");
         }
         if ("SYSTEM_ADMIN".equals(before.roleCode()) && !permissionCodes.contains("permission:manage")) {
-            auditService.record(currentUser.enterpriseId(), currentUser.id(), "LAST_PERMISSION_ADMIN_REMOVAL_DENIED", "SYS_ROLE", roleId, "FORBIDDEN", "不能移除最后一个有效权限管理员", request);
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "LAST_PERMISSION_ADMIN_REMOVAL_DENIED", "SYS_ROLE", roleId, "FORBIDDEN", "不能移除最后一个有效权限管理员", request);
             throw ApiException.forbidden("FORBIDDEN", "不能移除最后一个有效权限管理员");
         }
         jdbcTemplate.update("DELETE FROM sys_role_permission WHERE role_id = ?", roleId);
@@ -81,7 +129,7 @@ public class RoleService {
             );
         }
         RoleDto updated = roleById(roleId);
-        auditService.record(currentUser.enterpriseId(), currentUser.id(), "ROLE_PERMISSION_UPDATE", "SYS_ROLE", roleId, "SUCCESS", "before=" + before.permissions() + "; after=" + updated.permissions(), request);
+        auditService.recordSuccess(currentUser.enterpriseId(), currentUser.id(), "ROLE_PERMISSION_UPDATE", "SYS_ROLE", roleId, "before=" + before.permissions() + "; after=" + updated.permissions(), request);
         return updated;
     }
 

@@ -73,7 +73,7 @@ public class UserService {
 
     public List<UserDto> listUsers(CurrentUser currentUser, Long requestedEnterpriseId, HttpServletRequest request) {
         if (requestedEnterpriseId != null && !requestedEnterpriseId.equals(currentUser.enterpriseId())) {
-            auditService.record(currentUser.enterpriseId(), currentUser.id(), "USER_LIST_CROSS_ENTERPRISE_DENIED", "SYS_USER", null, "FORBIDDEN", "拒绝跨企业用户列表访问", request);
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "USER_LIST_CROSS_ENTERPRISE_DENIED", "SYS_USER", null, "FORBIDDEN", "拒绝跨企业用户列表访问", request);
             throw ApiException.forbidden("CROSS_ENTERPRISE_ACCESS_DENIED", "不能访问其他企业的数据");
         }
         return jdbcTemplate.query("""
@@ -92,7 +92,7 @@ public class UserService {
     public UserDto updateUserRolesInTransaction(CurrentUser currentUser, Long userId, Set<String> roleCodes, HttpServletRequest request) {
         UserAccount target = findAccountById(userId);
         if (!target.enterpriseId().equals(currentUser.enterpriseId())) {
-            auditService.record(currentUser.enterpriseId(), currentUser.id(), "USER_ROLE_CROSS_ENTERPRISE_DENIED", "SYS_USER", userId, "FORBIDDEN", "拒绝跨企业修改用户角色", request);
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "USER_ROLE_CROSS_ENTERPRISE_DENIED", "SYS_USER", userId, "FORBIDDEN", "拒绝跨企业修改用户角色", request);
             throw ApiException.forbidden("CROSS_ENTERPRISE_ACCESS_DENIED", "不能修改其他企业的用户");
         }
         validateRoleBoundary(currentUser, target, roleCodes, request);
@@ -106,18 +106,18 @@ public class UserService {
             );
         }
         UserDto updated = toDto(userId);
-        auditService.record(currentUser.enterpriseId(), currentUser.id(), "USER_ROLE_UPDATE", "SYS_USER", userId, "SUCCESS", "before=" + before + "; after=" + updated.roles(), request);
+        auditService.recordSuccess(currentUser.enterpriseId(), currentUser.id(), "USER_ROLE_UPDATE", "SYS_USER", userId, "before=" + before + "; after=" + updated.roles(), request);
         return updated;
     }
 
     private void validateRoleBoundary(CurrentUser currentUser, UserAccount target, Set<String> roleCodes, HttpServletRequest request) {
         if (roleCodes.contains("SYSTEM_ADMIN") && roleCodes.size() > 1) {
-            auditService.record(currentUser.enterpriseId(), currentUser.id(), "USER_ROLE_UPDATE_DENIED", "SYS_USER", target.id(), "FORBIDDEN", "系统管理员角色不得与业务角色混用", request);
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "USER_ROLE_UPDATE_DENIED", "SYS_USER", target.id(), "FORBIDDEN", "系统管理员角色不得与业务角色混用", request);
             throw ApiException.forbidden("FORBIDDEN", "系统管理员角色不得与业务角色混用");
         }
         Set<String> before = roles(target.id());
         if (before.contains("SYSTEM_ADMIN") && !roleCodes.contains("SYSTEM_ADMIN") && enabledPermissionAdminCount() <= 1) {
-            auditService.record(currentUser.enterpriseId(), currentUser.id(), "LAST_PERMISSION_ADMIN_REMOVAL_DENIED", "SYS_USER", target.id(), "FORBIDDEN", "不能移除最后一个有效权限管理员", request);
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "LAST_PERMISSION_ADMIN_REMOVAL_DENIED", "SYS_USER", target.id(), "FORBIDDEN", "不能移除最后一个有效权限管理员", request);
             throw ApiException.forbidden("FORBIDDEN", "不能移除最后一个有效权限管理员");
         }
     }
