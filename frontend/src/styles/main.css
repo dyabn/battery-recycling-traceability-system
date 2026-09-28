@@ -12,18 +12,24 @@ body {
   margin: 0;
 }
 
-.app-shell {
+.login-page,
+.simple-page {
   min-height: 100vh;
-  padding: 40px;
+  display: grid;
+  place-items: center;
+  padding: 32px;
 }
 
-.workspace {
+.login-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 420px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   gap: 32px;
-  max-width: 1180px;
-  margin: 0 auto;
-  align-items: start;
+  width: min(920px, 100%);
+  align-items: center;
+  padding: 36px;
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
 }
 
 .eyebrow {
@@ -47,23 +53,81 @@ h1 {
   line-height: 1.7;
 }
 
-.status-card {
+.login-form {
+  padding: 24px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
 }
 
-.card-header {
+.layout {
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #ffffff;
+  border-right: 1px solid #d9e2ec;
+}
+
+.brand {
+  height: 72px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid #d9e2ec;
+}
+
+.brand span,
+.topbar span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #d9e2ec;
+}
+
+.topbar div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.content {
+  background: #f6f8fb;
+}
+
+.page-panel {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 20px;
 }
 
 @media (max-width: 860px) {
-  .app-shell {
+  .login-page,
+  .simple-page {
     padding: 24px;
   }
 
-  .workspace {
+  .login-panel {
     grid-template-columns: 1fr;
   }
 }
