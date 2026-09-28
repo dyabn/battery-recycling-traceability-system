@@ -433,7 +433,7 @@ class SecurityIntegrationTest {
         }
         org.assertj.core.api.Assertions.assertThat(statuses).contains(200);
         org.assertj.core.api.Assertions.assertThat(successAuditCount("USER_ROLE_UPDATE", 4L)).isEqualTo(successBefore + 1);
-        org.assertj.core.api.Assertions.assertThat(idempotencyRecordCount("UPDATE_USER_ROLES", key)).isOne();
+        org.assertj.core.api.Assertions.assertThat(idempotencyRecordCount(1L, 1L, "UPDATE_USER_ROLES", key)).isOne();
     }
 
     @Test
@@ -593,12 +593,15 @@ class SecurityIntegrationTest {
                 """, String.class, operationCode, idempotencyKey);
     }
 
-    private int idempotencyRecordCount(String operationCode, String idempotencyKey) {
+    private int idempotencyRecordCount(Long enterpriseId, Long operatorUserId, String operationCode, String idempotencyKey) {
         Integer count = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM idempotency_record
-                WHERE operation_code = ? AND idempotency_key = ?
-                """, Integer.class, operationCode, idempotencyKey);
+                WHERE enterprise_id = ?
+                  AND operator_user_id = ?
+                  AND operation_code = ?
+                  AND idempotency_key = ?
+                """, Integer.class, enterpriseId, operatorUserId, operationCode, idempotencyKey);
         return count == null ? 0 : count;
     }
 }
