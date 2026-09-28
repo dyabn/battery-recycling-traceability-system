@@ -6,9 +6,9 @@
 
 - 增量：I1-auth-tenant-rbac
 - 分支：feature/first-slice-implementation
-- 验证提交：待最终 CI 回填
-- GitHub Actions：待最终 CI 回填
-- 结论：已完成 I1 评审整改，等待最终 GitHub Actions 验证和复核。
+- 验证提交：d72ee547f8eaa0051ea2935cc700e3c348bc10cb
+- GitHub Actions：https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/36411319766
+- 结论：I1 评审整改后的自动化验证通过，等待 I1 复核。
 
 ## 本轮整改范围
 
@@ -27,15 +27,15 @@
 
 | 检查项 | 结果 |
 | --- | --- |
-| 后端 `mvn test` | 通过；MySQL 集成测试本地按开关跳过 |
+| 后端 `mvn test` | 本地通过；MySQL 集成测试在 GitHub Actions 通过 |
 | 前端 Vitest | 通过 |
 | 前端生产构建 | 通过 |
 | Redocly OpenAPI 校验 | 通过 |
 | 生产构建演示密码检查 | 通过 |
 
-## CI 验证要求
+## CI 验证结果
 
-| 检查项 | 期望 |
+| 检查项 | 结果 |
 | --- | --- |
 | 后端 `mvn test` | 通过 |
 | MySQL 8.4 启动 | 通过 |
