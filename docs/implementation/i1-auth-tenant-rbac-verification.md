@@ -6,8 +6,8 @@
 
 - 增量：I1-auth-tenant-rbac
 - 分支：feature/first-slice-implementation
-- 验证提交：a07360bd9e54f3af2621df97d472b241d821bfba
-- GitHub Actions：https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/36414244931
+- 验证提交：3edfbb0fd178c989de62f18c9e8ced9dd08af540
+- GitHub Actions：https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/36414511620
 - 结论：I1 第二轮评审整改后的自动化验证通过，等待 I1 复核。
 
 ## 本轮整改范围
