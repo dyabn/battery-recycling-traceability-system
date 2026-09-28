@@ -360,9 +360,12 @@ implementation_progress:
       validated_commit: 0adb66e
     I1:
       status: paused-for-review
-      review_result: waiting-review
-      validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/36384449009
-      validated_commit: 5c6f806
+      review_result: 修改后复核
+      validation_run: 待最终 CI 回填
+      validated_commit: 待最终 CI 回填
+    I2:
+      status: not-started
+      I2_started: false
   outputs:
     backend: backend/
     frontend: frontend/
@@ -402,23 +405,27 @@ implementation_progress:
       - Spring Boot 连接迁移后的数据库成功
   i1_validation:
     workflow: Implementation CI
-    run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/36384449009
-    commit: 5c6f806
-    result: passed
+    run: 待最终 CI 回填
+    commit: 待最终 CI 回填
+    result: pending
     verified_items:
       - 后端 mvn test 通过
       - MySQL 8.4 启动成功
-      - Flyway 依次执行 V1、V2 和 V3 成功
+      - Flyway 依次执行 V1、V2、V3 和 V4 成功
       - V1.0 21 张表与 V1.1 8 张表合计 29 张业务表存在
+      - idempotency_key 字段长度为 128
       - 4 个基础角色存在
       - 26 个权限编码存在
       - dq:rule:toggle 分配数量为 0
       - 登录、禁用用户、无 Token、过期 Token、当前用户查询、无权限访问、跨企业访问、幂等和 V3 重复执行测试通过
+      - 幂等失败记录、拒绝审计、RBAC 权限边界、请求校验、Token 即时失效和 ID 唯一性测试通过
+      - Redocly OpenAPI 校验通过
       - 前端 npm install 通过
       - 前端 Vitest 通过
       - 前端 npm run build 通过
+      - 生产构建不包含演示密码预填
       - Spring Boot 连接迁移后的数据库成功
-  review_result: I1 等待评审
+  review_result: I1 修改后复核
 
 technical_design_progress:
   status: completed

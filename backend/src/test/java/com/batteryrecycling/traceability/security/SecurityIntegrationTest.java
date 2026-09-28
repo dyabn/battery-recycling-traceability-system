@@ -10,12 +10,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.batteryrecycling.traceability.common.api.IdGenerator;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import javax.crypto.SecretKey;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -47,6 +52,9 @@ class SecurityIntegrationTest {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    IdGenerator idGenerator;
+
     @Test
     @Order(1)
     void loginSuccessReturnsJwtAndCurrentUser() throws Exception {
@@ -56,10 +64,11 @@ class SecurityIntegrationTest {
                                 {"username":"admin","password":"password"}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.currentUser.username").value("admin"))
-                .andExpect(jsonPath("$.currentUser.permissions", hasItem("permission:manage")));
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.data.currentUser.username").value("admin"))
+                .andExpect(jsonPath("$.data.currentUser.permissions", hasItem("permission:manage")));
     }
 
     @Test
@@ -98,22 +107,26 @@ class SecurityIntegrationTest {
         mockMvc.perform(get("/api/v1/auth/current-user")
                         .header("Authorization", bearer(adminToken())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.enterpriseId").value(1))
-                .andExpect(jsonPath("$.roles", hasItem("SYSTEM_ADMIN")))
-                .andExpect(jsonPath("$.permissions", hasItem("permission:manage")));
+                .andExpect(jsonPath("$.data.enterpriseId").value(1))
+                .andExpect(jsonPath("$.data.roles", hasItem("SYSTEM_ADMIN")))
+                .andExpect(jsonPath("$.data.permissions", hasItem("permission:manage")));
     }
 
     @Test
     @Order(5)
     void permissionAndTenantBoundariesAreEnforced() throws Exception {
+        int deniedBefore = forbiddenAuditCount("GET /api/v1/users");
         mockMvc.perform(get("/api/v1/users")
                         .header("Authorization", bearer(supervisorToken())))
                 .andExpect(status().isForbidden());
+        org.assertj.core.api.Assertions.assertThat(forbiddenAuditCount("GET /api/v1/users")).isGreaterThan(deniedBefore);
 
+        int crossBefore = forbiddenAuditCount("USER_LIST_CROSS_ENTERPRISE_DENIED");
         mockMvc.perform(get("/api/v1/users?enterpriseId=2")
                         .header("Authorization", bearer(adminToken())))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("CROSS_ENTERPRISE_ACCESS_DENIED"));
+        org.assertj.core.api.Assertions.assertThat(forbiddenAuditCount("USER_LIST_CROSS_ENTERPRISE_DENIED")).isGreaterThan(crossBefore);
     }
 
     @Test
@@ -122,10 +135,10 @@ class SecurityIntegrationTest {
         mockMvc.perform(get("/api/v1/auth/current-user")
                         .header("Authorization", bearer(adminToken())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.permissions", hasItem("dq:rule:read")))
-                .andExpect(jsonPath("$.permissions", hasItem("dq:audit:read")))
-                .andExpect(jsonPath("$.permissions", not(hasItem("dq:check:execute"))))
-                .andExpect(jsonPath("$.permissions", not(hasItem("dq:rule:toggle"))));
+                .andExpect(jsonPath("$.data.permissions", hasItem("dq:rule:read")))
+                .andExpect(jsonPath("$.data.permissions", hasItem("dq:audit:read")))
+                .andExpect(jsonPath("$.data.permissions", not(hasItem("dq:check:execute"))))
+                .andExpect(jsonPath("$.data.permissions", not(hasItem("dq:rule:toggle"))));
 
         Integer toggleAssignments = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
@@ -146,12 +159,90 @@ class SecurityIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {"permissionCodes":["dq:rule:read","dq:rule:toggle"]}
-                                """))
+                """))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @Order(8)
+    void failedWriteKeepsBusinessStateAndMarksIdempotencyFailed() throws Exception {
+        String token = adminToken();
+        Set<String> beforeRoles = userRoles(1L);
+        mockMvc.perform(put("/api/v1/users/1/roles")
+                        .header("Authorization", bearer(token))
+                        .header("Idempotency-Key", "failed-mixed-role-key")
+                        .contentType("application/json")
+                        .content("""
+                                {"roleCodes":["SYSTEM_ADMIN","RECYCLE_OPERATOR"]}
+                                """))
+                .andExpect(status().isForbidden());
+
+        org.assertj.core.api.Assertions.assertThat(userRoles(1L)).isEqualTo(beforeRoles);
+        org.assertj.core.api.Assertions.assertThat(idempotencyStatus("UPDATE_USER_ROLES", "failed-mixed-role-key")).isEqualTo("FAILED");
+        org.assertj.core.api.Assertions.assertThat(forbiddenAuditCount("USER_ROLE_UPDATE_DENIED")).isGreaterThan(0);
+    }
+
+    @Test
+    @Order(9)
+    void rbacPrivilegeEscalationBoundariesAreEnforced() throws Exception {
+        String token = adminToken();
+        Long systemAdminRoleId = jdbcTemplate.queryForObject("SELECT id FROM sys_role WHERE role_code = 'SYSTEM_ADMIN'", Long.class);
+
+        mockMvc.perform(put("/api/v1/roles/{id}/permissions", systemAdminRoleId)
+                        .header("Authorization", bearer(token))
+                        .header("Idempotency-Key", "admin-business-perm-key")
+                        .contentType("application/json")
+                        .content("""
+                                {"permissionCodes":["authenticated","permission:manage","audit:read","batch:create"]}
+                                """))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(put("/api/v1/roles/{id}/permissions", systemAdminRoleId)
+                        .header("Authorization", bearer(token))
+                        .header("Idempotency-Key", "remove-last-admin-key")
+                        .contentType("application/json")
+                        .content("""
+                                {"permissionCodes":["authenticated","audit:read"]}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @Order(10)
+    void requestValidationRejectsEmptyPayloadAndInvalidIdempotencyKey() throws Exception {
+        String token = adminToken();
+        mockMvc.perform(put("/api/v1/users/5/roles")
+                        .header("Authorization", bearer(token))
+                        .header("Idempotency-Key", "empty-role-key")
+                        .contentType("application/json")
+                        .content("""
+                                {"roleCodes":[]}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        Long supervisorRoleId = jdbcTemplate.queryForObject("SELECT id FROM sys_role WHERE role_code = 'BUSINESS_SUPERVISOR'", Long.class);
+        mockMvc.perform(put("/api/v1/roles/{id}/permissions", supervisorRoleId)
+                        .header("Authorization", bearer(token))
+                        .header("Idempotency-Key", "short")
+                        .contentType("application/json")
+                        .content("""
+                                {"permissionCodes":[]}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @Order(11)
+    void issuedTokenIsRejectedAfterUserDisabled() throws Exception {
+        String token = tokenFor("enterprise_b_user", "password");
+        jdbcTemplate.update("UPDATE sys_user SET enabled_status = 'DISABLED' WHERE id = 6");
+        mockMvc.perform(get("/api/v1/auth/current-user")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @Order(12)
     void repeatedIdempotencyKeyReturnsFirstResultAndDifferentRequestIsConflict() throws Exception {
         String token = adminToken();
         String body = """
@@ -163,7 +254,7 @@ class SecurityIntegrationTest {
                         .contentType("application/json")
                         .content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.roles", hasItem("RECYCLE_OPERATOR")))
+                .andExpect(jsonPath("$.data.roles", hasItem("RECYCLE_OPERATOR")))
                 .andReturn().getResponse().getContentAsString();
 
         String second = mockMvc.perform(put("/api/v1/users/5/roles")
@@ -187,7 +278,7 @@ class SecurityIntegrationTest {
     }
 
     @Test
-    @Order(9)
+    @Order(13)
     void rerunningV3DoesNotDuplicateOrOverwriteExistingRolePermissions() throws Exception {
         jdbcTemplate.update("""
                 DELETE rp FROM sys_role_permission rp
@@ -218,6 +309,19 @@ class SecurityIntegrationTest {
         org.assertj.core.api.Assertions.assertThat(toggleAssignments).isZero();
     }
 
+    @Test
+    @Order(14)
+    void idGeneratorProducesUniqueIdsConcurrently() throws Exception {
+        Set<Long> ids = ConcurrentHashMap.newKeySet();
+        var executor = Executors.newFixedThreadPool(8);
+        for (int i = 0; i < 2000; i++) {
+            executor.submit(() -> ids.add(idGenerator.nextId()));
+        }
+        executor.shutdown();
+        org.assertj.core.api.Assertions.assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+        org.assertj.core.api.Assertions.assertThat(ids).hasSize(2000);
+    }
+
     private String adminToken() throws Exception {
         return tokenFor("admin", "password");
     }
@@ -233,7 +337,7 @@ class SecurityIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         JsonNode json = objectMapper.readTree(response);
-        return json.get("accessToken").asText();
+        return json.get("data").get("accessToken").asText();
     }
 
     private String bearer(String token) {
@@ -251,5 +355,30 @@ class SecurityIntegrationTest {
                 .expiration(Date.from(now.minusSeconds(60)))
                 .signWith(key)
                 .compact();
+    }
+
+    private int forbiddenAuditCount(String actionCode) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM audit_log WHERE action_code = ? AND result = 'FORBIDDEN'",
+                Integer.class,
+                actionCode);
+        return count == null ? 0 : count;
+    }
+
+    private Set<String> userRoles(Long userId) {
+        return Set.copyOf(jdbcTemplate.queryForList("""
+                SELECT r.role_code
+                FROM sys_role r
+                JOIN sys_user_role ur ON ur.role_id = r.id
+                WHERE ur.user_id = ?
+                """, String.class, userId));
+    }
+
+    private String idempotencyStatus(String operationCode, String idempotencyKey) {
+        return jdbcTemplate.queryForObject("""
+                SELECT process_status
+                FROM idempotency_record
+                WHERE operation_code = ? AND idempotency_key = ?
+                """, String.class, operationCode, idempotencyKey);
     }
 }
