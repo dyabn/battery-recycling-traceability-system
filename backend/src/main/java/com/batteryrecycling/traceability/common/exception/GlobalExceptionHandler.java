@@ -1,6 +1,8 @@
 package com.batteryrecycling.traceability.common.exception;
 
+import com.batteryrecycling.traceability.audit.AuditService;
 import com.batteryrecycling.traceability.common.api.ApiErrorResponse;
+import com.batteryrecycling.traceability.common.security.CurrentUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.time.OffsetDateTime;
@@ -14,6 +16,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private final AuditService auditService;
+    private final CurrentUserService currentUserService;
+
+    public GlobalExceptionHandler(AuditService auditService, CurrentUserService currentUserService) {
+        this.auditService = auditService;
+        this.currentUserService = currentUserService;
+    }
 
     @ExceptionHandler(ApiException.class)
     ResponseEntity<ApiErrorResponse> handleApiException(ApiException exception, HttpServletRequest request) {
@@ -27,6 +36,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<ApiErrorResponse> handleDenied(AccessDeniedException exception, HttpServletRequest request) {
+        currentUserService.currentUser().ifPresent(user -> auditService.record(
+                user.enterpriseId(),
+                user.id(),
+                request.getMethod() + " " + request.getRequestURI(),
+                "HTTP_REQUEST",
+                null,
+                "FORBIDDEN",
+                "没有执行该操作的权限",
+                request
+        ));
         return build(HttpStatus.FORBIDDEN, "FORBIDDEN", "没有执行该操作的权限", request);
     }
 

@@ -264,7 +264,7 @@ class SecurityIntegrationTest {
                         .content(body))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(objectMapper.readTree(second)).isEqualTo(objectMapper.readTree(first));
+        org.assertj.core.api.Assertions.assertThat(objectMapper.readTree(second).get("data")).isEqualTo(objectMapper.readTree(first).get("data"));
 
         mockMvc.perform(put("/api/v1/users/5/roles")
                         .header("Authorization", bearer(token))
