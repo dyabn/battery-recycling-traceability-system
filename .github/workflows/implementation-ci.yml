@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   backend:
@@ -31,6 +32,20 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
+      - name: Install MySQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y default-mysql-client
+      - name: Wait for MySQL 8.4
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -uroot -proot --silent; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MySQL did not become ready in time"
+          exit 1
       - name: Build and test backend
         working-directory: backend
         run: mvn -B test
@@ -42,6 +57,41 @@ jobs:
           -Dflyway.user=root
           -Dflyway.password=root
           flyway:migrate
+      - name: Verify V1.0 and V1.1 business table count
+        run: |
+          TABLE_COUNT=$(mysql -h 127.0.0.1 -uroot -proot -N -B -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='battery_traceability' AND table_type='BASE TABLE' AND table_name <> 'flyway_schema_history';")
+          echo "business_table_count=${TABLE_COUNT}"
+          if [ "${TABLE_COUNT}" != "29" ]; then
+            mysql -h 127.0.0.1 -uroot -proot -e "SHOW TABLES FROM battery_traceability;"
+            exit 1
+          fi
+          mysql -h 127.0.0.1 -uroot -proot -e "SHOW TABLES FROM battery_traceability;"
+      - name: Verify Spring Boot connects to migrated database
+        working-directory: backend
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: battery_traceability
+          DB_USERNAME: root
+          DB_PASSWORD: root
+        run: |
+          mvn -B spring-boot:run > spring-boot.log 2>&1 &
+          APP_PID=$!
+          trap "kill ${APP_PID} 2>/dev/null || true" EXIT
+
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:8080/actuator/health; then
+              exit 0
+            fi
+            if ! kill -0 "${APP_PID}" 2>/dev/null; then
+              cat spring-boot.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+          cat spring-boot.log
+          exit 1
 
   frontend:
     runs-on: ubuntu-latest
