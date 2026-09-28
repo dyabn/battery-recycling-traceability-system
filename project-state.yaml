@@ -361,8 +361,8 @@ implementation_progress:
     I1:
       status: paused-for-review
       review_result: 修改后复核
-      validation_run: 待最终 CI 回填
-      validated_commit: 待最终 CI 回填
+      validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/36414244931
+      validated_commit: a07360bd9e54f3af2621df97d472b241d821bfba
     I2:
       status: not-started
       I2_started: false
@@ -407,9 +407,9 @@ implementation_progress:
       - Spring Boot 连接迁移后的数据库成功
   i1_validation:
     workflow: Implementation CI
-    run: 待最终 CI 回填
-    commit: 待最终 CI 回填
-    result: pending
+    run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/36414244931
+    commit: a07360bd9e54f3af2621df97d472b241d821bfba
+    result: passed
     verified_items:
       - 后端 mvn test 通过
       - MySQL 8.4 启动成功
