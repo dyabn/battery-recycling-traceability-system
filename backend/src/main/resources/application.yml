@@ -32,6 +32,11 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+app:
+  security:
+    jwt-secret: ${JWT_SECRET:}
+    jwt-expiration-seconds: ${JWT_EXPIRATION_SECONDS:7200}
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
