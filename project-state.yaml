@@ -352,7 +352,15 @@ implementation_progress:
   scope: 第一切片和数据治理 V1.1 的可运行工程骨架
   skeleton_initialized: true
   skeleton_ci_passed: true
-  business_code_started: false
+  business_code_started: true
+  increments:
+    I0:
+      status: completed
+      validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/36376459135
+      validated_commit: 0adb66e
+    I1:
+      status: in-progress
+      review_result: waiting-review
   outputs:
     backend: backend/
     frontend: frontend/
