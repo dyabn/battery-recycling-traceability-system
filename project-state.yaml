@@ -359,8 +359,10 @@ implementation_progress:
       validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/36376459135
       validated_commit: 0adb66e
     I1:
-      status: in-progress
+      status: paused-for-review
       review_result: waiting-review
+      validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/36384449009
+      validated_commit: 5c6f806
   outputs:
     backend: backend/
     frontend: frontend/
@@ -375,8 +377,12 @@ implementation_progress:
     - 提供 MySQL 8.4 本地运行配置
     - 提供基础 CI 编译和构建入口
     - GitHub Actions 验证后端测试、前端构建、MySQL 8.4、Flyway V1/V2 迁移、29 张业务表和 Spring Boot 数据库连接通过
+    - 完成 I1 登录、JWT、角色权限和企业隔离基础实现
+    - 完成 V3 核心角色权限初始化和 dev 环境演示账号
+    - 完成角色权限修改的幂等与审计基础
+    - 完成前端登录、路由守卫、Token 拦截、权限菜单和系统管理只读页面
+    - GitHub Actions 验证 V1/V2/V3 迁移、认证测试、权限矩阵测试、企业隔离测试、前端测试和前端构建通过
   pending_items:
-    - 登录、JWT、角色权限和企业隔离实现
     - 第一切片业务接口实现
     - 数据治理规则处理器和质量问题闭环实现
     - 正式前端页面实现
@@ -394,7 +400,25 @@ implementation_progress:
       - Flyway 依次执行 V1 和 V2 成功
       - V1.0 21 张表与 V1.1 8 张表合计 29 张业务表存在
       - Spring Boot 连接迁移后的数据库成功
-  review_result: I0 工程骨架验证通过
+  i1_validation:
+    workflow: Implementation CI
+    run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/36384449009
+    commit: 5c6f806
+    result: passed
+    verified_items:
+      - 后端 mvn test 通过
+      - MySQL 8.4 启动成功
+      - Flyway 依次执行 V1、V2 和 V3 成功
+      - V1.0 21 张表与 V1.1 8 张表合计 29 张业务表存在
+      - 4 个基础角色存在
+      - 26 个权限编码存在
+      - dq:rule:toggle 分配数量为 0
+      - 登录、禁用用户、无 Token、过期 Token、当前用户查询、无权限访问、跨企业访问、幂等和 V3 重复执行测试通过
+      - 前端 npm install 通过
+      - 前端 Vitest 通过
+      - 前端 npm run build 通过
+      - Spring Boot 连接迁移后的数据库成功
+  review_result: I1 等待评审
 
 technical_design_progress:
   status: completed
