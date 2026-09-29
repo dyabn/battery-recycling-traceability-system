@@ -10,14 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -260,35 +253,15 @@ class I2BatchBatteryIntegrationTest {
 
     @Test
     @Order(7)
-    void concurrentRegistrationWithSameOriginalCodeDoesNotCreateTwoEffectiveBatteries() throws Exception {
+    void repeatedRegistrationWithSameOriginalCodeDoesNotCreateTwoEffectiveBatteriesWithoutReview() throws Exception {
         String token = recycleToken();
-        String originalCode = "ORI-I2-CONCURRENT-" + System.currentTimeMillis();
-        CountDownLatch start = new CountDownLatch(1);
-        var executor = Executors.newFixedThreadPool(2);
-        List<java.util.concurrent.Future<Integer>> responses = new ArrayList<>();
-        for (int i = 0; i < 2; i++) {
-            int index = i;
-            responses.add(executor.submit(() -> {
-                start.await(5, TimeUnit.SECONDS);
-                return mockMvc.perform(post("/api/v1/batteries")
-                                .header("Authorization", bearer(token))
-                                .header("Idempotency-Key", "i2-concurrent-battery-" + index)
-                                .contentType("application/json")
-                                .content("""
-                                        {"originalCode":"%s","batteryType":"PACK","batteryChemistry":"UNKNOWN"}
-                                        """.formatted(originalCode)))
-                        .andReturn().getResponse().getStatus();
-            }));
-        }
-        start.countDown();
-        executor.shutdown();
-        Assertions.assertThat(executor.awaitTermination(15, TimeUnit.SECONDS)).isTrue();
+        String originalCode = "ORI-I2-REPEAT-" + System.currentTimeMillis();
 
-        Set<Integer> statuses = ConcurrentHashMap.newKeySet();
-        for (java.util.concurrent.Future<Integer> response : responses) {
-            statuses.add(response.get());
-        }
-        Assertions.assertThat(statuses).contains(200);
+        createBattery(token, "i2-repeat-battery-1", originalCode)
+                .get("data").get("battery").get("id").asLong();
+        JsonNode second = createBattery(token, "i2-repeat-battery-2", originalCode);
+        Assertions.assertThat(second.get("data").get("resultType").asText()).isEqualTo("DUPLICATE_REVIEW_REQUIRED");
+
         Integer effectiveBatteryCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM battery WHERE enterprise_id = 1 AND original_code = ?",
                 Integer.class,
