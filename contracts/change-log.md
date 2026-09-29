@@ -36,6 +36,7 @@
 | CHG-032 | 2026-09-24 | 用户确认 | 合并数据治理 V1.1 技术设计基线，创建 `feature/first-slice-implementation`，初始化 Spring Boot 后端、Vue 前端、MySQL 8.4、Flyway 迁移和基础 CI；仍不实现正式业务代码。 | `backend/`、`frontend/`、`docker-compose.yml`、`.github/workflows/implementation-ci.yml`、`project-state.yaml`、追踪索引、README | 否 |
 | CHG-033 | 2026-09-28 | I0 骨架验证 | Implementation CI 验证通过，确认后端测试、前端构建、MySQL 8.4、Flyway V1/V2 迁移、29 张业务表和 Spring Boot 数据库连接；下一增量进入 I1 身份、权限和企业隔离。 | `.github/workflows/implementation-ci.yml`、`frontend/`、`project-state.yaml`、追踪索引 | 否 |
 | CHG-034 | 2026-09-28 | I1 第二轮复核整改 | 新增 V5 纠正内置角色权限矩阵，增加运行时角色最大权限边界，拆分成功审计与拒绝审计事务传播，补充并发幂等、响应契约和 I1-TC-029..034 测试；I1 仍保持修改后复核，不进入 I2。 | `backend/`、`.github/workflows/implementation-ci.yml`、I1 验证记录、追踪索引、`project-state.yaml` | 否 |
+| CHG-035 | 2026-09-29 | I1 最终复核通过 | I1 身份认证、企业隔离和角色权限基础通过最终复核；确认验证 run 36414511620、验证提交 3edfbb0fd178c989de62f18c9e8ced9dd08af540、评审包提交 8179950ff356ca0492e6a8e53277d2d3fc0c5191；I2 仍保持未启动。 | I1 验证记录、追踪索引、`project-state.yaml` | 否 |
 
 ## C3 第一条业务切片确认
 

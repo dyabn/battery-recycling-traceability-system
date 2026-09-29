@@ -2,19 +2,19 @@
 
 当前阶段：implementation-and-test / 测试通过。
 
-当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离处于修改后复核；I2 尚未启动。
+当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 尚未启动。
 
 ## I1 实现追踪项
 
 | 编号 | 类型 | 来源 | 状态 |
 | --- | --- | --- | --- |
-| IMPL-I1-001 | JWT 登录和当前用户 | `backend/src/main/java/.../auth`、`frontend/src/stores/auth.ts` | 修改后复核 |
-| IMPL-I1-002 | DTO Envelope 契约 | `contracts/api/openapi-first-slice.yaml`、`common/api/ApiResponse.java` | 修改后复核 |
-| IMPL-I1-003 | 企业隔离和 RBAC | `user`、`role`、`permission` 模块、`V5__correct_core_role_permission_matrix.sql` | 修改后复核 |
-| IMPL-I1-004 | 幂等与失败记录 | `idempotency` 模块、`V4__expand_idempotency_key_length.sql` | 修改后复核 |
-| IMPL-I1-005 | 成功/拒绝审计事务边界 | `audit/AuditService.java` | 修改后复核 |
-| IMPL-I1-006 | 前端认证恢复和权限路由 | `frontend/src/router/authGuard.ts` | 修改后复核 |
-| IMPL-I1-007 | I1 验证记录 | `docs/implementation/i1-auth-tenant-rbac-verification.md` | 修改后复核 |
+| IMPL-I1-001 | JWT 登录和当前用户 | `backend/src/main/java/.../auth`、`frontend/src/stores/auth.ts` | 已完成 |
+| IMPL-I1-002 | DTO Envelope 契约 | `contracts/api/openapi-first-slice.yaml`、`common/api/ApiResponse.java` | 已完成 |
+| IMPL-I1-003 | 企业隔离和 RBAC | `user`、`role`、`permission` 模块、`V5__correct_core_role_permission_matrix.sql` | 已完成 |
+| IMPL-I1-004 | 幂等与失败记录 | `idempotency` 模块、`V4__expand_idempotency_key_length.sql` | 已完成 |
+| IMPL-I1-005 | 成功/拒绝审计事务边界 | `audit/AuditService.java` | 已完成 |
+| IMPL-I1-006 | 前端认证恢复和权限路由 | `frontend/src/router/authGuard.ts` | 已完成 |
+| IMPL-I1-007 | I1 验证记录 | `docs/implementation/i1-auth-tenant-rbac-verification.md` | 已完成 |
 
 ## I1 测试追踪摘要
 
