@@ -121,6 +121,29 @@ h1 {
   font-size: 20px;
 }
 
+.filter-row {
+  margin-bottom: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.narrow-form {
+  max-width: 720px;
+}
+
+.result-alert {
+  margin-top: 16px;
+}
+
+.muted {
+  color: #64748b;
+  margin: 6px 0 0;
+}
+
 @media (max-width: 860px) {
   .login-page,
   .simple-page {

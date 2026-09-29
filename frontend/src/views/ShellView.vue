@@ -3,9 +3,11 @@
     <el-aside width="240px" class="sidebar">
       <div class="brand">
         <strong>电池追溯</strong>
-        <span>I1 权限基础</span>
+        <span>I2 批次登记</span>
       </div>
       <el-menu :default-active="$route.path" router>
+        <el-menu-item v-if="can('batch:read')" index="/batches">回收批次</el-menu-item>
+        <el-menu-item v-if="can('battery:create')" index="/batteries/register">电池登记</el-menu-item>
         <el-menu-item v-if="can('permission:manage')" index="/system/users">用户管理</el-menu-item>
         <el-menu-item v-if="can('permission:manage')" index="/system/roles">角色管理</el-menu-item>
         <el-menu-item v-if="can('permission:manage')" index="/system/permissions">权限清单</el-menu-item>
@@ -44,4 +46,3 @@ async function logout() {
   await router.push('/login');
 }
 </script>
-

@@ -3,6 +3,11 @@ import type { RouteRecordRaw } from 'vue-router';
 import ForbiddenView from '../views/ForbiddenView.vue';
 import LoginView from '../views/LoginView.vue';
 import ShellView from '../views/ShellView.vue';
+import BatteryRegisterView from '../views/battery/BatteryRegisterView.vue';
+import BatteryTraceView from '../views/battery/BatteryTraceView.vue';
+import DuplicateResolutionView from '../views/battery/DuplicateResolutionView.vue';
+import BatchDetailView from '../views/batch/BatchDetailView.vue';
+import BatchListView from '../views/batch/BatchListView.vue';
 import AuditView from '../views/system/AuditView.vue';
 import PermissionsView from '../views/system/PermissionsView.vue';
 import RolesView from '../views/system/RolesView.vue';
@@ -15,7 +20,12 @@ export const routes: RouteRecordRaw[] = [
     path: '/',
     component: ShellView,
     children: [
-      { path: '', redirect: '/system/users' },
+      { path: '', redirect: '/batches' },
+      { path: 'batches', name: 'batches', component: BatchListView, meta: { permission: 'batch:read' } },
+      { path: 'batches/:id', name: 'batch-detail', component: BatchDetailView, meta: { permission: 'batch:read' } },
+      { path: 'batteries/register', name: 'battery-register', component: BatteryRegisterView, meta: { permission: 'battery:create' } },
+      { path: 'duplicates/:id', name: 'duplicate-resolution', component: DuplicateResolutionView, meta: { permission: 'battery:duplicate:resolve' } },
+      { path: 'batteries/:id/trace', name: 'battery-trace', component: BatteryTraceView, meta: { permission: 'trace:read' } },
       { path: 'system/users', name: 'users', component: UsersView, meta: { permission: 'permission:manage' } },
       { path: 'system/roles', name: 'roles', component: RolesView, meta: { permission: 'permission:manage' } },
       { path: 'system/permissions', name: 'permissions', component: PermissionsView, meta: { permission: 'permission:manage' } },
@@ -23,4 +33,3 @@ export const routes: RouteRecordRaw[] = [
     ],
   },
 ];
-
