@@ -59,7 +59,19 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: root
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-development-secret-for-i1-tests-32bytes' }}
-        run: mvn -B test
+        run: |
+          set +e
+          mvn -B test
+          STATUS=$?
+          if [ "${STATUS}" != "0" ]; then
+            for report in target/surefire-reports/*.txt; do
+              if [ -f "${report}" ]; then
+                SUMMARY=$(tr '\n' ' ' < "${report}" | cut -c1-8000)
+                echo "::error file=${report}::${SUMMARY}"
+              fi
+            done
+            exit "${STATUS}"
+          fi
       - name: Run Flyway V1.0, V1.1, I1 and I2 migrations on MySQL 8.4
         working-directory: backend
         run: >
