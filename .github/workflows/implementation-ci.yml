@@ -60,7 +60,7 @@ jobs:
           DB_PASSWORD: root
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-development-secret-for-i1-tests-32bytes' }}
         run: mvn -B test
-      - name: Run Flyway V1.0, V1.1 and I1 V3/V4/V5 migrations on MySQL 8.4
+      - name: Run Flyway V1.0, V1.1, I1 and I2 migrations on MySQL 8.4
         working-directory: backend
         run: >
           mvn -B
@@ -80,6 +80,7 @@ jobs:
           PERMISSION_COUNT=$(mysql -h 127.0.0.1 -uroot -proot -N -B battery_traceability -e "SELECT COUNT(*) FROM sys_permission;")
           TOGGLE_ASSIGNMENTS=$(mysql -h 127.0.0.1 -uroot -proot -N -B battery_traceability -e "SELECT COUNT(*) FROM sys_role_permission rp JOIN sys_permission p ON p.id = rp.permission_id WHERE p.permission_code = 'dq:rule:toggle';")
           IDEMPOTENCY_KEY_LENGTH=$(mysql -h 127.0.0.1 -uroot -proot -N -B -e "SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.columns WHERE table_schema='battery_traceability' AND table_name='idempotency_record' AND column_name='idempotency_key';")
+          ACTIVE_BATTERY_GUARD=$(mysql -h 127.0.0.1 -uroot -proot -N -B -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='battery_traceability' AND table_name='recycle_batch_battery' AND index_name='uk_rbb_active_battery';")
           SYSTEM_ADMIN_PERMS=$(mysql -h 127.0.0.1 -uroot -proot -N -B battery_traceability -e "SELECT GROUP_CONCAT(p.permission_code ORDER BY p.permission_code SEPARATOR ',') FROM sys_role r JOIN sys_role_permission rp ON rp.role_id = r.id JOIN sys_permission p ON p.id = rp.permission_id WHERE r.role_code = 'SYSTEM_ADMIN';")
           BUSINESS_SUPERVISOR_PERMS=$(mysql -h 127.0.0.1 -uroot -proot -N -B battery_traceability -e "SELECT GROUP_CONCAT(p.permission_code ORDER BY p.permission_code SEPARATOR ',') FROM sys_role r JOIN sys_role_permission rp ON rp.role_id = r.id JOIN sys_permission p ON p.id = rp.permission_id WHERE r.role_code = 'BUSINESS_SUPERVISOR';")
           RECYCLE_OPERATOR_PERMS=$(mysql -h 127.0.0.1 -uroot -proot -N -B battery_traceability -e "SELECT GROUP_CONCAT(p.permission_code ORDER BY p.permission_code SEPARATOR ',') FROM sys_role r JOIN sys_role_permission rp ON rp.role_id = r.id JOIN sys_permission p ON p.id = rp.permission_id WHERE r.role_code = 'RECYCLE_OPERATOR';")
@@ -88,11 +89,12 @@ jobs:
           echo "permission_count=${PERMISSION_COUNT}"
           echo "dq_rule_toggle_assignments=${TOGGLE_ASSIGNMENTS}"
           echo "idempotency_key_length=${IDEMPOTENCY_KEY_LENGTH}"
+          echo "active_battery_guard=${ACTIVE_BATTERY_GUARD}"
           echo "system_admin_permissions=${SYSTEM_ADMIN_PERMS}"
           echo "business_supervisor_permissions=${BUSINESS_SUPERVISOR_PERMS}"
           echo "recycle_operator_permissions=${RECYCLE_OPERATOR_PERMS}"
           echo "warehouse_admin_permissions=${WAREHOUSE_ADMIN_PERMS}"
-          if [ "${ROLE_COUNT}" != "4" ] || [ "${PERMISSION_COUNT}" != "26" ] || [ "${TOGGLE_ASSIGNMENTS}" != "0" ] || [ "${IDEMPOTENCY_KEY_LENGTH}" != "128" ]; then
+          if [ "${ROLE_COUNT}" != "4" ] || [ "${PERMISSION_COUNT}" != "26" ] || [ "${TOGGLE_ASSIGNMENTS}" != "0" ] || [ "${IDEMPOTENCY_KEY_LENGTH}" != "128" ] || [ "${ACTIVE_BATTERY_GUARD}" != "1" ]; then
             exit 1
           fi
           if [ "${SYSTEM_ADMIN_PERMS}" != "audit:read,authenticated,dq:audit:read,dq:dashboard:read,dq:issue:read,dq:rule:read,permission:manage" ]; then exit 1; fi
