@@ -37,6 +37,7 @@
 | CHG-033 | 2026-09-28 | I0 骨架验证 | Implementation CI 验证通过，确认后端测试、前端构建、MySQL 8.4、Flyway V1/V2 迁移、29 张业务表和 Spring Boot 数据库连接；下一增量进入 I1 身份、权限和企业隔离。 | `.github/workflows/implementation-ci.yml`、`frontend/`、`project-state.yaml`、追踪索引 | 否 |
 | CHG-034 | 2026-09-28 | I1 第二轮复核整改 | 新增 V5 纠正内置角色权限矩阵，增加运行时角色最大权限边界，拆分成功审计与拒绝审计事务传播，补充并发幂等、响应契约和 I1-TC-029..034 测试；I1 仍保持修改后复核，不进入 I2。 | `backend/`、`.github/workflows/implementation-ci.yml`、I1 验证记录、追踪索引、`project-state.yaml` | 否 |
 | CHG-035 | 2026-09-29 | I1 最终复核通过 | I1 身份认证、企业隔离和角色权限基础通过最终复核；确认验证 run 36414511620、验证提交 3edfbb0fd178c989de62f18c9e8ced9dd08af540、评审包提交 8179950ff356ca0492e6a8e53277d2d3fc0c5191；I2 仍保持未启动。 | I1 验证记录、追踪索引、`project-state.yaml` | 否 |
+| CHG-036 | 2026-09-29 | I2 启动与契约预检 | 启动 I2 回收批次与电池登记增量，范围限定到创建批次、登记电池、重复编码核实、加入批次和提交待验收；补齐 I2 所需 OpenAPI 批次详情字段和错误响应，不进入 I3。 | `project-state.yaml`、OpenAPI、API 设计、追踪索引 | 否 |
 
 ## C3 第一条业务切片确认
 

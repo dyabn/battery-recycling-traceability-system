@@ -27,6 +27,8 @@ OpenAPI 文件：`contracts/api/openapi-first-slice.yaml`
 
 I1 实现阶段将登录、当前用户、用户列表、角色、权限和审计接口统一为 DTO Envelope；错误响应保留 `code`、`message`、`traceId`、`timestamp` 和 `data=null`。
 
+I2 实现阶段继续沿用同一 Envelope；回收批次详情响应必须包含来源信息、交接信息、备注、版本号以及批次中的电池列表，便于前端直接完成“批次 -> 电池 -> 提交待验收”的闭环。
+
 ### 1.3 认证和权限
 
 - 除登录接口外，所有接口必须携带 `Authorization: Bearer <jwt>`。
@@ -51,6 +53,7 @@ I1 实现阶段将登录、当前用户、用户列表、角色、权限和审�
 | `EFFECTIVE_RECORD_DELETE_FORBIDDEN` | 409 | 已生效记录禁止删除。 |
 | `DUPLICATE_SUBMISSION` | 409 | 重复提交或重复入库。 |
 | `IDEMPOTENCY_KEY_REUSED` | 409 | 同一幂等键被不同请求体复用。 |
+| `RESOURCE_NOT_FOUND` | 404 | 当前企业下资源不存在或不可见。 |
 
 ## 2. 接口清单
 
@@ -108,6 +111,8 @@ I1 实现阶段将登录、当前用户、用户列表、角色、权限和审�
 - 必填：`sourceType`、`sourceSubjectName`、`handoverDate`。
 - 选填：`handoverLocation`、`relatedDocumentNo`、`handoverPerson`、`remark`、`attachmentIds`。
 - 自动：`batchNo`、`enterpriseId`、`createdBy`、`createdAt`、`batchStatus`。
+- 响应：批次详情必须返回 `sourceType`、`sourceSubjectName`、`handoverDate`、`handoverLocation`、`relatedDocumentNo`、`handoverPerson`、`remark`、`version` 和批次中的 `batteries`。
+- 错误响应：缺少必填字段返回 400；资源不存在返回 404；跨企业或无权限返回 403；非草稿修改、提交冲突或重复加入返回 409。
 
 ### 4.2 电池登记与重复核实
 

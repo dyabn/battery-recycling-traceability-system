@@ -173,6 +173,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       tags: [RecycleBatch]
       summary: 修改草稿回收批次
@@ -201,6 +203,10 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /recycle-batches/{id}/submit:
     post:
       tags: [RecycleBatch]
@@ -225,6 +231,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
   /batteries:
@@ -257,6 +265,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
   /batteries/duplicate-check:
@@ -318,6 +328,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
   /recycle-batches/{id}/batteries:
@@ -354,6 +366,10 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /acceptances/pending:
     get:
       tags: [Acceptance]
@@ -825,6 +841,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
     Conflict:
       description: 状态冲突或重复提交
       content:
@@ -1062,8 +1084,12 @@ components:
                 $ref: '#/components/schemas/RecycleBatch'
     RecycleBatch:
       type: object
+      required: [id, batchNo, sourceType, sourceSubjectName, handoverDate, batchStatus, version, batteries]
       properties:
         id:
+          type: integer
+          format: int64
+        enterpriseId:
           type: integer
           format: int64
         batchNo:
@@ -1075,8 +1101,43 @@ components:
         handoverDate:
           type: string
           format: date
+        handoverLocation:
+          type: string
+          nullable: true
+        relatedDocumentNo:
+          type: string
+          nullable: true
+        handoverPerson:
+          type: string
+          nullable: true
+        remark:
+          type: string
+          nullable: true
         batchStatus:
           type: string
+        submittedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdBy:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedBy:
+          type: integer
+          format: int64
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+        batteries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Battery'
     BatteryCreateRequest:
       type: object
       required: [batteryType, batteryChemistry]
@@ -1142,18 +1203,46 @@ components:
                 $ref: '#/components/schemas/Battery'
     Battery:
       type: object
+      required: [id, systemTraceCode, batteryType, batteryChemistry, lifecycleStatus, duplicateStatus]
       properties:
         id:
+          type: integer
+          format: int64
+        enterpriseId:
           type: integer
           format: int64
         systemTraceCode:
           type: string
         originalCode:
           type: string
+          nullable: true
+        batteryType:
+          type: string
+          enum: [PACK]
+        batteryModel:
+          type: string
+          nullable: true
+        manufacturer:
+          type: string
+          nullable: true
+        batteryChemistry:
+          type: string
+        nominalCapacity:
+          type: number
+          nullable: true
+        productionDate:
+          type: string
+          format: date
+          nullable: true
+        currentResponsibleEnterpriseId:
+          type: integer
+          format: int64
         lifecycleStatus:
           type: string
         duplicateStatus:
           type: string
+        version:
+          type: integer
     DuplicateCheckRequest:
       type: object
       required: [originalCode]

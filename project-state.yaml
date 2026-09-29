@@ -347,8 +347,8 @@ technical_design_v1_1:
 implementation_progress:
   status: in-progress
   branch: feature/first-slice-implementation
-  current_step: I1身份、权限和企业隔离
-  current_increment: I1-auth-tenant-rbac
+  current_step: I2回收批次与电池登记
+  current_increment: I2-batch-battery-registration
   scope: 第一切片和数据治理 V1.1 的可运行工程骨架
   skeleton_initialized: true
   skeleton_ci_passed: true
@@ -366,8 +366,9 @@ implementation_progress:
       validated_commit: 3edfbb0fd178c989de62f18c9e8ced9dd08af540
       review_package_commit: 8179950ff356ca0492e6a8e53277d2d3fc0c5191
     I2:
-      status: not-started
-      I2_started: false
+      status: in-progress
+      review_result: waiting-review
+      I2_started: true
   outputs:
     backend: backend/
     frontend: frontend/
@@ -390,6 +391,7 @@ implementation_progress:
     - 完成前端登录、路由守卫、Token 拦截、权限菜单和系统管理只读页面
     - GitHub Actions 验证 V1/V2/V3 迁移、认证测试、权限矩阵测试、企业隔离测试、前端测试和前端构建通过
     - 完成 I1 身份认证、企业隔离和角色权限基础复核确认
+    - 启动 I2 回收批次与电池登记增量，范围限定到批次提交进入待验收
   pending_items:
     - 第一切片业务接口实现
     - 数据治理规则处理器和质量问题闭环实现
@@ -432,7 +434,7 @@ implementation_progress:
       - 前端 npm run build 通过
       - 生产构建不包含演示密码预填
       - Spring Boot 连接迁移后的数据库成功
-  review_result: I1复核通过
+  review_result: I1复核通过，I2已启动
 
 technical_design_progress:
   status: completed
