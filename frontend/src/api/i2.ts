@@ -1,4 +1,5 @@
 import { http } from './http';
+import { clearPendingI2IdempotencyKeys, completeIdempotencyKey, nextIdempotencyKey } from './idempotencyRegistry';
 
 export interface ApiEnvelope<T> {
   code: string;
@@ -83,12 +84,6 @@ export interface TraceEvent {
   result: string;
 }
 
-const pendingIdempotencyKeys = new Map<string, string>();
-
-function idempotencyKey() {
-  return crypto.randomUUID();
-}
-
 function normalizeForFingerprint(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(normalizeForFingerprint);
@@ -108,16 +103,6 @@ function fingerprint(value: unknown) {
   return JSON.stringify(normalizeForFingerprint(value));
 }
 
-function keyForOperation(operationCode: string, operationFingerprint: string) {
-  const mapKey = `${operationCode}:${operationFingerprint}`;
-  let key = pendingIdempotencyKeys.get(mapKey);
-  if (!key) {
-    key = idempotencyKey();
-    pendingIdempotencyKeys.set(mapKey, key);
-  }
-  return { mapKey, key };
-}
-
 async function withIdempotency<T>(
   operationCode: string,
   operationFingerprint: string,
@@ -127,15 +112,13 @@ async function withIdempotency<T>(
   if (explicitKey) {
     return request(explicitKey);
   }
-  const { mapKey, key } = keyForOperation(operationCode, operationFingerprint);
+  const { mapKey, key } = nextIdempotencyKey(operationCode, operationFingerprint);
   const response = await request(key);
-  pendingIdempotencyKeys.delete(mapKey);
+  completeIdempotencyKey(mapKey);
   return response;
 }
 
-export function clearPendingI2IdempotencyKeys() {
-  pendingIdempotencyKeys.clear();
-}
+export { clearPendingI2IdempotencyKeys };
 
 export async function listBatches(status?: string) {
   const response = await http.get<ApiEnvelope<RecycleBatch[]>>('/recycle-batches', { params: { status: status || undefined } });

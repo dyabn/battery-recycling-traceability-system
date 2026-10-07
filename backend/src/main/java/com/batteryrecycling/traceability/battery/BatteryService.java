@@ -353,9 +353,9 @@ public class BatteryService {
         return true;
     }
 
-    private String originalCodeLockName(Long enterpriseId, String originalCode) {
+    String originalCodeLockName(Long enterpriseId, String originalCode) {
         String hash = idempotencyService.sha256Hex(enterpriseId + ":" + originalCode);
-        return "battery-original:" + enterpriseId + ":" + hash.substring(0, 32);
+        return "bat:" + hash.substring(0, 60);
     }
 
     private boolean exists(String tableName, Long id) {

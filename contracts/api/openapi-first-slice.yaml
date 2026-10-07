@@ -227,6 +227,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/BatchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1268,6 +1270,7 @@ components:
       properties:
         originalCode:
           type: string
+          maxLength: 100
     DuplicateCheckEnvelope:
       allOf:
         - $ref: '#/components/schemas/Envelope'

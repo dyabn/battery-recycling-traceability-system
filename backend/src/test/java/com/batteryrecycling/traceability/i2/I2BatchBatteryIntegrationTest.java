@@ -48,6 +48,8 @@ class I2BatchBatteryIntegrationTest {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
+    private long manualId = 880000100000000000L;
+
     @Test
     @Order(1)
     void createBatchValidatesRequiredFieldsAndReturnsDraft() throws Exception {
@@ -110,6 +112,9 @@ class I2BatchBatteryIntegrationTest {
         String token = recycleToken();
         long firstBatteryId = createBattery(token, "i2-battery-first", "ORI-I2-DUP").get("data").get("battery").get("id").asLong();
         int lifecycleBefore = lifecycleCount(firstBatteryId);
+        int batteryBefore = totalBatteryCount();
+        int candidateBefore = totalCandidateCount();
+        int reviewBefore = totalDuplicateReviewCount();
 
         mockMvc.perform(post("/api/v1/batteries/duplicate-check")
                         .header("Authorization", bearer(token))
@@ -121,6 +126,9 @@ class I2BatchBatteryIntegrationTest {
                 .andExpect(jsonPath("$.data.duplicated").value(true))
                 .andExpect(jsonPath("$.data.matchedBatteryIds").isArray());
         Assertions.assertThat(lifecycleCount(firstBatteryId)).isEqualTo(lifecycleBefore);
+        Assertions.assertThat(totalBatteryCount()).isEqualTo(batteryBefore);
+        Assertions.assertThat(totalCandidateCount()).isEqualTo(candidateBefore);
+        Assertions.assertThat(totalDuplicateReviewCount()).isEqualTo(reviewBefore);
 
         JsonNode duplicate = createBattery(token, "i2-battery-duplicate", "ORI-I2-DUP");
         duplicate.path("data").path("resultType").asText();
@@ -212,6 +220,18 @@ class I2BatchBatteryIntegrationTest {
                 .andExpect(jsonPath("$.code").value("BATCH_EMPTY"));
         Assertions.assertThat(batchStatus(emptyBatchId)).isEqualTo("DRAFT");
         Assertions.assertThat(idempotencyStatus("SUBMIT_RECYCLE_BATCH", "i2-empty-submit")).isEqualTo("FAILED");
+
+        long invalidSourceBatchId = createBatch(token, "i2-invalid-source-batch", "异常来源");
+        long invalidSourceBatteryId = createBattery(token, "i2-invalid-source-battery", "ORI-I2-INVALID-SOURCE").get("data").get("battery").get("id").asLong();
+        addBattery(token, invalidSourceBatchId, invalidSourceBatteryId, "i2-invalid-source-add");
+        jdbcTemplate.update("UPDATE recycle_batch SET source_subject_name = '' WHERE id = ?", invalidSourceBatchId);
+        mockMvc.perform(post("/api/v1/recycle-batches/{id}/submit", invalidSourceBatchId)
+                        .header("Authorization", bearer(token))
+                        .header("Idempotency-Key", "i2-invalid-source-submit"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BATCH_REQUIRED_FIELD_MISSING"));
+        Assertions.assertThat(batchStatus(invalidSourceBatchId)).isEqualTo("DRAFT");
+        Assertions.assertThat(batteryStatus(invalidSourceBatteryId)).isEqualTo("REGISTERED");
     }
 
     @Test
@@ -227,6 +247,27 @@ class I2BatchBatteryIntegrationTest {
                 .andExpect(jsonPath("$.code").value("CROSS_ENTERPRISE_ACCESS_DENIED"));
         Assertions.assertThat(forbiddenAuditCount("BATCH_CROSS_ENTERPRISE_DENIED")).isGreaterThan(0);
 
+        mockMvc.perform(get("/api/v1/recycle-batches")
+                        .header("Authorization", bearer(recycleToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].id", not(hasItem(foreignBatchId))));
+
+        mockMvc.perform(post("/api/v1/recycle-batches")
+                        .header("Authorization", bearer(tokenFor("admin", "password")))
+                        .header("Idempotency-Key", "i2-admin-create-denied")
+                        .contentType("application/json")
+                        .content("""
+                                {"sourceType":"ENTERPRISE","sourceSubjectName":"系统管理员无权创建","handoverDate":"2026-09-29"}
+                                """))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/batteries")
+                        .header("Authorization", bearer(tokenFor("supervisor", "password")))
+                        .header("Idempotency-Key", "i2-supervisor-battery-denied")
+                        .contentType("application/json")
+                        .content("""
+                                {"originalCode":"ORI-I2-SUP-DENIED","batteryType":"PACK","batteryChemistry":"UNKNOWN"}
+                                """))
+                .andExpect(status().isForbidden());
         mockMvc.perform(post("/api/v1/recycle-batches")
                         .header("Authorization", bearer(warehouseToken))
                         .header("Idempotency-Key", "i2-warehouse-create")
@@ -235,19 +276,58 @@ class I2BatchBatteryIntegrationTest {
                                 {"sourceType":"ENTERPRISE","sourceSubjectName":"无权来源","handoverDate":"2026-09-29"}
                                 """))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/recycle-batches/{id}/submit", foreignBatchId)
+                        .header("Authorization", bearer(warehouseToken))
+                        .header("Idempotency-Key", "i2-warehouse-submit-denied"))
+                .andExpect(status().isForbidden());
+
+        String foreignOriginalCode = "ORI-I2-FOREIGN-" + System.nanoTime();
+        long foreignBatteryId = insertForeignBattery(foreignOriginalCode);
+        mockMvc.perform(post("/api/v1/batteries/duplicate-check")
+                        .header("Authorization", bearer(recycleToken))
+                        .contentType("application/json")
+                        .content("""
+                                {"originalCode":"%s"}
+                                """.formatted(foreignOriginalCode)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.duplicated").value(false))
+                .andExpect(jsonPath("$.data.matchedBatteryIds").isEmpty());
+        long ownCandidateId = insertCandidate(1L, foreignOriginalCode);
+        mockMvc.perform(post("/api/v1/battery-registration-candidates/{id}/duplicate-resolution", ownCandidateId)
+                        .header("Authorization", bearer(recycleToken))
+                        .header("Idempotency-Key", "i2-foreign-existing-denied")
+                        .contentType("application/json")
+                        .content("""
+                                {"reviewResult":"SAME_BATTERY","existingBatteryId":%d}
+                                """.formatted(foreignBatteryId)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CROSS_ENTERPRISE_ACCESS_DENIED"));
+        long foreignCandidateId = insertCandidate(2L, foreignOriginalCode);
+        mockMvc.perform(post("/api/v1/battery-registration-candidates/{id}/duplicate-resolution", foreignCandidateId)
+                        .header("Authorization", bearer(recycleToken))
+                        .header("Idempotency-Key", "i2-foreign-candidate-denied")
+                        .contentType("application/json")
+                        .content("""
+                                {"reviewResult":"DIFFERENT_BATTERY","duplicateReason":"跨企业候选"}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CROSS_ENTERPRISE_ACCESS_DENIED"));
 
         long batchA = createBatch(recycleToken, "i2-active-batch-a", "批次A");
         long batchB = createBatch(recycleToken, "i2-active-batch-b", "批次B");
         long batteryId = createBattery(recycleToken, "i2-active-battery", "ORI-I2-ACTIVE").get("data").get("battery").get("id").asLong();
-        addBattery(recycleToken, batchA, batteryId, "i2-active-add-a");
-        mockMvc.perform(post("/api/v1/recycle-batches/{id}/batteries", batchB)
-                        .header("Authorization", bearer(recycleToken))
-                        .header("Idempotency-Key", "i2-active-add-b")
-                        .contentType("application/json")
-                        .content("""
-                                {"batteryId":%d}
-                                """.formatted(batteryId)))
-                .andExpect(status().isConflict());
+        int successBefore = successAuditCountByDetail("BATTERY_ADDED_TO_BATCH", "batteryId=" + batteryId);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        Future<Integer> first = executor.submit(concurrentAddBattery(recycleToken, "i2-active-add-a", batchA, batteryId, ready, start));
+        Future<Integer> second = executor.submit(concurrentAddBattery(recycleToken, "i2-active-add-b", batchB, batteryId, ready, start));
+        Assertions.assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
+        start.countDown();
+        Assertions.assertThat(List.of(first.get(20, TimeUnit.SECONDS), second.get(20, TimeUnit.SECONDS))).containsExactlyInAnyOrder(200, 409);
+        executor.shutdownNow();
+        Assertions.assertThat(activeBatchRelationCount(batteryId)).isOne();
+        Assertions.assertThat(successAuditCountByDetail("BATTERY_ADDED_TO_BATCH", "batteryId=" + batteryId)).isEqualTo(successBefore + 1);
 
         mockMvc.perform(post("/api/v1/recycle-batches/{id}/batteries", batchA)
                         .header("Authorization", bearer(recycleToken))
@@ -268,6 +348,7 @@ class I2BatchBatteryIntegrationTest {
 
         createBattery(token, "i2-repeat-battery-1", originalCode)
                 .get("data").get("battery").get("id").asLong();
+        int effectiveBefore = batteryCountByOriginal(originalCode);
         JsonNode second = createBattery(token, "i2-repeat-battery-2", originalCode);
         Assertions.assertThat(second.get("data").get("resultType").asText()).isEqualTo("DUPLICATE_REVIEW_REQUIRED");
 
@@ -279,7 +360,8 @@ class I2BatchBatteryIntegrationTest {
                 "SELECT COUNT(*) FROM battery_registration_candidate WHERE enterprise_id = 1 AND original_code = ? AND candidate_status = 'PENDING_REVIEW'",
                 Integer.class,
                 originalCode);
-        Assertions.assertThat(effectiveBatteryCount).isEqualTo(1);
+        Assertions.assertThat(effectiveBefore).isOne();
+        Assertions.assertThat(effectiveBatteryCount).isEqualTo(effectiveBefore);
         Assertions.assertThat(pendingCandidateCount).isGreaterThanOrEqualTo(1);
     }
 
@@ -332,6 +414,24 @@ class I2BatchBatteryIntegrationTest {
                 .andExpect(jsonPath("$.data.resultType").value("BATTERY_CREATED"))
                 .andReturnJson();
         Assertions.assertThat(noOriginalCode.get("data").get("battery").get("originalCode").isNull()).isTrue();
+        ExecutorService executor = Executors.newFixedThreadPool(4);
+        CountDownLatch ready = new CountDownLatch(4);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<JsonNode>> noCodeResponses = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            int index = i;
+            noCodeResponses.add(executor.submit(concurrentCreateBatteryWithoutOriginalCode(token, "i2-no-code-concurrent-" + index, ready, start)));
+        }
+        Assertions.assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
+        start.countDown();
+        List<String> traceCodes = new ArrayList<>();
+        for (Future<JsonNode> response : noCodeResponses) {
+            JsonNode created = response.get(20, TimeUnit.SECONDS);
+            traceCodes.add(created.get("data").get("battery").get("systemTraceCode").asText());
+            Assertions.assertThat(created.get("data").get("battery").get("originalCode").isNull()).isTrue();
+        }
+        executor.shutdownNow();
+        Assertions.assertThat(traceCodes).doesNotHaveDuplicates();
 
         mockMvc.perform(post("/api/v1/batteries")
                         .header("Authorization", bearer(token))
@@ -644,6 +744,18 @@ class I2BatchBatteryIntegrationTest {
         };
     }
 
+    private Callable<JsonNode> concurrentCreateBatteryWithoutOriginalCode(String token, String key, CountDownLatch ready, CountDownLatch start) {
+        return () -> {
+            ready.countDown();
+            start.await(10, TimeUnit.SECONDS);
+            return postJson("/api/v1/batteries", token, key, """
+                    {"batteryType":"PACK","batteryChemistry":"UNKNOWN"}
+                    """)
+                    .andExpect(status().isOk())
+                    .andReturnJson();
+        };
+    }
+
     private Callable<Integer> concurrentResolveDuplicate(String token, String key, long candidateId, long existingBatteryId, CountDownLatch ready, CountDownLatch start) {
         return () -> {
             ready.countDown();
@@ -655,6 +767,22 @@ class I2BatchBatteryIntegrationTest {
                             .content("""
                                     {"reviewResult":"SAME_BATTERY","existingBatteryId":%d}
                                     """.formatted(existingBatteryId)))
+                    .andReturn();
+            return result.getResponse().getStatus();
+        };
+    }
+
+    private Callable<Integer> concurrentAddBattery(String token, String key, long batchId, long batteryId, CountDownLatch ready, CountDownLatch start) {
+        return () -> {
+            ready.countDown();
+            start.await(10, TimeUnit.SECONDS);
+            MvcResult result = mockMvc.perform(post("/api/v1/recycle-batches/{id}/batteries", batchId)
+                            .header("Authorization", bearer(token))
+                            .header("Idempotency-Key", key)
+                            .contentType("application/json")
+                            .content("""
+                                    {"batteryId":%d}
+                                    """.formatted(batteryId)))
                     .andReturn();
             return result.getResponse().getStatus();
         };
@@ -685,6 +813,36 @@ class I2BatchBatteryIntegrationTest {
         return id;
     }
 
+    private long insertForeignBattery(String originalCode) {
+        long id = nextManualId();
+        jdbcTemplate.update("""
+                INSERT INTO battery (
+                  id, enterprise_id, system_trace_code, original_code, battery_type, battery_chemistry,
+                  current_responsible_enterprise_id, lifecycle_status, duplicate_status,
+                  created_by, created_at, updated_at, version
+                )
+                VALUES (?, 2, ?, ?, 'PACK', 'UNKNOWN', 2, 'REGISTERED', 'NORMAL', 6, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), 0)
+                """, id, "BAT-" + id, originalCode);
+        return id;
+    }
+
+    private long insertCandidate(Long enterpriseId, String originalCode) {
+        long id = nextManualId();
+        long submittedBy = enterpriseId == 1L ? 3L : 6L;
+        jdbcTemplate.update("""
+                INSERT INTO battery_registration_candidate (
+                  id, enterprise_id, original_code, battery_type, battery_chemistry, candidate_status,
+                  submitted_by, submitted_at, created_at, updated_at, version
+                )
+                VALUES (?, ?, ?, 'PACK', 'UNKNOWN', 'PENDING_REVIEW', ?, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), 0)
+                """, id, enterpriseId, originalCode, submittedBy);
+        return id;
+    }
+
+    private long nextManualId() {
+        return manualId++;
+    }
+
     private String recycleToken() throws Exception {
         return tokenFor("recycle_operator", "password");
     }
@@ -708,6 +866,18 @@ class I2BatchBatteryIntegrationTest {
 
     private int lifecycleCount(long batteryId) {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM lifecycle_event WHERE battery_id = ?", Integer.class, batteryId);
+    }
+
+    private int totalBatteryCount() {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM battery", Integer.class);
+    }
+
+    private int totalCandidateCount() {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM battery_registration_candidate", Integer.class);
+    }
+
+    private int totalDuplicateReviewCount() {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM duplicate_code_review", Integer.class);
     }
 
     private int activeBatchRelationCount(long batteryId) {
@@ -752,6 +922,10 @@ class I2BatchBatteryIntegrationTest {
 
     private int forbiddenAuditCount(String actionCode) {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action_code = ? AND result = 'FORBIDDEN'", Integer.class, actionCode);
+    }
+
+    private int successAuditCountByDetail(String actionCode, String detail) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action_code = ? AND result = 'SUCCESS' AND detail = ?", Integer.class, actionCode, detail);
     }
 
     private final class JsonResult {

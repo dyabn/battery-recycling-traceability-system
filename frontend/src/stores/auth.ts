@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 
+import { clearPendingI2IdempotencyKeys } from '../api/idempotencyRegistry';
 import { http } from '../api/http';
 
 export interface CurrentUser {
@@ -75,6 +76,7 @@ export const useAuthStore = defineStore('auth', {
       this.currentUser = null;
       storage()?.removeItem(tokenKey);
       storage()?.removeItem(userKey);
+      clearPendingI2IdempotencyKeys();
     },
   },
 });
