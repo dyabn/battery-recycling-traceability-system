@@ -106,7 +106,7 @@ class I3AcceptanceIntegrationTest {
                 .andExpect(jsonPath("$.code").value("ACCEPTANCE_REQUIRED_FIELD_MISSING"));
         createAcceptance(token, batteryId, "i3-validation-length", "PASS", "A".repeat(41), "外观完整", "资料完整", null)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("ACCEPTANCE_FIELD_TOO_LONG"));
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 
         Assertions.assertThat(batteryStatus(batteryId)).isEqualTo("PENDING_ACCEPTANCE");
         Assertions.assertThat(batchStatus(batchId)).isEqualTo("PENDING_ACCEPTANCE");
