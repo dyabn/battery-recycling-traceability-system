@@ -44,6 +44,12 @@ public class IdempotencyService {
                 }
                 throw ApiException.conflict("IDEMPOTENCY_KEY_REUSED", "Idempotency-Key 正在处理中，请稍后重试");
             }
+        } else {
+            T concurrentCachedResponse = cachedResponse(currentUser, operationCode, idempotencyKey, requestHash, responseType);
+            if (concurrentCachedResponse != null) {
+                return concurrentCachedResponse;
+            }
+            throw ApiException.conflict("IDEMPOTENCY_REQUEST_PROCESSING", "Idempotency-Key 正在处理中，请稍后重试");
         }
 
         try {
