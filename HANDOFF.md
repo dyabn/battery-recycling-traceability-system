@@ -244,10 +244,10 @@ SHA-256 以交付时 `Get-FileHash` 输出为准；不要在本文件中硬编�
 Get-FileHash .\i2-batch-battery-registration-review.zip -Algorithm SHA256
 ```
 
-该 ZIP 来自最新文档收口 HEAD：
+该 ZIP 来自当前文档收口 HEAD；以本地命令输出为准：
 
 ```text
-53b0d67e60716a6732cbc7eb9479f29c9f893524
+git rev-parse HEAD
 ```
 
 其中代码验证提交为：
