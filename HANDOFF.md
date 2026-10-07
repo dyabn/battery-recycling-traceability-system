@@ -35,8 +35,9 @@
 - 远程仓库：`https://github.com/dyabn/battery-recycling-traceability-system.git`
 - 当前最新本地/远程实现提交：以 `git rev-parse HEAD` 和 `git rev-parse origin/feature/first-slice-implementation` 为准
 - I2 代码验证提交：`0571da07eb8e22427a2376603d0605d606cf4a39`
-- 最新通过的 GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37629609561`
-- I3 当前状态：本地实现和本地验证已完成，等待提交、GitHub Actions MySQL 8.4 验证和人工复核。
+- I3 代码验证提交：`97373104c990c2fef6978ed7aa45b526f10b3d0d`
+- 最新通过的 GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37638275006`
+- I3 当前状态：实现、本地验证和 MySQL 8.4 GitHub Actions 验证已完成，等待人工复核。
 
 ## 3. 已完成的前置工作
 
@@ -89,7 +90,7 @@
 
 ## 4. I2 完成情况
 
-I2 最终复核已通过。最新实现提交 `0571da07eb8e22427a2376603d0605d606cf4a39` 已由 Implementation CI run `37629609561` 验证通过；I2 已关闭。I3 已按用户确认方案启动并完成本地实现，等待 CI 与人工复核。
+I2 最终复核已通过。最新实现提交 `0571da07eb8e22427a2376603d0605d606cf4a39` 已由 Implementation CI run `37629609561` 验证通过；I2 已关闭。I3 已按用户确认方案启动并完成实现，Implementation CI run `37638275006` 对提交 `97373104c990c2fef6978ed7aa45b526f10b3d0d` 验证通过，等待人工复核。
 
 ### 4.1 后端修复
 
@@ -154,7 +155,15 @@ I3 已按用户确认方案实现，尚未复核关闭。
 - 前端生产构建通过；
 - Redocly OpenAPI lint 退出码为 0；删除保护接口保留无 2xx 响应的语义警告。
 
-下一步必须先提交并推送，再等待 Implementation CI 在 MySQL 8.4 下实际执行 `I3AcceptanceIntegrationTest`，通过后再由用户复核决定是否关闭 I3。
+GitHub Actions 已验证：
+
+- Workflow：Implementation CI
+- Run：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37638275006`
+- 验证提交：`97373104c990c2fef6978ed7aa45b526f10b3d0d`
+- 结果：通过
+- `RUN_MYSQL_TESTS=true` 下实际执行 I1/I2/I3 集成测试，`I3AcceptanceIntegrationTest` 6 个测试通过。
+
+下一步由用户复核决定是否关闭 I3；人工复核通过前不进入 I4。
 
 ### 4.2 前端修复
 
@@ -233,7 +242,7 @@ git diff --check
 - 本机没有可用 MySQL 8.4 测试环境，后端 MySQL 集成测试会按 `RUN_MYSQL_TESTS` 条件跳过。
 - GitHub Actions 会设置 `RUN_MYSQL_TESTS=true` 并启动 MySQL 8.4，因此 I1/I2/I3 集成测试需要在 CI 中真实执行。
 
-GitHub Actions：
+I2 GitHub Actions：
 
 - Workflow：Implementation CI
 - Run：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37629609561`
@@ -264,7 +273,13 @@ CI 已验证：
 - 前端 Vitest；
 - 前端生产构建。
 
-I3 GitHub Actions：待提交推送后触发。
+I3 GitHub Actions：
+
+- Workflow：Implementation CI
+- Run：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37638275006`
+- 结果：通过
+- 验证提交：`97373104c990c2fef6978ed7aa45b526f10b3d0d`
+- 已验证 MySQL 8.4、Flyway V1..V6、RUN_MYSQL_TESTS=true、I1/I2/I3 集成测试、Redocly、前端测试和构建。
 
 ## 7. 评审包
 
@@ -297,7 +312,7 @@ git rev-parse HEAD
 
 ## 8. 当前停在什么位置
 
-当前停在：I3 已完成本地实现和本地验证，等待提交推送、GitHub Actions MySQL 8.4 验证和用户复核。
+当前停在：I3 已完成实现、本地验证和 GitHub Actions MySQL 8.4 验证，等待用户人工复核。
 
 当前状态应保持：
 
@@ -331,13 +346,13 @@ git status --short
 git log --oneline -5
 ```
 
-3. 提交并推送 I3 实现后，等待 Implementation CI：
+3. 核对 I3 验证证据：
 
 ```text
-必须确认 MySQL 8.4、Flyway V1..V6、RUN_MYSQL_TESTS=true、I3AcceptanceIntegrationTest 6 个测试均实际执行且通过。
+Implementation CI run 37638275006 已确认 MySQL 8.4、Flyway V1..V6、RUN_MYSQL_TESTS=true、I3AcceptanceIntegrationTest 6 个测试均实际执行且通过。
 ```
 
-4. CI 通过后更新 I3 验证记录、`project-state.yaml`、追踪索引、变更日志和 HANDOFF，再由用户复核决定是否关闭 I3。
+4. 等待用户人工复核决定是否关闭 I3；关闭前保持 `paused-for-review / 修改后复核`，不进入 I4。
 
 后续 I4 启动前应重新确认范围，默认只考虑真实入库相关能力：
 
