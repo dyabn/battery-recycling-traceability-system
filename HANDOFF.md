@@ -283,7 +283,13 @@ I3 GitHub Actions：
 
 ## 7. 评审包
 
-本轮尚未生成 I3 评审包。旧 I2 评审包如仍存在，仅代表 I2 收口材料，不应用作 I3 复核材料。
+本轮 I3 评审包已生成在仓库根目录，文件名为：
+
+```text
+D:\ruanjiankaifajishu\battery-recycling-traceability-system\i3-acceptance-supplement-review.zip
+```
+
+该包由当前 HEAD 生成，已排除所有旧版 ZIP，避免评审材料混淆。旧 I2 评审包如仍存在，仅代表 I2 收口材料，不应用作 I3 复核材料。
 
 I2 旧包路径：
 
@@ -308,6 +314,12 @@ git rev-parse HEAD
 
 ```text
 0571da07eb8e22427a2376603d0605d606cf4a39
+```
+
+其中 I3 代码验证提交为：
+
+```text
+97373104c990c2fef6978ed7aa45b526f10b3d0d
 ```
 
 ## 8. 当前停在什么位置
