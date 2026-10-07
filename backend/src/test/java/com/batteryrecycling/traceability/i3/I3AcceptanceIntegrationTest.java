@@ -52,9 +52,13 @@ class I3AcceptanceIntegrationTest {
         long batchId = createSubmittedBatch(token, "i3-flow", List.of("ORI-I3-FLOW-A", "ORI-I3-FLOW-B", "ORI-I3-FLOW-C"));
         List<Long> batteryIds = activeBatteryIds(batchId);
 
-        mockMvc.perform(get("/api/v1/acceptances/pending").header("Authorization", bearer(token)))
+        String pendingResponse = mockMvc.perform(get("/api/v1/acceptances/pending").header("Authorization", bearer(token)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[*].id", hasItem(batteryIds.get(0).intValue())));
+                .andReturn().getResponse().getContentAsString();
+        Assertions.assertThat(objectMapper.readTree(pendingResponse).path("data").findValues("id").stream()
+                        .map(JsonNode::asLong)
+                        .toList())
+                .contains(batteryIds.get(0));
 
         createAcceptance(token, batteryIds.get(0), "i3-pass-a", "PASS", "身份一致", "外观完整", "资料完整", null)
                 .andExpect(status().isOk())
@@ -141,8 +145,8 @@ class I3AcceptanceIntegrationTest {
     void permissionsAndEnterpriseIsolationAreEnforced() throws Exception {
         String recycleToken = recycleToken();
         String warehouseToken = tokenFor("warehouse_admin", "password");
-        grantRecycleRoleToEnterpriseBUser();
-        String enterpriseBToken = tokenFor("enterprise_b_user", "password");
+        ensureEnterpriseBRecycleUser();
+        String enterpriseBToken = tokenFor("i3_enterprise_b_recycle", "password");
         long batchId = createSubmittedBatch(recycleToken, "i3-permission", List.of("ORI-I3-PERM"));
         long batteryId = activeBatteryIds(batchId).get(0);
 
@@ -360,14 +364,19 @@ class I3AcceptanceIntegrationTest {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action_code = ? AND result = 'FORBIDDEN'", Integer.class, actionCode);
     }
 
-    private void grantRecycleRoleToEnterpriseBUser() {
+    private void ensureEnterpriseBRecycleUser() {
+        jdbcTemplate.update("""
+                INSERT INTO sys_user (id, enterprise_id, username, password_hash, display_name, enabled_status, created_at, updated_at, version)
+                VALUES (880000300000000002, 2, 'i3_enterprise_b_recycle', '$2a$10$e.zfYCvFFe6RsksxE2IxmuV/t79vateuo4hsQ7072lvKHSUjqrMrC', 'I3企业B回收操作员', 'ENABLED', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), 0)
+                ON DUPLICATE KEY UPDATE enabled_status = 'ENABLED', updated_at = CURRENT_TIMESTAMP(3)
+                """);
         jdbcTemplate.update("""
                 INSERT INTO sys_user_role (id, user_id, role_id, created_at)
-                SELECT 880000300000000001, 6, r.id, CURRENT_TIMESTAMP(3)
+                SELECT 880000300000000003, 880000300000000002, r.id, CURRENT_TIMESTAMP(3)
                 FROM sys_role r
                 WHERE r.role_code = 'RECYCLE_OPERATOR'
                   AND NOT EXISTS (
-                    SELECT 1 FROM sys_user_role ur WHERE ur.user_id = 6 AND ur.role_id = r.id
+                    SELECT 1 FROM sys_user_role ur WHERE ur.user_id = 880000300000000002 AND ur.role_id = r.id
                   )
                 """);
     }
