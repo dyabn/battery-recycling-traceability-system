@@ -925,7 +925,7 @@ class I2BatchBatteryIntegrationTest {
     }
 
     private int successAuditCountByDetail(String actionCode, String detail) {
-        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action_code = ? AND result = 'SUCCESS' AND detail = ?", Integer.class, actionCode, detail);
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action_code = ? AND result = 'SUCCESS' AND reject_reason = ?", Integer.class, actionCode, detail);
     }
 
     private final class JsonResult {
