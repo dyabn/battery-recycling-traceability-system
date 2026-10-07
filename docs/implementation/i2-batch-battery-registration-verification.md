@@ -1,14 +1,14 @@
 # I2 回收批次与电池登记验证记录
 
-文档状态：待评审
+文档状态：已确认
 
 ## 验证对象
 
 - 增量：I2-batch-battery-registration
 - 分支：feature/first-slice-implementation
-- 验证提交：02a210070585e66839fb1641319fcbd15669407f
-- GitHub Actions：https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37596117520
-- 结论：I2 第二轮仍为“修改后复核”，本轮阻断项已本地整改验证，等待 GitHub Actions 再次执行后进入最终人工复核。
+- 验证提交：0571da07eb8e22427a2376603d0605d606cf4a39
+- GitHub Actions：https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37629609561
+- 结论：I2 复核通过。I2 回收批次与电池登记增量已关闭，I3 保持未启动。
 
 ## I2 范围
 
@@ -102,7 +102,7 @@
 | I2-TC-045 | 原始编码锁名固定不超过 64 字符，且相同企业稳定、不同企业隔离 | 通过 |
 | I2-TC-046 | 退出登录或 401 清理待重试幂等 Key，重新登录后不复用旧会话 Key | 通过 |
 
-说明：I2 MySQL 集成测试在本机无 MySQL 8.4 环境时按环境变量跳过；真实数据库约束、并发登记、候选并发核实、批次并发提交和 V6 唯一约束由 GitHub Actions 的 MySQL 8.4 环境执行。
+说明：I2 MySQL 集成测试在本机无 MySQL 8.4 环境时按环境变量跳过；GitHub Actions run 37629609561 已在 MySQL 8.4 环境以 `RUN_MYSQL_TESTS=true` 实际执行，`I2BatchBatteryIntegrationTest` 为 Tests run 17、Skipped 0、Failures 0、Errors 0。
 
 ## 验证命令
 
@@ -120,6 +120,7 @@ git diff --check
 GitHub Actions 已执行：
 
 - 后端 `mvn test`，包含 I1 回归和 I2 MySQL 集成测试；
+- `RUN_MYSQL_TESTS=true`，`I2BatchBatteryIntegrationTest` 实际执行 17 个测试且 skipped 为 0；
 - MySQL 8.4 启动；
 - Flyway V1..V6 迁移；
 - 29 张业务表和 V6 唯一索引断言；
@@ -145,4 +146,4 @@ GitHub Actions 已执行：
 - I2 停在批次提交进入 `PENDING_ACCEPTANCE`。
 - 验收、补充资料、验收不通过、入库、库存和数据治理闭环未进入本增量。
 - 正式附件上传接口未在 I2 页面中开放；批次接口对非空 `attachmentIds` 做有效性校验。
-- I2 完成后仍需正式评审，评审通过前不得进入 I3。
+- I2 已完成正式复核并关闭；I3 尚未启动。

@@ -2,19 +2,19 @@
 
 当前阶段：implementation-and-test / 测试通过。
 
-当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记处于修改后复核，不关闭 I2，不进入 I3。
+当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已复核通过并关闭；I3 尚未启动。
 
 ## I2 实现追踪项
 
 | 编号 | 类型 | 来源 | 状态 |
 | --- | --- | --- | --- |
-| IMPL-I2-001 | I2 启动与接口契约预检 | `project-state.yaml`、`contracts/api/openapi-first-slice.yaml`、`docs/api/first-slice-api-design.md` | 已实现待评审 |
-| IMPL-I2-002 | 回收批次创建、查询和草稿修改 | `POST/GET/PUT /api/v1/recycle-batches` | 已实现待评审 |
-| IMPL-I2-003 | 电池登记和系统追溯编码 | `POST /api/v1/batteries` | 已实现待评审 |
-| IMPL-I2-004 | 重复原始编码检查和人工核实 | `POST /api/v1/batteries/duplicate-check`、`POST /api/v1/battery-registration-candidates/{id}/duplicate-resolution` | 已实现待评审 |
-| IMPL-I2-005 | 电池加入批次和批次提交 | `POST /api/v1/recycle-batches/{id}/batteries`、`POST /api/v1/recycle-batches/{id}/submit` | 已实现待评审 |
-| IMPL-I2-006 | I2 前端业务闭环 | 批次、登记、核实、追溯页面 | 已实现待评审 |
-| IMPL-I2-007 | I2 自动化测试和验证记录 | `I2-TC-001..046`、I1 回归 | 修改后复核 |
+| IMPL-I2-001 | I2 启动与接口契约预检 | `project-state.yaml`、`contracts/api/openapi-first-slice.yaml`、`docs/api/first-slice-api-design.md` | 已完成 |
+| IMPL-I2-002 | 回收批次创建、查询和草稿修改 | `POST/GET/PUT /api/v1/recycle-batches` | 已完成 |
+| IMPL-I2-003 | 电池登记和系统追溯编码 | `POST /api/v1/batteries` | 已完成 |
+| IMPL-I2-004 | 重复原始编码检查和人工核实 | `POST /api/v1/batteries/duplicate-check`、`POST /api/v1/battery-registration-candidates/{id}/duplicate-resolution` | 已完成 |
+| IMPL-I2-005 | 电池加入批次和批次提交 | `POST /api/v1/recycle-batches/{id}/batteries`、`POST /api/v1/recycle-batches/{id}/submit` | 已完成 |
+| IMPL-I2-006 | I2 前端业务闭环 | 批次、登记、核实、追溯页面 | 已完成 |
+| IMPL-I2-007 | I2 自动化测试和验证记录 | `I2-TC-001..046`、I1 回归 | 已完成 |
 
 ## I2 测试追踪摘要
 

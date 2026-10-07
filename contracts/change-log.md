@@ -41,6 +41,7 @@
 | CHG-037 | 2026-09-29 | I2 实现完成并等待评审 | 完成回收批次创建/查询/草稿修改、电池登记、重复编码检查与人工核实、电池加入批次、批次提交待验收、生命周期追溯、前端闭环和 I2 集成测试；Implementation CI run 36561591132 通过，I2 暂停待评审，不进入 I3。 | `backend/`、`frontend/`、`.github/workflows/implementation-ci.yml`、I2 验证记录、追踪索引、`project-state.yaml` | 否 |
 | CHG-038 | 2026-10-07 | I2 修改后复核整改 | 修复草稿批次编辑入口、前端幂等重试复用、原始编码并发锁事务释放、未核实重复阻断、OpenAPI 错误响应和字段长度约束，补齐 I2-TC-035..044、V6 数据字典追踪和验证记录；Implementation CI run 37596117520 通过，I2 仍保持修改后复核等待最终确认。 | `backend/`、`frontend/`、OpenAPI、数据库设计、数据字典、I2 验证记录、追踪索引、`project-state.yaml` | 否 |
 | CHG-039 | 2026-10-07 | I2 第二轮复核阻断项修订 | 补齐批次提交 `400` 与重复检查长度 OpenAPI YAML 断言，原始编码锁名固定 64 字符，`I2-TC-035` 改为真实并发加入两个批次，补齐 TC-007/012/013/014/020/025/033/034 证据，并在认证会话清理时清空待重试幂等 Key；I2 继续保持修改后复核，不关闭、不进入 I3。 | `backend/`、`frontend/`、OpenAPI、I2 验证记录、追踪索引 | 否 |
+| CHG-040 | 2026-10-07 | I2 最终复核通过 | Implementation CI run 37629609561 对提交 0571da07eb8e22427a2376603d0605d606cf4a39 验证通过，MySQL 8.4、Flyway V1..V6、RUN_MYSQL_TESTS=true、I2BatchBatteryIntegrationTest 17 个测试均通过；确认 I2 复核通过并关闭，I3 保持未启动。 | `project-state.yaml`、I2 验证记录、追踪索引、`HANDOFF.md` | 否 |
 
 ## C3 第一条业务切片确认
 

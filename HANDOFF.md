@@ -23,19 +23,19 @@
 | --- | --- | --- |
 | I0 | 工程骨架、Flyway、CI | 已完成 |
 | I1 | 登录、JWT、RBAC、企业隔离、审计、幂等基础 | 已完成 |
-| I2 | 回收批次、电池登记、重复编码核实、加入批次、提交待验收 | 修改后复核，等待用户最终确认 |
+| I2 | 回收批次、电池登记、重复编码核实、加入批次、提交待验收 | 已完成，复核通过 |
 | I3 | 验收、资料补充、验收不通过、入库前置 | 未启动 |
 
-重要边界：当前不能关闭 I2，不能进入 I3，不能创建实现 PR，不能合并 main，除非用户明确给出 I2 最终复核通过结论。
+重要边界：I2 已关闭；I3 尚未启动。除非用户明确要求启动 I3，否则不要实现验收、资料补充、验收不通过或入库前置能力。
 
 ## 2. 当前仓库与分支
 
 - 仓库目录：`D:\ruanjiankaifajishu\battery-recycling-traceability-system`
 - 当前分支：`feature/first-slice-implementation`
 - 远程仓库：`https://github.com/dyabn/battery-recycling-traceability-system.git`
-- 当前最新本地/远程提交：`023f28c docs(implementation): update i2 review evidence [skip ci]`
-- I2 代码验证提交：`02a210070585e66839fb1641319fcbd15669407f`
-- 最新通过的 GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37596117520`
+- 当前最新本地/远程实现提交：`0571da07eb8e22427a2376603d0605d606cf4a39`
+- I2 代码验证提交：`0571da07eb8e22427a2376603d0605d606cf4a39`
+- 最新通过的 GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37629609561`
 
 ## 3. 已完成的前置工作
 
@@ -85,9 +85,9 @@
 
 不要修改已经执行过的 V1 到 V6。后续数据库变化必须新增 `V7__xxx.sql` 或更高版本。
 
-## 4. 本次会话完成的 I2 整改
+## 4. I2 完成情况
 
-用户给出的 I2 正式评审结论是“修改后复核，暂不通过，不关闭 I2，不进入 I3”。本次会话已完成整改并通过 CI。
+I2 最终复核已通过。最新实现提交 `0571da07eb8e22427a2376603d0605d606cf4a39` 已由 Implementation CI run `37629609561` 验证通过；I2 已关闭，I3 仍未启动。
 
 ### 4.1 后端修复
 
@@ -103,12 +103,12 @@
 已修复：
 
 - DTO 增加 `@Size`、`@Digits` 等字段长度/精度约束，避免超长请求直接打到数据库变成 500。
-- 原始编码并发锁改为 `battery-original:{enterpriseId}:{sha256前32位}`，避免锁名过长。
+- 原始编码并发锁改为 `bat:` + SHA-256 前 60 位，锁名固定 64 字符，避免 MySQL 用户锁名称超过限制。
 - 原始编码锁改为事务同步 `afterCompletion` 释放，确保提交或回滚后释放。
 - 核实为不同电池时新档案写入 `duplicate_status=RESOLVED_DIFFERENT`。
 - 加入批次和提交批次前检查 `duplicate_status` 与未关闭候选，未核实重复对象拒绝进入待验收。
 - 修复幂等并发竞态：同一 `Idempotency-Key` 已存在时不再穿透执行业务；只能返回缓存、处理中、失败或冲突。
-- 新增/扩展 I2 MySQL 集成测试到 17 个测试方法，覆盖 `I2-TC-001..044` 所需关键场景。
+- 新增/扩展 I2 MySQL 集成测试到 17 个测试方法，覆盖 `I2-TC-001..046` 所需关键场景。
 
 重要测试覆盖包括：
 
@@ -176,9 +176,9 @@
 - 数据库设计补充 V6 `active_battery_id` 生成列和 `uk_rbb_active_battery` 唯一约束说明。
 - 数据字典补充 `recycle_batch_battery.active_battery_id`。
 - 追踪索引补充 `FR-C4-008 -> V6 -> I2-TC-035/042` 关系。
-- I2 验证记录扩展到 `I2-TC-001..044`。
-- `project-state.yaml` 保持 I2 为 `paused-for-review / 修改后复核`，未关闭 I2。
-- `contracts/change-log.md` 增加 `CHG-038`。
+- I2 验证记录扩展到 `I2-TC-001..046`。
+- `project-state.yaml` 中 I2 已更新为 `completed / 复核通过`，I3 为 `not-started`。
+- `contracts/change-log.md` 增加 `CHG-038`、`CHG-039` 和 I2 最终复核通过记录。
 
 ## 5. 验证结果
 
@@ -201,19 +201,22 @@ git diff --check
 GitHub Actions：
 
 - Workflow：Implementation CI
-- Run：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37596117520`
+- Run：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37629609561`
 - 结果：通过
-- 验证提交：`02a210070585e66839fb1641319fcbd15669407f`
+- 验证提交：`0571da07eb8e22427a2376603d0605d606cf4a39`
 
 CI 已验证：
 
 - 后端 `mvn test`；
 - MySQL 8.4 启动；
 - Flyway V1..V6 迁移；
+- `RUN_MYSQL_TESTS=true`；
 - 29 张业务表；
 - V6 有效批次电池关系唯一约束；
 - I1 认证、RBAC、企业隔离、幂等和审计回归；
-- I2 批次、电池登记、重复核实、加入批次、提交待验收和追溯集成测试；
+- I2 批次、电池登记、重复核实、加入批次、提交待验收和追溯集成测试，`I2BatchBatteryIntegrationTest` 为 Tests run 17、Skipped 0、Failures 0、Errors 0；
+- 双线程并发加入两个批次测试；
+- 原始编码锁名 64 字符上限和 OpenAPI YAML 契约断言测试；
 - 同原始编码并发登记；
 - 候选并发核实；
 - 同幂等键并发提交；
@@ -237,24 +240,24 @@ D:\ruanjiankaifajishu\battery-recycling-traceability-system\i2-batch-battery-reg
 SHA-256：
 
 ```text
-D698401513FECDE6B003BAAB0486F67F7236FE988AA4046E09861ABB0B704266
+CF55096223BFA1A644CC4932B872E7BBE8D83A3EE5B683962863F77FBE7CD256
 ```
 
 该 ZIP 来自最新 HEAD：
 
 ```text
-023f28c docs(implementation): update i2 review evidence [skip ci]
+0571da07eb8e22427a2376603d0605d606cf4a39
 ```
 
 其中代码验证提交为：
 
 ```text
-02a210070585e66839fb1641319fcbd15669407f
+0571da07eb8e22427a2376603d0605d606cf4a39
 ```
 
 ## 7. 当前停在什么位置
 
-当前停在：I2 修改后复核整改完成，等待用户最终复核。
+当前停在：I2 已复核通过并关闭，等待用户决定是否启动 I3。
 
 当前状态应保持：
 
@@ -263,14 +266,16 @@ implementation_progress:
   current_increment: I2-batch-battery-registration
   increments:
     I2:
-      status: paused-for-review
-      review_result: 修改后复核
+      status: completed
+      review_result: 复核通过
+      confirmed_date: 2026-10-07
       I2_started: true
+    I3:
+      status: not-started
+      I3_started: false
 ```
 
-不要把 I2 改为 completed，除非用户明确回复“I2 复核通过”或等价确认。
-
-不要启动 I3，除非 I2 已确认完成。
+不要启动 I3，除非用户明确要求。
 
 ## 8. 下一步应该做什么
 
@@ -289,25 +294,11 @@ git log --oneline -5
 
 ```text
 i2-batch-battery-registration-review.zip
-SHA-256: D698401513FECDE6B003BAAB0486F67F7236FE988AA4046E09861ABB0B704266
-CI: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37596117520
+SHA-256: CF55096223BFA1A644CC4932B872E7BBE8D83A3EE5B683962863F77FBE7CD256
+CI: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37629609561
 ```
 
-4. 等待用户的 I2 最终复核结论。
-
-如果用户确认 I2 通过，才做：
-
-- 更新 `project-state.yaml`：I2 -> `completed / 复核通过`；
-- 更新 `docs/implementation/i2-batch-battery-registration-verification.md` 文档状态为已确认；
-- 更新 `contracts/traceability-index.md` 中 I2 状态为已完成；
-- 更新 `contracts/change-log.md` 增加 I2 最终复核通过记录；
-- 提交类似：
-
-```text
-docs(implementation): confirm i2 batch battery increment
-```
-
-然后再按用户指令启动 I3。
+4. 等待用户是否启动 I3。
 
 I3 建议范围仍然只做：
 
