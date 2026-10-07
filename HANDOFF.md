@@ -24,18 +24,19 @@
 | I0 | 工程骨架、Flyway、CI | 已完成 |
 | I1 | 登录、JWT、RBAC、企业隔离、审计、幂等基础 | 已完成 |
 | I2 | 回收批次、电池登记、重复编码核实、加入批次、提交待验收 | 已完成，复核通过 |
-| I3 | 验收、资料补充、验收不通过、入库前置 | 未启动 |
+| I3 | 验收、资料补充、验收不通过、入库前置 | 已实现，修改后复核 |
 
-重要边界：I2 已关闭；I3 尚未启动。除非用户明确要求启动 I3，否则不要实现验收、资料补充、验收不通过或入库前置能力。
+重要边界：I2 已关闭；I3 已按用户确认方案启动并实现完成，目前停在 `paused-for-review / 修改后复核`。不要关闭 I3，不要进入 I4，除非用户复核通过并明确要求。
 
 ## 2. 当前仓库与分支
 
 - 仓库目录：`D:\ruanjiankaifajishu\battery-recycling-traceability-system`
 - 当前分支：`feature/first-slice-implementation`
 - 远程仓库：`https://github.com/dyabn/battery-recycling-traceability-system.git`
-- 当前最新本地/远程实现提交：`0571da07eb8e22427a2376603d0605d606cf4a39`
+- 当前最新本地/远程实现提交：以 `git rev-parse HEAD` 和 `git rev-parse origin/feature/first-slice-implementation` 为准
 - I2 代码验证提交：`0571da07eb8e22427a2376603d0605d606cf4a39`
 - 最新通过的 GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37629609561`
+- I3 当前状态：本地实现和本地验证已完成，等待提交、GitHub Actions MySQL 8.4 验证和人工复核。
 
 ## 3. 已完成的前置工作
 
@@ -71,6 +72,7 @@
 - `docs/security/first-slice-security-design.md`
 - `docs/implementation/i1-auth-tenant-rbac-verification.md`
 - `docs/implementation/i2-batch-battery-registration-verification.md`
+- `docs/implementation/i3-acceptance-verification.md`
 
 契约与迁移：
 
@@ -87,7 +89,7 @@
 
 ## 4. I2 完成情况
 
-I2 最终复核已通过。最新实现提交 `0571da07eb8e22427a2376603d0605d606cf4a39` 已由 Implementation CI run `37629609561` 验证通过；I2 已关闭，I3 仍未启动。
+I2 最终复核已通过。最新实现提交 `0571da07eb8e22427a2376603d0605d606cf4a39` 已由 Implementation CI run `37629609561` 验证通过；I2 已关闭。I3 已按用户确认方案启动并完成本地实现，等待 CI 与人工复核。
 
 ### 4.1 后端修复
 
@@ -124,6 +126,35 @@ I2 最终复核已通过。最新实现提交 `0571da07eb8e22427a2376603d0605d60
 - 同幂等键并发提交只执行一次；
 - 不同幂等键并发提交同一批次只成功一次；
 - OpenAPI 错误状态码契约。
+
+## 5. I3 当前实现情况
+
+I3 已按用户确认方案实现，尚未复核关闭。
+
+新增/修改的主要能力：
+
+- `GET /api/v1/acceptances/pending` 查询待处理验收任务，包含待验收和待补充资料电池；
+- `POST /api/v1/batteries/{id}/acceptances` 登记 `PASS / NEED_SUPPLEMENT / REJECT` 三种验收结果；
+- `POST /api/v1/batteries/{id}/acceptance-supplements` 保存补充说明或附件并重新提交；
+- `POST /api/v1/attachments` 创建临时附件，`GET /api/v1/attachments/{id}/download` 做权限内下载保护；
+- `DELETE /api/v1/acceptance-records/{id}` 拒绝删除已生效验收记录并写审计；
+- 批次状态根据成员验收进度推进到 `ACCEPTANCE_PROCESSING` 或 `COMPLETED`；
+- 生命周期追溯增加验收通过、待补充、已补充、不通过事件；
+- 前端新增待处理验收页面，批次详情新增验收进度摘要。
+
+新增测试：
+
+- `backend/src/test/java/com/batteryrecycling/traceability/i3/I3AcceptanceIntegrationTest.java`
+- `frontend/src/views/i3-pages.test.ts`
+
+本地已验证：
+
+- 后端 `mvn -B test` 通过；本地未设置 `RUN_MYSQL_TESTS=true`，I2/I3 MySQL 集成测试按环境变量跳过；
+- 前端 Vitest 14 个测试通过；
+- 前端生产构建通过；
+- Redocly OpenAPI lint 退出码为 0；删除保护接口保留无 2xx 响应的语义警告。
+
+下一步必须先提交并推送，再等待 Implementation CI 在 MySQL 8.4 下实际执行 `I3AcceptanceIntegrationTest`，通过后再由用户复核决定是否关闭 I3。
 
 ### 4.2 前端修复
 
@@ -177,18 +208,22 @@ I2 最终复核已通过。最新实现提交 `0571da07eb8e22427a2376603d0605d60
 - 数据字典补充 `recycle_batch_battery.active_battery_id`。
 - 追踪索引补充 `FR-C4-008 -> V6 -> I2-TC-035/042` 关系。
 - I2 验证记录扩展到 `I2-TC-001..046`。
-- `project-state.yaml` 中 I2 已更新为 `completed / 复核通过`，I3 为 `not-started`。
+- `project-state.yaml` 中 I2 已更新为 `completed / 复核通过`，I3 为 `paused-for-review / 修改后复核`。
 - `contracts/change-log.md` 增加 `CHG-038`、`CHG-039` 和 I2 最终复核通过记录。
 
-## 5. 验证结果
+## 6. 验证结果
 
 本地已执行并通过：
 
 ```powershell
-$env:JAVA_HOME='D:\Java'; $env:Path='D:\Java\bin;' + $env:Path; mvn -B test
-npm run test
+$env:JAVA_HOME='D:\Java'; $env:Path='D:\Java\bin;' + $env:Path
+cd backend
+mvn -B test
+cd ..\frontend
+npm test -- --run
 npm run build
-npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml
+cd ..
+npx @redocly/cli lint contracts/api/openapi-first-slice.yaml
 python -c "import yaml; yaml.safe_load(open('project-state.yaml', encoding='utf-8')); print('yaml ok')"
 git diff --check
 ```
@@ -196,7 +231,7 @@ git diff --check
 本地注意：
 
 - 本机没有可用 MySQL 8.4 测试环境，后端 MySQL 集成测试会按 `RUN_MYSQL_TESTS` 条件跳过。
-- GitHub Actions 会设置 `RUN_MYSQL_TESTS=true` 并启动 MySQL 8.4，因此 I1/I2 集成测试在 CI 中真实执行。
+- GitHub Actions 会设置 `RUN_MYSQL_TESTS=true` 并启动 MySQL 8.4，因此 I1/I2/I3 集成测试需要在 CI 中真实执行。
 
 GitHub Actions：
 
@@ -229,9 +264,13 @@ CI 已验证：
 - 前端 Vitest；
 - 前端生产构建。
 
-## 6. 评审包
+I3 GitHub Actions：待提交推送后触发。
 
-已在仓库根目录生成新版 I2 评审包，不提交到 Git：
+## 7. 评审包
+
+本轮尚未生成 I3 评审包。旧 I2 评审包如仍存在，仅代表 I2 收口材料，不应用作 I3 复核材料。
+
+I2 旧包路径：
 
 ```text
 D:\ruanjiankaifajishu\battery-recycling-traceability-system\i2-batch-battery-registration-review.zip
@@ -250,21 +289,21 @@ Get-FileHash .\i2-batch-battery-registration-review.zip -Algorithm SHA256
 git rev-parse HEAD
 ```
 
-其中代码验证提交为：
+其中 I2 代码验证提交为：
 
 ```text
 0571da07eb8e22427a2376603d0605d606cf4a39
 ```
 
-## 7. 当前停在什么位置
+## 8. 当前停在什么位置
 
-当前停在：I2 已复核通过并关闭，等待用户决定是否启动 I3。
+当前停在：I3 已完成本地实现和本地验证，等待提交推送、GitHub Actions MySQL 8.4 验证和用户复核。
 
 当前状态应保持：
 
 ```yaml
 implementation_progress:
-  current_increment: I2-batch-battery-registration
+  current_increment: I3-acceptance-supplement
   increments:
     I2:
       status: completed
@@ -272,13 +311,14 @@ implementation_progress:
       confirmed_date: 2026-10-07
       I2_started: true
     I3:
-      status: not-started
-      I3_started: false
+      status: paused-for-review
+      review_result: 修改后复核
+      I3_started: true
 ```
 
-不要启动 I3，除非用户明确要求。
+不要关闭 I3，不要进入 I4，除非用户复核通过并明确要求。
 
-## 8. 下一步应该做什么
+## 9. 下一步应该做什么
 
 新会话开始后建议按顺序执行：
 
@@ -291,25 +331,23 @@ git status --short
 git log --oneline -5
 ```
 
-3. 如用户要求上传/复核材料，提供：
+3. 提交并推送 I3 实现后，等待 Implementation CI：
 
 ```text
-i2-batch-battery-registration-review.zip
-SHA-256: 以交付消息或本地 Get-FileHash 输出为准
-CI: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37629609561
+必须确认 MySQL 8.4、Flyway V1..V6、RUN_MYSQL_TESTS=true、I3AcceptanceIntegrationTest 6 个测试均实际执行且通过。
 ```
 
-4. 等待用户是否启动 I3。
+4. CI 通过后更新 I3 验证记录、`project-state.yaml`、追踪索引、变更日志和 HANDOFF，再由用户复核决定是否关闭 I3。
 
-I3 建议范围仍然只做：
+后续 I4 启动前应重新确认范围，默认只考虑真实入库相关能力：
 
-- 验收登记；
-- 资料补充；
-- 验收不通过；
-- 批次验收处理中/已完成状态；
-- 不做入库、库存、数据治理闭环，除非用户扩大范围。
+- 待入库任务；
+- 入库记录；
+- 有效库存；
+- 仓库和库位校验；
+- 不做数据治理闭环、企业间流转、出库或综合利用，除非用户扩大范围。
 
-## 9. 避免重复和接口对不上的提醒
+## 10. 避免重复和接口对不上的提醒
 
 - 不要重新设计 C1-C4、技术设计 V1.0 或数据治理 V1.1；这些都已经确认。
 - 不要修改 V1 到 V6 历史迁移。
@@ -317,9 +355,10 @@ I3 建议范围仍然只做：
 - 后端权限是最终裁决点，前端权限隐藏只是体验优化。
 - 所有写接口必须保留 `Idempotency-Key`。
 - 企业 ID 必须来自 JWT/当前用户上下文，不能由请求体或查询参数决定。
-- 当前 I2 的目标止于“批次提交待验收”，不要提前实现验收、入库或数据治理处理器。
+- 当前 I3 的目标止于“验收完成并形成待入库资格”，不要提前实现真实入库、库存或数据治理处理器。
 - 如果要继续开发，优先读取：
   - `project-state.yaml`
+  - `docs/implementation/i3-acceptance-verification.md`
   - `docs/implementation/i2-batch-battery-registration-verification.md`
   - `contracts/api/openapi-first-slice.yaml`
   - `docs/api/first-slice-api-design.md`

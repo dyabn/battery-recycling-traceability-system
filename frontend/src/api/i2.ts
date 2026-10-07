@@ -84,6 +84,33 @@ export interface TraceEvent {
   result: string;
 }
 
+export interface AcceptancePayload {
+  acceptanceResult: 'PASS' | 'NEED_SUPPLEMENT' | 'REJECT';
+  identityCheckResult: string;
+  appearanceCheckResult: string;
+  documentCheckResult: string;
+  acceptanceNote?: string;
+}
+
+export interface AcceptanceResult {
+  acceptanceRecordId: number;
+  batteryStatus: string;
+}
+
+export interface AcceptanceSupplementPayload {
+  supplementNote?: string;
+  attachmentIds?: number[];
+}
+
+export interface Attachment {
+  id: number;
+  fileName: string;
+  fileExt: string;
+  fileSizeBytes: number;
+  bindingStatus: 'TEMP' | 'BOUND';
+  expiresAt?: string | null;
+}
+
 function normalizeForFingerprint(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(normalizeForFingerprint);
@@ -180,4 +207,34 @@ export async function submitBatch(batchId: number, key?: string) {
 export async function getBatteryTrace(batteryId: number) {
   const response = await http.get<ApiEnvelope<TraceEvent[]>>(`/batteries/${batteryId}/trace`);
   return response.data.data;
+}
+
+export async function listPendingAcceptances() {
+  const response = await http.get<ApiEnvelope<Battery[]>>('/acceptances/pending');
+  return response.data.data;
+}
+
+export async function createAcceptance(batteryId: number, payload: AcceptancePayload, key?: string) {
+  return withIdempotency('CREATE_ACCEPTANCE', fingerprint({ batteryId, payload }), async (idempotencyKeyValue) => {
+    const response = await http.post<ApiEnvelope<AcceptanceResult>>(`/batteries/${batteryId}/acceptances`, payload, { headers: { 'Idempotency-Key': idempotencyKeyValue } });
+    return response.data.data;
+  }, key);
+}
+
+export async function supplementAcceptance(batteryId: number, payload: AcceptanceSupplementPayload, key?: string) {
+  return withIdempotency('SUPPLEMENT_ACCEPTANCE', fingerprint({ batteryId, payload }), async (idempotencyKeyValue) => {
+    const response = await http.post<ApiEnvelope<Battery>>(`/batteries/${batteryId}/acceptance-supplements`, payload, { headers: { 'Idempotency-Key': idempotencyKeyValue } });
+    return response.data.data;
+  }, key);
+}
+
+export async function uploadAttachment(file: File, key?: string) {
+  return withIdempotency('UPLOAD_ATTACHMENT', fingerprint({ name: file.name, size: file.size, type: file.type }), async (idempotencyKeyValue) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await http.post<ApiEnvelope<Attachment>>('/attachments', formData, {
+      headers: { 'Idempotency-Key': idempotencyKeyValue, 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+  }, key);
 }

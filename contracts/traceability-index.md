@@ -2,7 +2,31 @@
 
 当前阶段：implementation-and-test / 测试通过。
 
-当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已复核通过并关闭；I3 尚未启动。
+当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已复核通过并关闭；I3 验收闭环已实现并暂停待复核。
+
+## I3 实现追踪项
+
+| 编号 | 类型 | 来源 | 状态 |
+| --- | --- | --- | --- |
+| IMPL-I3-001 | I3 启动与接口契约对齐 | `project-state.yaml`、`contracts/api/openapi-first-slice.yaml` | 已完成 |
+| IMPL-I3-002 | 待处理验收任务查询 | `GET /api/v1/acceptances/pending` | 已完成 |
+| IMPL-I3-003 | 验收登记三结果闭环 | `POST /api/v1/batteries/{id}/acceptances`、`acceptance_record`、`battery`、`lifecycle_event` | 已完成 |
+| IMPL-I3-004 | 资料补充与重新提交 | `POST /api/v1/batteries/{id}/acceptance-supplements`、`acceptance_supplement`、`business_attachment` | 已完成 |
+| IMPL-I3-005 | 批次验收进度联动 | `recycle_batch.batch_status`、批次详情成员状态 | 已完成 |
+| IMPL-I3-006 | 附件临时上传、绑定和下载保护 | `POST /api/v1/attachments`、`GET /api/v1/attachments/{id}/download` | 已完成 |
+| IMPL-I3-007 | 生效验收记录删除保护 | `DELETE /api/v1/acceptance-records/{id}`、`audit_log` | 已完成 |
+| IMPL-I3-008 | I3 前端业务闭环 | 待处理验收页面、批次详情验收进度、追溯页面 | 已完成 |
+| IMPL-I3-009 | I3 自动化测试和验证记录 | `I3-TC-001..030`、I1/I2 回归 | 已完成 |
+
+## I3 测试追踪摘要
+
+| 测试范围 | 覆盖 |
+| --- | --- |
+| I3-TC-001..006 | 待验收列表、验收通过、待补充、不通过、生命周期事件和批次进度 |
+| I3-TC-007..012 | 必填、条件说明、字段长度、非法状态、失败状态保持和 OpenAPI 契约 |
+| I3-TC-013..018 | 仅说明补充、仅附件补充、附件绑定、已绑定/无效附件拒绝、多轮补充再验收和历史保留 |
+| I3-TC-019..024 | 权限矩阵、企业隔离、同键幂等、同键异请求冲突、同电池并发验收和同批次并发完成 |
+| I3-TC-025..030 | 删除保护审计、前端待处理验收页面、附件上传、补充提交、批次进度展示和构建回归 |
 
 ## I2 实现追踪项
 

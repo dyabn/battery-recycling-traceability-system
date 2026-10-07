@@ -10,6 +10,8 @@
         <el-select v-model="status" clearable placeholder="全部" style="width: 180px" @change="load">
           <el-option label="草稿" value="DRAFT" />
           <el-option label="待验收" value="PENDING_ACCEPTANCE" />
+          <el-option label="验收处理中" value="ACCEPTANCE_PROCESSING" />
+          <el-option label="已完成" value="COMPLETED" />
         </el-select>
       </el-form-item>
     </el-form>

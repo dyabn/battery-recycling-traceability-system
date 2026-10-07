@@ -430,6 +430,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
   /batteries/{id}/acceptance-supplements:
@@ -458,10 +460,40 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/BatteryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /acceptance-records/{id}:
+    delete:
+      tags: [Acceptance]
+      summary: 删除保护入口
+      operationId: deleteAcceptanceRecord
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      x-traceability:
+        fr: [FR-C4-022]
+        ac: [AC-014]
+        tc: [TC-C4-013]
+        ui: [UI-C4-014]
+        permission: authenticated
+        module: MOD-AUDIT
+        db: [acceptance_record, audit_log]
+      responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /inbounds/pending:
     get:
       tags: [Inbound]
@@ -1308,12 +1340,16 @@ components:
           enum: [PASS, NEED_SUPPLEMENT, REJECT]
         identityCheckResult:
           type: string
+          maxLength: 40
         appearanceCheckResult:
           type: string
+          maxLength: 40
         documentCheckResult:
           type: string
+          maxLength: 40
         acceptanceNote:
           type: string
+          maxLength: 500
     AcceptanceEnvelope:
       allOf:
         - $ref: '#/components/schemas/Envelope'
@@ -1332,6 +1368,7 @@ components:
       properties:
         supplementNote:
           type: string
+          maxLength: 500
         attachmentIds:
           type: array
           items:

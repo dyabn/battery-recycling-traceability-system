@@ -20,6 +20,12 @@
     </el-descriptions>
 
     <h3>批次电池</h3>
+    <div v-if="batch" class="status-summary">
+      <el-tag>待验收 {{ progress.pendingAcceptance }}</el-tag>
+      <el-tag type="warning">待补充 {{ progress.pendingSupplement }}</el-tag>
+      <el-tag type="success">通过待入库 {{ progress.accepted }}</el-tag>
+      <el-tag type="danger">不通过 {{ progress.rejected }}</el-tag>
+    </div>
     <el-table :data="batch?.batteries || []" stripe>
       <el-table-column prop="systemTraceCode" label="系统追溯编码" min-width="190" />
       <el-table-column prop="originalCode" label="原始编码" min-width="150" />
@@ -65,6 +71,15 @@ const batteryId = ref(1);
 const batchId = computed(() => Number(route.params.id));
 const canAdd = computed(() => authStore.hasPermission('battery:create') && batch.value?.batchStatus === 'DRAFT');
 const canSubmit = computed(() => authStore.hasPermission('batch:submit') && batch.value?.batchStatus === 'DRAFT');
+const progress = computed(() => {
+  const batteries = batch.value?.batteries || [];
+  return {
+    pendingAcceptance: batteries.filter((battery) => battery.lifecycleStatus === 'PENDING_ACCEPTANCE').length,
+    pendingSupplement: batteries.filter((battery) => battery.lifecycleStatus === 'PENDING_SUPPLEMENT').length,
+    accepted: batteries.filter((battery) => battery.lifecycleStatus === 'ACCEPTED_PENDING_INBOUND').length,
+    rejected: batteries.filter((battery) => battery.lifecycleStatus === 'ACCEPTANCE_REJECTED').length,
+  };
+});
 
 async function load() {
   loading.value = true;
@@ -98,3 +113,12 @@ async function submit() {
 
 onMounted(load);
 </script>
+
+<style scoped>
+.status-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+</style>
