@@ -1,7 +1,8 @@
 package com.batteryrecycling.traceability.battery;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,22 +13,28 @@ public final class BatteryDtos {
     }
 
     public record BatteryCreateRequest(
+            @Size(max = 100)
             String originalCode,
             @NotBlank String batteryType,
+            @Size(max = 100)
             String batteryModel,
+            @Size(max = 100)
             String manufacturer,
+            @Size(max = 40)
             @NotBlank String batteryChemistry,
+            @Digits(integer = 8, fraction = 2)
             BigDecimal nominalCapacity,
             LocalDate productionDate
     ) {
     }
 
-    public record DuplicateCheckRequest(@NotBlank String originalCode) {
+    public record DuplicateCheckRequest(@NotBlank @Size(max = 100) String originalCode) {
     }
 
     public record DuplicateResolutionRequest(
             @NotBlank String reviewResult,
             Long existingBatteryId,
+            @Size(max = 255)
             String duplicateReason
     ) {
     }

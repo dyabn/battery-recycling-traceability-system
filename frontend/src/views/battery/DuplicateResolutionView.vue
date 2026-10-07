@@ -20,7 +20,7 @@
         </el-radio-group>
       </el-form-item>
       <el-form-item v-if="reviewResult === 'DIFFERENT_BATTERY'" label="重复原因">
-        <el-input v-model="duplicateReason" type="textarea" :rows="3" />
+        <el-input v-model="duplicateReason" type="textarea" :rows="3" maxlength="255" show-word-limit />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" :loading="saving" @click="save">确认核实</el-button>

@@ -2,7 +2,7 @@
 
 当前阶段：implementation-and-test / 测试通过。
 
-当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已实现并暂停待评审。
+当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记处于修改后复核，不关闭 I2，不进入 I3。
 
 ## I2 实现追踪项
 
@@ -14,7 +14,7 @@
 | IMPL-I2-004 | 重复原始编码检查和人工核实 | `POST /api/v1/batteries/duplicate-check`、`POST /api/v1/battery-registration-candidates/{id}/duplicate-resolution` | 已实现待评审 |
 | IMPL-I2-005 | 电池加入批次和批次提交 | `POST /api/v1/recycle-batches/{id}/batteries`、`POST /api/v1/recycle-batches/{id}/submit` | 已实现待评审 |
 | IMPL-I2-006 | I2 前端业务闭环 | 批次、登记、核实、追溯页面 | 已实现待评审 |
-| IMPL-I2-007 | I2 自动化测试和验证记录 | `I2-TC-001..034`、I1 回归 | 已实现待评审 |
+| IMPL-I2-007 | I2 自动化测试和验证记录 | `I2-TC-001..044`、I1 回归 | 修改后复核 |
 
 ## I2 测试追踪摘要
 
@@ -24,6 +24,7 @@
 | I2-TC-009..020 | 电池登记、追溯编码、重复检查、候选创建、同一/不同电池核实、候选重复处理拒绝、跨企业候选保护 |
 | I2-TC-021..029 | 电池加入批次、重复加入、跨有效批次占用、空批次提交、状态保持、提交原子状态转换和生命周期事件 |
 | I2-TC-030..034 | 幂等重复、幂等冲突、权限矩阵、企业隔离、成功/拒绝审计、前端流程和错误提示 |
+| I2-TC-035..044 | V6 有效批次关系约束、同原始编码并发登记、候选并发核实、字段长度边界、前端草稿编辑、前端超时重试幂等、OpenAPI 状态码契约、未核实重复阻断、多电池提交回滚、批次并发提交 |
 
 ## I1 实现追踪项
 
@@ -224,7 +225,7 @@
 | FR-C4-005 | UI-C4-006 | `POST /api/v1/batteries` | `battery` | MOD-BATTERY |
 | FR-C4-006 | UI-C4-006、UI-C4-014 | `POST /api/v1/batteries`、`POST /api/v1/batteries/duplicate-check` | `battery`、`battery_registration_candidate` | MOD-BATTERY、MOD-DUPLICATE |
 | FR-C4-007 | UI-C4-006 | `POST /api/v1/battery-registration-candidates/{id}/duplicate-resolution` | `battery_registration_candidate`、`duplicate_code_review`、`battery` | MOD-DUPLICATE |
-| FR-C4-008 | UI-C4-005、UI-C4-006 | `POST /api/v1/recycle-batches/{id}/batteries` | `recycle_batch_battery`、`battery` | MOD-BATCH、MOD-BATTERY |
+| FR-C4-008 | UI-C4-005、UI-C4-006 | `POST /api/v1/recycle-batches/{id}/batteries` | `recycle_batch_battery`、`battery`；V6 `active_battery_id` + `uk_rbb_active_battery`；I2-TC-035、042 | MOD-BATCH、MOD-BATTERY |
 | FR-C4-009 | UI-C4-005 | `POST /api/v1/recycle-batches/{id}/submit` | `recycle_batch`、`recycle_batch_battery`、`battery`、`audit_log` | MOD-BATCH、MOD-AUDIT |
 | FR-C4-010 | UI-C4-005、UI-C4-007 | `POST /api/v1/recycle-batches/{id}/submit` | `recycle_batch`、`battery`、`lifecycle_event` | MOD-BATCH、MOD-TRACE |
 | FR-C4-011 | UI-C4-008 | `POST /api/v1/batteries/{id}/acceptances` | `acceptance_record`、`battery`、`recycle_batch`、`lifecycle_event` | MOD-ACCEPTANCE、MOD-TRACE |

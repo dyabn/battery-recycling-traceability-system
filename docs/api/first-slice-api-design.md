@@ -112,18 +112,22 @@ I2 实现阶段继续沿用同一 Envelope；回收批次详情响应必须包�
 - 选填：`handoverLocation`、`relatedDocumentNo`、`handoverPerson`、`remark`、`attachmentIds`。
 - 自动：`batchNo`、`enterpriseId`、`createdBy`、`createdAt`、`batchStatus`。
 - 响应：批次详情必须返回 `sourceType`、`sourceSubjectName`、`handoverDate`、`handoverLocation`、`relatedDocumentNo`、`handoverPerson`、`remark`、`version` 和批次中的 `batteries`。
-- 错误响应：缺少必填字段返回 400；资源不存在返回 404；跨企业或无权限返回 403；非草稿修改、提交冲突或重复加入返回 409。
+- 字段长度：`sourceType` 最长 30，`sourceSubjectName` 最长 100，`handoverLocation` 最长 200，`relatedDocumentNo` 最长 80，`handoverPerson` 最长 64，`remark` 最长 500。
+- 错误响应：缺少必填字段、字段超长或空批次提交返回 400；资源不存在返回 404；跨企业或无权限返回 403；非草稿修改、提交冲突或重复加入返回 409。
 
 ### 4.2 电池登记与重复核实
 
 - 自动：`systemTraceCode`、`currentResponsibleEnterpriseId`、`lifecycleStatus`。
 - 必填：`batteryType=PACK`、`batteryChemistry`，其中电池体系允许 `UNKNOWN`。
 - 选填：`originalCode`、`batteryModel`、`manufacturer`、`nominalCapacity`、`productionDate`。
+- 字段长度：`originalCode`、`batteryModel`、`manufacturer` 最长 100，`batteryChemistry` 最长 40，`duplicateReason` 最长 255。
 - 原始编码为空或不重复时，`POST /batteries` 直接创建有效 `battery`。
 - `POST /batteries` 统一返回 `BatteryRegistrationResult`：不重复时返回 `resultType=BATTERY_CREATED` 和 `battery`；原始编码疑似重复时不创建有效 `battery`，创建 `battery_registration_candidate` 并返回 `resultType=DUPLICATE_REVIEW_REQUIRED`、`candidateId`、`candidateStatus=PENDING_REVIEW` 和 `matchedBatteryIds`。
 - `POST /batteries/duplicate-check` 只按 `originalCode` 检查是否疑似重复，不创建候选，也不返回 `candidateId`。
 - `POST /battery-registration-candidates/{id}/duplicate-resolution` 核实为同一电池时返回原档案；核实为不同电池时必须填写 `duplicateReason` 并创建新 `battery`。
 - 候选创建阶段没有 `battery_id`，不得写入 `lifecycle_event`；只写 `audit_log`。核实后若映射到既有电池或新电池，才在对应电池下写生命周期事件。
+- 新建有效档案 `duplicateStatus=NORMAL`；核实为不同电池后创建的新档案 `duplicateStatus=RESOLVED_DIFFERENT`。加入批次和提交批次前必须拒绝 `SUSPECTED_DUPLICATE` 或存在未关闭重复候选的问题对象，失败时整批状态保持不变。
+- `POST /batteries/duplicate-check` 缺少或超长 `originalCode` 返回 400；重复核实缺少必要字段返回 400；追溯查询当前企业不可见或不存在的电池返回 404。
 
 ### 4.3 验收登记
 
@@ -150,7 +154,10 @@ I2 实现阶段继续沿用同一 Envelope；回收批次详情响应必须包�
 | 接口 | 幂等方式 |
 | --- | --- |
 | 创建批次 | 客户端必须传 `Idempotency-Key`，服务端按用户、接口和键去重。 |
+| 修改批次 | 客户端必须按一次草稿编辑操作复用同一 `Idempotency-Key`；请求内容变化时生成新键。 |
 | 创建电池 | `system_trace_code` 由服务端生成；重复原始编码进入候选核实，不用原始编码做幂等键。 |
+| 重复核实 | 客户端必须按一次候选核实操作复用同一 `Idempotency-Key`；并发核实只允许一笔成功。 |
+| 加入批次 | 客户端必须按一次“批次+电池”加入操作复用同一 `Idempotency-Key`；V6 有效批次关系唯一约束兜底防止一电池多有效批次。 |
 | 提交批次 | 幂等键 + 批次状态条件，重复提交返回既有状态或 `DUPLICATE_SUBMISSION`。 |
 | 保存验收 | 幂等键 + 电池状态条件，防止重复点击产生多条最终验收。 |
 | 办理入库 | 幂等键 + 电池状态条件 + 当前库存唯一约束。 |

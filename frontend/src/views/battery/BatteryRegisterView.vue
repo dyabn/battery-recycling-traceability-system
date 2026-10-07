@@ -7,7 +7,7 @@
 
     <el-form ref="formRef" :model="form" :rules="rules" label-width="132px" class="narrow-form">
       <el-form-item label="原始编码">
-        <el-input v-model="form.originalCode" clearable />
+        <el-input v-model="form.originalCode" clearable maxlength="100" show-word-limit />
       </el-form-item>
       <el-form-item label="电池类型" prop="batteryType">
         <el-select v-model="form.batteryType">
@@ -22,10 +22,10 @@
         </el-select>
       </el-form-item>
       <el-form-item label="电池型号">
-        <el-input v-model="form.batteryModel" />
+        <el-input v-model="form.batteryModel" maxlength="100" show-word-limit />
       </el-form-item>
       <el-form-item label="生产企业">
-        <el-input v-model="form.manufacturer" />
+        <el-input v-model="form.manufacturer" maxlength="100" show-word-limit />
       </el-form-item>
       <el-form-item label="标称容量">
         <el-input-number v-model="form.nominalCapacity" :min="0" :precision="2" />

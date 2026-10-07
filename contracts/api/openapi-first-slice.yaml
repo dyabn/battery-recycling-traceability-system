@@ -121,12 +121,12 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/BatchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-        '400':
-          $ref: '#/components/responses/BadRequest'
     get:
       tags: [RecycleBatch]
       summary: 查询回收批次列表
@@ -295,6 +295,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DuplicateCheckEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -324,6 +326,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/BatteryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -362,6 +366,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/BatchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -553,6 +559,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /audit-logs:
     get:
       tags: [System]
@@ -1046,19 +1054,25 @@ components:
       properties:
         sourceType:
           type: string
+          maxLength: 30
         sourceSubjectName:
           type: string
+          maxLength: 100
         handoverDate:
           type: string
           format: date
         handoverLocation:
           type: string
+          maxLength: 200
         relatedDocumentNo:
           type: string
+          maxLength: 80
         handoverPerson:
           type: string
+          maxLength: 64
         remark:
           type: string
+          maxLength: 500
         attachmentIds:
           type: array
           items:
@@ -1144,15 +1158,19 @@ components:
       properties:
         originalCode:
           type: string
+          maxLength: 100
         batteryType:
           type: string
           enum: [PACK]
         batteryModel:
           type: string
+          maxLength: 100
         manufacturer:
           type: string
+          maxLength: 100
         batteryChemistry:
           type: string
+          maxLength: 40
         nominalCapacity:
           type: number
         productionDate:
@@ -1215,6 +1233,7 @@ components:
           type: string
         originalCode:
           type: string
+          maxLength: 100
           nullable: true
         batteryType:
           type: string
@@ -1276,6 +1295,7 @@ components:
           format: int64
         duplicateReason:
           type: string
+          maxLength: 255
     AcceptanceCreateRequest:
       type: object
       required: [acceptanceResult, identityCheckResult, appearanceCheckResult, documentCheckResult]

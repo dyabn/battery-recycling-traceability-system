@@ -87,6 +87,7 @@ erDiagram
 | 疑似重复不建有效档案 | 重复原始编码先写入 `battery_registration_candidate`，核实为不同电池后才创建 `battery`。 |
 | 批次编号唯一 | `recycle_batch.batch_no` 唯一索引。 |
 | 批次至少一个有效电池 | 由提交批次事务校验，不用数据库静态约束表达。 |
+| 电池不能同时加入两个有效批次 | V6 增量迁移为 `recycle_batch_battery.active_battery_id` 增加生成列，并建立 `uk_rbb_active_battery(active_battery_id)` 唯一索引，仅对 `relation_status='ACTIVE'` 的关系生效。 |
 | 未核实疑似重复不能提交 | `battery.duplicate_status` 与服务层提交校验共同保证。 |
 | 验收记录防重复 | 不使用永久 `UNIQUE(battery_id)`；通过电池状态条件更新、乐观锁和幂等键防止重复验收。 |
 | 入库防重复 | 不使用永久 `UNIQUE(inbound_record.battery_id)`；通过电池状态条件更新、幂等键和当前库存唯一约束防止重复入库。 |
@@ -125,6 +126,7 @@ erDiagram
 | `recycle_batch` | `uk_recycle_batch_no(batch_no)` | 批次编号唯一。 |
 | `recycle_batch` | `idx_batch_enterprise_status(enterprise_id, batch_status)` | 批次列表和状态筛选。 |
 | `recycle_batch_battery` | `uk_batch_battery(batch_id, battery_id)` | 防止同一电池重复加入同一批次。 |
+| `recycle_batch_battery` | `uk_rbb_active_battery(active_battery_id)` | V6 增量约束，防止同一电池同时存在于两个有效批次关系。 |
 | `acceptance_record` | `idx_acceptance_battery(battery_id, created_at)` | 验收历史查询。 |
 | `inventory` | `uk_inventory_current_battery(current_battery_id)` | 单电池唯一当前库存。 |
 | `lifecycle_event` | `idx_event_battery_time(battery_id, occurred_at)` | 追溯时间线。 |
@@ -157,6 +159,7 @@ erDiagram
 | 场景 | 设计 |
 | --- | --- |
 | 两人同时提交同一批次 | `recycle_batch.version` 乐观锁；状态条件为 `DRAFT`。 |
+| 两人同时将同一电池加入不同批次 | 服务层先查询有效关系并加锁；V6 `uk_rbb_active_battery` 唯一索引作为数据库兜底。 |
 | 重复点击验收 | `battery.version` 乐观锁；状态必须为 `PENDING_ACCEPTANCE`；幂等键防重复记录；不设置 `acceptance_record.battery_id` 永久唯一。 |
 | 重复点击入库 | `battery.lifecycle_status` 必须为 `ACCEPTED_PENDING_INBOUND`；幂等键和当前库存唯一约束防重复。 |
 | 两人同时登记相同原始编码 | `original_code` 可重复；疑似重复先进入 `battery_registration_candidate`；不靠唯一约束误拦截。 |

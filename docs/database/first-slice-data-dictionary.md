@@ -113,6 +113,7 @@
 | `recycle_batch_battery` | `batch_id` | BIGINT | 否 | 无 | FK, UNIQUE 组合 | 批次 | 用户操作 |
 | `recycle_batch_battery` | `battery_id` | BIGINT | 否 | 无 | FK, UNIQUE 组合 | 电池 | 用户操作 |
 | `recycle_batch_battery` | `relation_status` | VARCHAR(20) | 否 | `ACTIVE` | CHECK | 关系状态 | 系统维护 |
+| `recycle_batch_battery` | `active_battery_id` | BIGINT | 是 | 生成列 | UNIQUE | 有效批次关系唯一约束列 | V6 数据库生成；`relation_status='ACTIVE'` 时等于 `battery_id`，否则为空 |
 | `recycle_batch_battery` | `created_by` | BIGINT | 否 | 无 | FK | 创建人 | 登录上下文 |
 | `recycle_batch_battery` | `created_at` | DATETIME(3) | 否 | 无 | 无 | 创建时间 | 系统生成 |
 | `duplicate_code_review` | `id` | BIGINT | 否 | 无 | PK | 核实记录主键 | 系统 ASSIGN_ID |

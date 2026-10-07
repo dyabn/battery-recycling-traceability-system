@@ -21,6 +21,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 public class BatteryService {
@@ -52,10 +54,12 @@ public class BatteryService {
         validateCreateRequest(request);
         String originalCode = normalizeBlank(request.originalCode());
         boolean locked = false;
-        String lockName = originalCode == null ? null : "battery-original:" + currentUser.enterpriseId() + ":" + originalCode;
+        boolean releaseInFinally = false;
+        String lockName = originalCode == null ? null : originalCodeLockName(currentUser.enterpriseId(), originalCode);
         try {
             if (lockName != null) {
                 locked = acquireLock(lockName);
+                releaseInFinally = !registerLockRelease(lockName);
             }
             if (originalCode != null) {
                 List<Long> matched = matchedBatteryIds(currentUser.enterpriseId(), originalCode);
@@ -82,10 +86,10 @@ public class BatteryService {
                     return BatteryRegistrationResult.duplicate(candidateId, matched);
                 }
             }
-            BatteryDto battery = insertBattery(currentUser, originalCode, request.batteryModel(), request.manufacturer(), request.batteryChemistry(), request.nominalCapacity(), request.productionDate(), servletRequest);
+            BatteryDto battery = insertBattery(currentUser, originalCode, request.batteryModel(), request.manufacturer(), request.batteryChemistry(), request.nominalCapacity(), request.productionDate(), "NORMAL", servletRequest);
             return BatteryRegistrationResult.created(battery);
         } finally {
-            if (locked) {
+            if (locked && releaseInFinally) {
                 releaseLock(lockName);
             }
         }
@@ -148,7 +152,7 @@ public class BatteryService {
             if (reason == null) {
                 throw ApiException.badRequest("VALIDATION_FAILED", "确认不同电池时必须填写重复原因");
             }
-            BatteryDto created = insertBattery(currentUser, candidate.originalCode(), candidate.batteryModel(), candidate.manufacturer(), candidate.batteryChemistry(), candidate.nominalCapacity(), candidate.productionDate(), servletRequest);
+            BatteryDto created = insertBattery(currentUser, candidate.originalCode(), candidate.batteryModel(), candidate.manufacturer(), candidate.batteryChemistry(), candidate.nominalCapacity(), candidate.productionDate(), "RESOLVED_DIFFERENT", servletRequest);
             closeCandidate(candidateId, "CLOSED_DIFFERENT");
             long reviewId = idGenerator.nextId();
             jdbcTemplate.update("""
@@ -248,7 +252,7 @@ public class BatteryService {
                 traceId);
     }
 
-    private BatteryDto insertBattery(CurrentUser currentUser, String originalCode, String batteryModel, String manufacturer, String batteryChemistry, BigDecimal nominalCapacity, LocalDate productionDate, HttpServletRequest request) {
+    private BatteryDto insertBattery(CurrentUser currentUser, String originalCode, String batteryModel, String manufacturer, String batteryChemistry, BigDecimal nominalCapacity, LocalDate productionDate, String duplicateStatus, HttpServletRequest request) {
         long batteryId = idGenerator.nextId();
         String traceCode = "BAT-" + batteryId;
         jdbcTemplate.update("""
@@ -258,7 +262,7 @@ public class BatteryService {
                   current_responsible_enterprise_id, lifecycle_status, duplicate_status,
                   created_by, created_at, updated_by, updated_at, version
                 )
-                VALUES (?, ?, ?, ?, 'PACK', ?, ?, ?, ?, ?, ?, 'REGISTERED', 'NORMAL', ?, CURRENT_TIMESTAMP(3), NULL, CURRENT_TIMESTAMP(3), 0)
+                VALUES (?, ?, ?, ?, 'PACK', ?, ?, ?, ?, ?, ?, 'REGISTERED', ?, ?, CURRENT_TIMESTAMP(3), NULL, CURRENT_TIMESTAMP(3), 0)
                 """,
                 batteryId,
                 currentUser.enterpriseId(),
@@ -270,6 +274,7 @@ public class BatteryService {
                 nominalCapacity,
                 productionDate,
                 currentUser.enterpriseId(),
+                duplicateStatus,
                 currentUser.id());
         insertLifecycle(currentUser, batteryId, null, "BATTERY_REGISTERED", "电池登记", null, "REGISTERED", request);
         auditService.recordSuccess(currentUser.enterpriseId(), currentUser.id(), "BATTERY_CREATED", "BATTERY", batteryId, "systemTraceCode=" + traceCode, request);
@@ -333,6 +338,24 @@ public class BatteryService {
 
     private void releaseLock(String lockName) {
         jdbcTemplate.queryForObject("SELECT RELEASE_LOCK(?)", Integer.class, lockName);
+    }
+
+    private boolean registerLockRelease(String lockName) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return false;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                releaseLock(lockName);
+            }
+        });
+        return true;
+    }
+
+    private String originalCodeLockName(Long enterpriseId, String originalCode) {
+        String hash = idempotencyService.sha256Hex(enterpriseId + ":" + originalCode);
+        return "battery-original:" + enterpriseId + ":" + hash.substring(0, 32);
     }
 
     private boolean exists(String tableName, Long id) {

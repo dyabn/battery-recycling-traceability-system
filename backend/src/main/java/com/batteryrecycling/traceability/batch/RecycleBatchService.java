@@ -155,6 +155,7 @@ public class RecycleBatchService {
             auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "BATCH_BATTERY_ADD_INVALID_STATE", "BATTERY", batteryId, "FAILED", "电池状态不允许加入批次", servletRequest);
             throw ApiException.conflict("INVALID_BATTERY_STATE", "只有已登记电池可以加入批次");
         }
+        validateDuplicateReady(currentUser, battery, servletRequest);
         List<Long> activeBatchIds = jdbcTemplate.queryForList("""
                 SELECT batch_id
                 FROM recycle_batch_battery
@@ -211,6 +212,7 @@ public class RecycleBatchService {
                 auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "RECYCLE_BATCH_SUBMIT_INVALID_BATTERY", "BATTERY", battery.id(), "FAILED", "批次存在非登记状态电池", servletRequest);
                 throw ApiException.conflict("INVALID_BATTERY_STATE", "批次内所有电池必须为已登记状态");
             }
+            validateDuplicateReady(currentUser, battery, servletRequest);
         }
         int batchUpdated = jdbcTemplate.update("""
                 UPDATE recycle_batch
@@ -300,6 +302,30 @@ public class RecycleBatchService {
                 || request.sourceSubjectName() == null || request.sourceSubjectName().isBlank()
                 || request.handoverDate() == null) {
             throw ApiException.badRequest("BATCH_REQUIRED_FIELD_MISSING", "批次来源必填信息缺失");
+        }
+    }
+
+    private void validateDuplicateReady(CurrentUser currentUser, BatteryDto battery, HttpServletRequest request) {
+        if ("SUSPECTED_DUPLICATE".equals(battery.duplicateStatus())) {
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "BATTERY_DUPLICATE_UNRESOLVED", "BATTERY", battery.id(), "FAILED", "疑似重复未核实", request);
+            throw ApiException.conflict("BATTERY_DUPLICATE_UNRESOLVED", "疑似重复未核实");
+        }
+        if (!("NORMAL".equals(battery.duplicateStatus()) || "RESOLVED_DIFFERENT".equals(battery.duplicateStatus()) || "RESOLVED_SAME".equals(battery.duplicateStatus()))) {
+            throw ApiException.conflict("BATTERY_DUPLICATE_UNRESOLVED", "电池重复状态不允许当前操作");
+        }
+        if (battery.originalCode() == null || battery.originalCode().isBlank()) {
+            return;
+        }
+        Integer pendingCandidates = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM battery_registration_candidate
+                WHERE enterprise_id = ?
+                  AND original_code = ?
+                  AND candidate_status = 'PENDING_REVIEW'
+                """, Integer.class, currentUser.enterpriseId(), battery.originalCode());
+        if (pendingCandidates != null && pendingCandidates > 0) {
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "BATTERY_DUPLICATE_UNRESOLVED", "BATTERY", battery.id(), "FAILED", "存在未关闭重复编码候选", request);
+            throw ApiException.conflict("BATTERY_DUPLICATE_UNRESOLVED", "存在未关闭重复编码候选，不能加入批次或提交待验收");
         }
     }
 

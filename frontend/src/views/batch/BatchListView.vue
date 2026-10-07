@@ -23,8 +23,9 @@
       <el-table-column label="电池数" width="90">
         <template #default="{ row }">{{ row.batteries.length }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="140" fixed="right">
+      <el-table-column label="操作" width="180" fixed="right">
         <template #default="{ row }">
+          <el-button v-if="canCreate && row.batchStatus === 'DRAFT'" link type="primary" @click="openEdit(row)">编辑</el-button>
           <el-button link type="primary" @click="$router.push(`/batches/${row.id}`)">详情</el-button>
         </template>
       </el-table-column>
@@ -40,22 +41,22 @@
           </el-select>
         </el-form-item>
         <el-form-item label="来源主体" prop="sourceSubjectName">
-          <el-input v-model="form.sourceSubjectName" />
+          <el-input v-model="form.sourceSubjectName" maxlength="100" show-word-limit />
         </el-form-item>
         <el-form-item label="交接日期" prop="handoverDate">
           <el-date-picker v-model="form.handoverDate" value-format="YYYY-MM-DD" type="date" />
         </el-form-item>
         <el-form-item label="交接地点">
-          <el-input v-model="form.handoverLocation" />
+          <el-input v-model="form.handoverLocation" maxlength="200" show-word-limit />
         </el-form-item>
         <el-form-item label="关联单据号">
-          <el-input v-model="form.relatedDocumentNo" />
+          <el-input v-model="form.relatedDocumentNo" maxlength="80" show-word-limit />
         </el-form-item>
         <el-form-item label="交接人员">
-          <el-input v-model="form.handoverPerson" />
+          <el-input v-model="form.handoverPerson" maxlength="64" show-word-limit />
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" :rows="3" />
+          <el-input v-model="form.remark" type="textarea" :rows="3" maxlength="500" show-word-limit />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -117,6 +118,11 @@ function openCreate() {
   dialogVisible.value = true;
 }
 
+function openEdit(batch: RecycleBatch) {
+  resetForm(batch);
+  dialogVisible.value = true;
+}
+
 async function load() {
   loading.value = true;
   try {
@@ -144,4 +150,11 @@ async function save() {
 }
 
 onMounted(load);
+
+defineExpose({
+  form,
+  editingBatch,
+  openEdit,
+  save,
+});
 </script>
