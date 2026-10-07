@@ -237,16 +237,17 @@ CI 已验证：
 D:\ruanjiankaifajishu\battery-recycling-traceability-system\i2-batch-battery-registration-review.zip
 ```
 
-SHA-256：
+SHA-256 以交付时 `Get-FileHash` 输出为准；不要在本文件中硬编码评审包自身哈希，避免评审包内容与哈希形成循环依赖。
 
 ```text
-CF55096223BFA1A644CC4932B872E7BBE8D83A3EE5B683962863F77FBE7CD256
+见交付消息或重新执行：
+Get-FileHash .\i2-batch-battery-registration-review.zip -Algorithm SHA256
 ```
 
-该 ZIP 来自最新 HEAD：
+该 ZIP 来自最新文档收口 HEAD：
 
 ```text
-0571da07eb8e22427a2376603d0605d606cf4a39
+53b0d67e60716a6732cbc7eb9479f29c9f893524
 ```
 
 其中代码验证提交为：
@@ -294,7 +295,7 @@ git log --oneline -5
 
 ```text
 i2-batch-battery-registration-review.zip
-SHA-256: CF55096223BFA1A644CC4932B872E7BBE8D83A3EE5B683962863F77FBE7CD256
+SHA-256: 以交付消息或本地 Get-FileHash 输出为准
 CI: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37629609561
 ```
 
