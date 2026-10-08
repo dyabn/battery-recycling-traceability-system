@@ -35,9 +35,9 @@
 - 远程仓库：`https://github.com/dyabn/battery-recycling-traceability-system.git`
 - 当前最新本地/远程实现提交：以 `git rev-parse HEAD` 和 `git rev-parse origin/feature/first-slice-implementation` 为准
 - I2 代码验证提交：`0571da07eb8e22427a2376603d0605d606cf4a39`
-- I3 代码验证提交：`0736e201595daccbe3485a3f48e56822f3f70e3f`
-- 最新通过的 GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37723213070`
-- I3 当前状态：实现、本地验证和 MySQL 8.4 GitHub Actions 验证已完成，等待人工复核。
+- I3 最新整改提交：`6fee83009925d4fdec505c7f2dfbaeb5b7755425`
+- I3 最新通过的 GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37734497499`
+- I3 当前状态：第二轮修改后复核整改已完成，MySQL 8.4 GitHub Actions 验证通过；人工复核通过前不关闭 I3。
 
 ## 3. 已完成的前置工作
 
@@ -90,7 +90,7 @@
 
 ## 4. I2 完成情况
 
-I2 最终复核已通过。最新实现提交 `0571da07eb8e22427a2376603d0605d606cf4a39` 已由 Implementation CI run `37629609561` 验证通过；I2 已关闭。I3 已按用户确认方案启动并完成实现，Implementation CI run `37723213070` 对提交 `0736e201595daccbe3485a3f48e56822f3f70e3f` 验证通过，等待人工复核。
+I2 最终复核已通过。最新实现提交 `0571da07eb8e22427a2376603d0605d606cf4a39` 已由 Implementation CI run `37629609561` 验证通过；I2 已关闭。I3 已按用户确认方案启动并完成实现，第二轮修改后复核整改提交 `6fee83009925d4fdec505c7f2dfbaeb5b7755425` 已由 Implementation CI run `37734497499` 验证通过，等待人工复核。
 
 ### 4.1 后端修复
 
@@ -141,8 +141,9 @@ I3 已按用户确认方案实现，尚未复核关闭。
 - `DELETE /api/v1/acceptance-records/{id}` 拒绝删除已生效验收记录并写审计；
 - 批次状态根据成员验收进度推进到 `ACCEPTANCE_PROCESSING` 或 `COMPLETED`；
 - 生命周期追溯增加验收通过、待补充、已补充、不通过事件；
-- 追溯兼容字段返回验收三项、验收说明、补充说明和附件下载入口；
-- 附件上传保存真实文件，下载返回原始字节，上传幂等摘要纳入文件内容 SHA-256；
+- 追溯兼容字段返回验收三项、验收说明、补充说明和附件下载入口，前端追溯页已展示并通过带 JWT 的请求下载附件；
+- 附件上传保存真实文件到 `app.attachment.storage-dir` 配置目录，默认 `../data/attachments`，下载返回原始字节，上传幂等摘要纳入文件内容 SHA-256；
+- 附件存储文件名由服务端生成，事务回滚后清理已写文件，测试覆盖重建服务实例后仍可下载；
 - 缺少说明、无效附件和 DTO 校验失败等拒绝路径写独立事务拒绝审计；
 - 前端新增待处理验收页面，批次详情新增验收进度摘要。
 
@@ -154,19 +155,19 @@ I3 已按用户确认方案实现，尚未复核关闭。
 本地已验证：
 
 - 后端 `mvn -B test` 通过；本地未设置 `RUN_MYSQL_TESTS=true`，I2/I3 MySQL 集成测试按环境变量跳过；
-- 前端 Vitest 14 个测试通过；
+- 前端 Vitest 17 个测试通过；
 - 前端生产构建通过；
 - Redocly OpenAPI lint 退出码为 0；删除保护接口保留无 2xx 响应的语义警告。
 
-GitHub Actions 已验证：
+最新通过的 GitHub Actions 已验证：
 
 - Workflow：Implementation CI
-- Run：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37723213070`
-- 验证提交：`0736e201595daccbe3485a3f48e56822f3f70e3f`
+- Run：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37734497499`
+- 验证提交：`6fee83009925d4fdec505c7f2dfbaeb5b7755425`
 - 结果：通过
-- `RUN_MYSQL_TESTS=true` 下实际执行 I1/I2/I3 集成测试，`I3AcceptanceIntegrationTest` 6 个测试通过，覆盖真实附件下载、附件内容幂等、无效附件组合、追溯历史详情和拒绝审计。
+- `RUN_MYSQL_TESTS=true` 下实际执行 I1/I2/I3 集成测试，`I3AcceptanceIntegrationTest` 6 个测试通过，覆盖真实附件下载、附件内容幂等、无效附件组合、追溯历史详情、重建服务实例后下载、回滚文件清理和拒绝审计。
 
-下一步由用户复核决定是否关闭 I3；人工复核通过前不进入 I4。
+本轮第二轮整改提交 `6fee83009925d4fdec505c7f2dfbaeb5b7755425` 已通过最新 GitHub Actions 验证；人工复核通过前不关闭 I3，不进入 I4。
 
 ### 4.2 前端修复
 
@@ -276,12 +277,12 @@ CI 已验证：
 - 前端 Vitest；
 - 前端生产构建。
 
-I3 GitHub Actions：
+I3 最新通过的 GitHub Actions：
 
 - Workflow：Implementation CI
-- Run：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37723213070`
+- Run：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37734497499`
 - 结果：通过
-- 验证提交：`0736e201595daccbe3485a3f48e56822f3f70e3f`
+- 验证提交：`6fee83009925d4fdec505c7f2dfbaeb5b7755425`
 - 已验证 MySQL 8.4、Flyway V1..V6、RUN_MYSQL_TESTS=true、I1/I2/I3 集成测试、Redocly、前端测试和构建。
 
 ## 7. 评审包
@@ -319,15 +320,15 @@ git rev-parse HEAD
 0571da07eb8e22427a2376603d0605d606cf4a39
 ```
 
-其中 I3 代码验证提交为：
+其中 I3 最新通过 CI 的代码验证提交为：
 
 ```text
-0736e201595daccbe3485a3f48e56822f3f70e3f
+6fee83009925d4fdec505c7f2dfbaeb5b7755425
 ```
 
 ## 8. 当前停在什么位置
 
-当前停在：I3 已完成实现、本地验证和 GitHub Actions MySQL 8.4 验证，等待用户人工复核。
+当前停在：I3 已完成第二轮修改后复核整改和 GitHub Actions MySQL 8.4 验证，等待用户人工复核。
 
 当前状态应保持：
 
@@ -364,7 +365,7 @@ git log --oneline -5
 3. 核对 I3 验证证据：
 
 ```text
-Implementation CI run 37723213070 已确认 MySQL 8.4、Flyway V1..V6、RUN_MYSQL_TESTS=true、I3AcceptanceIntegrationTest 6 个测试均实际执行且通过。
+Implementation CI run 37734497499 已确认提交 6fee83009925d4fdec505c7f2dfbaeb5b7755425 通过，覆盖 MySQL 8.4、Flyway V1..V6、RUN_MYSQL_TESTS=true、I3AcceptanceIntegrationTest 6 个测试、Redocly、前端测试和构建。
 ```
 
 4. 等待用户人工复核决定是否关闭 I3；关闭前保持 `paused-for-review / 修改后复核`，不进入 I4。
