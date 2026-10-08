@@ -18,7 +18,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -211,8 +213,8 @@ public class BatteryService {
 
     public List<TraceEventDto> trace(CurrentUser currentUser, Long batteryId, HttpServletRequest request) {
         BatteryDto battery = requireBattery(currentUser, batteryId, request);
-        return jdbcTemplate.query("""
-                SELECT e.event_name, b.system_trace_code, u.display_name, e.occurred_at,
+        List<TraceRow> rows = jdbcTemplate.query("""
+                SELECT e.event_type, e.event_name, b.system_trace_code, u.display_name, e.occurred_at,
                        CONCAT(COALESCE(e.from_status, 'null'), ' -> ', COALESCE(e.to_status, 'null')) AS status_change,
                        e.event_result
                 FROM lifecycle_event e
@@ -221,7 +223,8 @@ public class BatteryService {
                 WHERE e.enterprise_id = ? AND e.battery_id = ?
                 ORDER BY e.occurred_at, e.id
                 """,
-                (rs, rowNum) -> new TraceEventDto(
+                (rs, rowNum) -> new TraceRow(
+                        rs.getString("event_type"),
                         rs.getString("event_name"),
                         rs.getString("system_trace_code"),
                         rs.getString("display_name"),
@@ -229,6 +232,30 @@ public class BatteryService {
                         rs.getString("status_change"),
                         rs.getString("event_result")),
                 currentUser.enterpriseId(), battery.id());
+        List<AcceptanceTraceDetail> acceptances = acceptanceTraceDetails(currentUser, batteryId);
+        List<SupplementTraceDetail> supplements = supplementTraceDetails(currentUser, batteryId);
+        List<TraceEventDto> events = new ArrayList<>();
+        int passIndex = 0;
+        int needSupplementIndex = 0;
+        int rejectIndex = 0;
+        int supplementIndex = 0;
+        for (TraceRow row : rows) {
+            Map<String, Object> details = Map.of();
+            if ("ACCEPTANCE_PASSED".equals(row.eventType())) {
+                AcceptanceTraceDetail detail = detailByResult(acceptances, "PASS", passIndex++);
+                details = detail == null ? Map.of() : Map.of("acceptance", detail.toMap());
+            } else if ("ACCEPTANCE_NEED_SUPPLEMENT".equals(row.eventType())) {
+                AcceptanceTraceDetail detail = detailByResult(acceptances, "NEED_SUPPLEMENT", needSupplementIndex++);
+                details = detail == null ? Map.of() : Map.of("acceptance", detail.toMap());
+            } else if ("ACCEPTANCE_REJECTED".equals(row.eventType())) {
+                AcceptanceTraceDetail detail = detailByResult(acceptances, "REJECT", rejectIndex++);
+                details = detail == null ? Map.of() : Map.of("acceptance", detail.toMap());
+            } else if ("ACCEPTANCE_SUPPLEMENTED".equals(row.eventType()) && supplementIndex < supplements.size()) {
+                details = Map.of("supplement", supplements.get(supplementIndex++).toMap());
+            }
+            events.add(new TraceEventDto(row.eventName(), row.objectCode(), row.operator(), row.occurredAt(), row.statusChange(), row.result(), details));
+        }
+        return events;
     }
 
     public void insertLifecycle(CurrentUser currentUser, Long batteryId, Long batchId, String eventType, String eventName, String fromStatus, String toStatus, HttpServletRequest request) {
@@ -388,6 +415,74 @@ public class BatteryService {
                 rs.getInt("version"));
     }
 
+    private List<AcceptanceTraceDetail> acceptanceTraceDetails(CurrentUser currentUser, Long batteryId) {
+        return jdbcTemplate.query("""
+                SELECT ar.id, ar.acceptance_result, ar.identity_check_result, ar.appearance_check_result,
+                       ar.document_check_result, ar.acceptance_note, u.display_name, ar.accepted_at
+                FROM acceptance_record ar
+                JOIN sys_user u ON u.id = ar.accepted_by
+                WHERE ar.enterprise_id = ? AND ar.battery_id = ?
+                ORDER BY ar.accepted_at, ar.id
+                """,
+                (rs, rowNum) -> new AcceptanceTraceDetail(
+                        rs.getLong("id"),
+                        rs.getString("acceptance_result"),
+                        rs.getString("identity_check_result"),
+                        rs.getString("appearance_check_result"),
+                        rs.getString("document_check_result"),
+                        rs.getString("acceptance_note"),
+                        rs.getString("display_name"),
+                        rs.getObject("accepted_at", LocalDateTime.class)),
+                currentUser.enterpriseId(), batteryId);
+    }
+
+    private List<SupplementTraceDetail> supplementTraceDetails(CurrentUser currentUser, Long batteryId) {
+        return jdbcTemplate.query("""
+                SELECT s.id, s.acceptance_record_id, s.supplement_note, u.display_name, s.supplemented_at
+                FROM acceptance_supplement s
+                JOIN sys_user u ON u.id = s.supplemented_by
+                WHERE s.enterprise_id = ? AND s.battery_id = ?
+                ORDER BY s.supplemented_at, s.id
+                """,
+                (rs, rowNum) -> new SupplementTraceDetail(
+                        rs.getLong("id"),
+                        rs.getObject("acceptance_record_id", Long.class),
+                        rs.getString("supplement_note"),
+                        rs.getString("display_name"),
+                        rs.getObject("supplemented_at", LocalDateTime.class),
+                        supplementAttachments(currentUser, rs.getLong("id"))),
+                currentUser.enterpriseId(), batteryId);
+    }
+
+    private List<Map<String, Object>> supplementAttachments(CurrentUser currentUser, Long supplementId) {
+        return jdbcTemplate.query("""
+                SELECT id, file_name, file_ext, file_size_bytes
+                FROM business_attachment
+                WHERE enterprise_id = ? AND object_type = 'ACCEPTANCE_SUPPLEMENT' AND object_id = ?
+                ORDER BY id
+                """,
+                (rs, rowNum) -> Map.of(
+                        "id", rs.getLong("id"),
+                        "fileName", rs.getString("file_name"),
+                        "fileExt", rs.getString("file_ext"),
+                        "fileSizeBytes", rs.getLong("file_size_bytes"),
+                        "downloadUrl", "/api/v1/attachments/" + rs.getLong("id") + "/download"),
+                currentUser.enterpriseId(), supplementId);
+    }
+
+    private AcceptanceTraceDetail detailByResult(List<AcceptanceTraceDetail> details, String result, int index) {
+        int seen = 0;
+        for (AcceptanceTraceDetail detail : details) {
+            if (result.equals(detail.acceptanceResult())) {
+                if (seen == index) {
+                    return detail;
+                }
+                seen++;
+            }
+        }
+        return null;
+    }
+
     private Candidate mapCandidate(ResultSet rs, int rowNum) throws SQLException {
         return new Candidate(
                 rs.getLong("id"),
@@ -403,5 +498,34 @@ public class BatteryService {
     }
 
     private record Candidate(Long id, Long enterpriseId, String originalCode, String batteryType, String batteryModel, String manufacturer, String batteryChemistry, BigDecimal nominalCapacity, LocalDate productionDate, String candidateStatus) {
+    }
+
+    private record TraceRow(String eventType, String eventName, String objectCode, String operator, LocalDateTime occurredAt, String statusChange, String result) {
+    }
+
+    private record AcceptanceTraceDetail(Long id, String acceptanceResult, String identityCheckResult, String appearanceCheckResult, String documentCheckResult, String acceptanceNote, String acceptedBy, LocalDateTime acceptedAt) {
+        private Map<String, Object> toMap() {
+            return Map.of(
+                    "id", id,
+                    "acceptanceResult", acceptanceResult,
+                    "identityCheckResult", identityCheckResult,
+                    "appearanceCheckResult", appearanceCheckResult,
+                    "documentCheckResult", documentCheckResult,
+                    "acceptanceNote", acceptanceNote == null ? "" : acceptanceNote,
+                    "acceptedBy", acceptedBy,
+                    "acceptedAt", acceptedAt);
+        }
+    }
+
+    private record SupplementTraceDetail(Long id, Long acceptanceRecordId, String supplementNote, String supplementedBy, LocalDateTime supplementedAt, List<Map<String, Object>> attachments) {
+        private Map<String, Object> toMap() {
+            return Map.of(
+                    "id", id,
+                    "acceptanceRecordId", acceptanceRecordId == null ? "" : acceptanceRecordId,
+                    "supplementNote", supplementNote,
+                    "supplementedBy", supplementedBy,
+                    "supplementedAt", supplementedAt,
+                    "attachments", attachments);
+        }
     }
 }

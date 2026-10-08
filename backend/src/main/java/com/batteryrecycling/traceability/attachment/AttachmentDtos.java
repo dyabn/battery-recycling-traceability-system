@@ -11,6 +11,7 @@ public final class AttachmentDtos {
             String fileName,
             String fileExt,
             Long fileSizeBytes,
+            String contentSha256,
             String bindingStatus,
             LocalDateTime expiresAt
     ) {

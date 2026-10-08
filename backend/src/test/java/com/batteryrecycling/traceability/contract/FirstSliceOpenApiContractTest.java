@@ -44,6 +44,16 @@ class FirstSliceOpenApiContractTest {
             Map<String, Object> supplementProperties = (Map<String, Object>) supplementRequest.get("properties");
             Assertions.assertThat((Map<String, Object>) supplementProperties.get("supplementNote")).containsEntry("maxLength", 500);
 
+            Map<String, Object> attachment = (Map<String, Object>) schemas.get("Attachment");
+            Map<String, Object> attachmentProperties = (Map<String, Object>) attachment.get("properties");
+            Assertions.assertThat((Map<String, Object>) attachmentProperties.get("contentSha256"))
+                    .containsEntry("minLength", 64)
+                    .containsEntry("maxLength", 64);
+
+            Map<String, Object> traceEvent = (Map<String, Object>) schemas.get("TraceEvent");
+            Map<String, Object> traceProperties = (Map<String, Object>) traceEvent.get("properties");
+            Assertions.assertThat(traceProperties).containsKey("details");
+
             Assertions.assertThat(paths).containsKey("/acceptance-records/{id}");
         } catch (Exception exception) {
             throw new AssertionError("OpenAPI contract could not be parsed", exception);

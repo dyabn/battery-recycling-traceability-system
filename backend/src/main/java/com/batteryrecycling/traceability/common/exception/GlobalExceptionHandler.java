@@ -31,6 +31,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class})
     ResponseEntity<ApiErrorResponse> handleValidation(Exception exception, HttpServletRequest request) {
+        currentUserService.currentUser().ifPresent(user -> auditService.recordRejected(
+                user.enterpriseId(),
+                user.id(),
+                "REQUEST_VALIDATION_FAILED",
+                "HTTP_REQUEST",
+                null,
+                "FAILED",
+                request.getMethod() + " " + request.getRequestURI(),
+                request
+        ));
         return build(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "请求参数校验失败", request);
     }
 

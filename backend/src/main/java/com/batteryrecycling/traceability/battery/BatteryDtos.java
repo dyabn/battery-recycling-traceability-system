@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public final class BatteryDtos {
     private BatteryDtos() {
@@ -82,7 +83,8 @@ public final class BatteryDtos {
             String operator,
             LocalDateTime occurredAt,
             String statusChange,
-            String result
+            String result,
+            Map<String, Object> details
     ) {
     }
 }

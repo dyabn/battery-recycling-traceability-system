@@ -82,6 +82,7 @@ export interface TraceEvent {
   occurredAt: string;
   statusChange: string;
   result: string;
+  details?: Record<string, unknown>;
 }
 
 export interface AcceptancePayload {
@@ -107,6 +108,7 @@ export interface Attachment {
   fileName: string;
   fileExt: string;
   fileSizeBytes: number;
+  contentSha256?: string | null;
   bindingStatus: 'TEMP' | 'BOUND';
   expiresAt?: string | null;
 }
@@ -128,6 +130,15 @@ function normalizeForFingerprint(value: unknown): unknown {
 
 function fingerprint(value: unknown) {
   return JSON.stringify(normalizeForFingerprint(value));
+}
+
+async function fileContentFingerprint(file: File) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (globalThis.crypto?.subtle) {
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('');
+  }
+  return Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join('');
 }
 
 async function withIdempotency<T>(
@@ -229,7 +240,8 @@ export async function supplementAcceptance(batteryId: number, payload: Acceptanc
 }
 
 export async function uploadAttachment(file: File, key?: string) {
-  return withIdempotency('UPLOAD_ATTACHMENT', fingerprint({ name: file.name, size: file.size, type: file.type }), async (idempotencyKeyValue) => {
+  const contentFingerprint = await fileContentFingerprint(file);
+  return withIdempotency('UPLOAD_ATTACHMENT', fingerprint({ name: file.name, size: file.size, type: file.type, contentFingerprint }), async (idempotencyKeyValue) => {
     const formData = new FormData();
     formData.append('file', file);
     const response = await http.post<ApiEnvelope<Attachment>>('/attachments', formData, {

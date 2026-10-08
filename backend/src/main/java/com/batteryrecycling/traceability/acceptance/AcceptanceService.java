@@ -63,7 +63,7 @@ public class AcceptanceService {
     }
 
     public AcceptanceResult createAcceptanceInTransaction(CurrentUser currentUser, Long batteryId, AcceptanceCreateRequest request, HttpServletRequest servletRequest) {
-        validateAcceptanceRequest(request);
+        validateAcceptanceRequest(currentUser, batteryId, request, servletRequest);
         BatteryDto battery = batteryService.requireBatteryForUpdate(currentUser, batteryId, servletRequest);
         if (!"PENDING_ACCEPTANCE".equals(battery.lifecycleStatus())) {
             auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "ACCEPTANCE_INVALID_BATTERY_STATE", "BATTERY", batteryId, "FAILED", "非待验收电池不能登记验收", servletRequest);
@@ -116,9 +116,11 @@ public class AcceptanceService {
         String note = normalizeBlank(request.supplementNote());
         List<Long> attachmentIds = request.attachmentIds() == null ? List.of() : request.attachmentIds();
         if (note == null && attachmentIds.isEmpty()) {
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "ACCEPTANCE_SUPPLEMENT_REJECTED", "BATTERY", batteryId, "FAILED", "补充说明和附件至少提供一项", servletRequest);
             throw ApiException.badRequest("ACCEPTANCE_REQUIRED_FIELD_MISSING", "补充说明和附件至少提供一项");
         }
         if (note != null && note.length() > 500) {
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "ACCEPTANCE_SUPPLEMENT_REJECTED", "BATTERY", batteryId, "FAILED", "补充说明最长 500 字符", servletRequest);
             throw ApiException.badRequest("ACCEPTANCE_FIELD_TOO_LONG", "补充说明最长 500 字符");
         }
         BatteryDto battery = batteryService.requireBatteryForUpdate(currentUser, batteryId, servletRequest);
@@ -128,7 +130,7 @@ public class AcceptanceService {
         }
         long batchId = activeBatchIdForUpdate(currentUser, batteryId, servletRequest);
         Long acceptanceRecordId = latestNeedSupplementAcceptance(currentUser, batteryId);
-        validateTempAttachmentsForUpdate(currentUser, attachmentIds);
+        validateTempAttachmentsForUpdate(currentUser, batteryId, attachmentIds, servletRequest);
         long supplementId = idGenerator.nextId();
         jdbcTemplate.update("""
                 INSERT INTO acceptance_supplement (
@@ -172,27 +174,32 @@ public class AcceptanceService {
         throw ApiException.notFound("验收记录不存在");
     }
 
-    private void validateAcceptanceRequest(AcceptanceCreateRequest request) {
+    private void validateAcceptanceRequest(CurrentUser currentUser, Long batteryId, AcceptanceCreateRequest request, HttpServletRequest servletRequest) {
         if (normalizeBlank(request.acceptanceResult()) == null
                 || normalizeBlank(request.identityCheckResult()) == null
                 || normalizeBlank(request.appearanceCheckResult()) == null
                 || normalizeBlank(request.documentCheckResult()) == null) {
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "ACCEPTANCE_REJECTED_BY_VALIDATION", "BATTERY", batteryId, "FAILED", "验收结果和三项检查结果均不能为空", servletRequest);
             throw ApiException.badRequest("ACCEPTANCE_REQUIRED_FIELD_MISSING", "验收结果和三项检查结果均不能为空");
         }
         String result = request.acceptanceResult().trim();
         if (!List.of("PASS", "NEED_SUPPLEMENT", "REJECT").contains(result)) {
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "ACCEPTANCE_REJECTED_BY_VALIDATION", "BATTERY", batteryId, "FAILED", "验收结果不合法", servletRequest);
             throw ApiException.badRequest("VALIDATION_FAILED", "验收结果不合法");
         }
         if (request.identityCheckResult().trim().length() > 40
                 || request.appearanceCheckResult().trim().length() > 40
                 || request.documentCheckResult().trim().length() > 40) {
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "ACCEPTANCE_REJECTED_BY_VALIDATION", "BATTERY", batteryId, "FAILED", "三项检查结果最长 40 字符", servletRequest);
             throw ApiException.badRequest("ACCEPTANCE_FIELD_TOO_LONG", "三项检查结果最长 40 字符");
         }
         String note = normalizeBlank(request.acceptanceNote());
         if (("NEED_SUPPLEMENT".equals(result) || "REJECT".equals(result)) && note == null) {
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "ACCEPTANCE_REJECTED_BY_VALIDATION", "BATTERY", batteryId, "FAILED", "待补充资料和验收不通过必须填写说明", servletRequest);
             throw ApiException.badRequest("ACCEPTANCE_REQUIRED_FIELD_MISSING", "待补充资料和验收不通过必须填写说明");
         }
         if (note != null && note.length() > 500) {
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "ACCEPTANCE_REJECTED_BY_VALIDATION", "BATTERY", batteryId, "FAILED", "验收说明最长 500 字符", servletRequest);
             throw ApiException.badRequest("ACCEPTANCE_FIELD_TOO_LONG", "验收说明最长 500 字符");
         }
     }
@@ -248,7 +255,7 @@ public class AcceptanceService {
         return ids.isEmpty() ? null : ids.get(0);
     }
 
-    private void validateTempAttachmentsForUpdate(CurrentUser currentUser, List<Long> attachmentIds) {
+    private void validateTempAttachmentsForUpdate(CurrentUser currentUser, Long batteryId, List<Long> attachmentIds, HttpServletRequest servletRequest) {
         if (attachmentIds.isEmpty()) {
             return;
         }
@@ -263,6 +270,7 @@ public class AcceptanceService {
                 FOR UPDATE
                 """.formatted(placeholders(attachmentIds.size())), Long.class, concat(currentUser.enterpriseId(), currentUser.id(), attachmentIds));
         if (found.size() != attachmentIds.size() || !found.containsAll(attachmentIds)) {
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "ACCEPTANCE_SUPPLEMENT_INVALID_ATTACHMENT", "BATTERY", batteryId, "FAILED", "附件不存在、已绑定、过期或无权使用", servletRequest);
             throw ApiException.badRequest("INVALID_ATTACHMENT", "附件不存在、已绑定、过期或无权使用");
         }
     }
@@ -280,6 +288,7 @@ public class AcceptanceService {
                   AND id IN (%s)
                 """.formatted(placeholders(attachmentIds.size())), concat(supplementId, currentUser.enterpriseId(), currentUser.id(), attachmentIds));
         if (updated != attachmentIds.size()) {
+            auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "ACCEPTANCE_SUPPLEMENT_INVALID_ATTACHMENT", "ACCEPTANCE_SUPPLEMENT", supplementId, "FAILED", "附件绑定失败", null);
             throw ApiException.badRequest("INVALID_ATTACHMENT", "附件绑定失败");
         }
     }

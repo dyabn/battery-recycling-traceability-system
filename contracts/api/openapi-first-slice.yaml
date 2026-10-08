@@ -1445,6 +1445,10 @@ components:
           type: string
         result:
           type: string
+        details:
+          type: object
+          description: Compatible extension for stage-specific trace details, such as acceptance checks, supplement notes and attachment download entries.
+          additionalProperties: true
     AuditLogListEnvelope:
       allOf:
         - $ref: '#/components/schemas/Envelope'
@@ -1608,6 +1612,10 @@ components:
         fileSizeBytes:
           type: integer
           format: int64
+        contentSha256:
+          type: string
+          minLength: 64
+          maxLength: 64
         bindingStatus:
           type: string
           enum: [TEMP, BOUND]

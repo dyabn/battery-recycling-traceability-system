@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { http } from './http';
-import { clearPendingI2IdempotencyKeys, createBatch } from './i2';
+import { clearPendingI2IdempotencyKeys, createBatch, uploadAttachment } from './i2';
 import { useAuthStore } from '../stores/auth';
 
 vi.mock('./http', () => ({
@@ -124,6 +124,28 @@ describe('i2 api idempotency', () => {
     await expect(createBatch(payload)).rejects.toThrow('timeout');
     useAuthStore().clearSession();
     await expect(createBatch(payload)).resolves.toEqual(response.data.data);
+
+    expect(vi.mocked(http.post).mock.calls[0][2]?.headers?.['Idempotency-Key']).toBe('uuid-1');
+    expect(vi.mocked(http.post).mock.calls[1][2]?.headers?.['Idempotency-Key']).toBe('uuid-2');
+  });
+
+  it('uses a new attachment idempotency key when same name and size have different content', async () => {
+    vi.mocked(http.post).mockResolvedValue({
+      data: {
+        data: {
+          id: 1,
+          fileName: 'proof.txt',
+          fileExt: 'txt',
+          fileSizeBytes: 2,
+          contentSha256: 'hash',
+          bindingStatus: 'TEMP',
+          expiresAt: '2026-10-08T12:00:00',
+        },
+      },
+    });
+
+    await uploadAttachment(new File(['aa'], 'proof.txt', { type: 'text/plain' }));
+    await uploadAttachment(new File(['bb'], 'proof.txt', { type: 'text/plain' }));
 
     expect(vi.mocked(http.post).mock.calls[0][2]?.headers?.['Idempotency-Key']).toBe('uuid-1');
     expect(vi.mocked(http.post).mock.calls[1][2]?.headers?.['Idempotency-Key']).toBe('uuid-2');

@@ -10,8 +10,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -84,21 +87,37 @@ class I3AcceptanceIntegrationTest {
 
         Assertions.assertThat(batchStatus(batchId)).isEqualTo("COMPLETED");
         Assertions.assertThat(acceptanceCount(batteryIds.get(1))).isEqualTo(2);
-        mockMvc.perform(get("/api/v1/batteries/{id}/trace", batteryIds.get(1)).header("Authorization", bearer(token)))
+        String traceResponse = mockMvc.perform(get("/api/v1/batteries/{id}/trace", batteryIds.get(1)).header("Authorization", bearer(token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[*].eventName", hasItem("验收待补充资料")))
                 .andExpect(jsonPath("$.data[*].eventName", hasItem("验收资料已补充")))
-                .andExpect(jsonPath("$.data[*].eventName", hasItem("验收不通过")));
+                .andExpect(jsonPath("$.data[*].eventName", hasItem("验收不通过")))
+                .andReturn().getResponse().getContentAsString();
+        JsonNode trace = objectMapper.readTree(traceResponse).get("data");
+        Assertions.assertThat(event(trace, "验收待补充资料").at("/details/acceptance/identityCheckResult").asText()).isEqualTo("身份一致");
+        Assertions.assertThat(event(trace, "验收待补充资料").at("/details/acceptance/appearanceCheckResult").asText()).isEqualTo("外观需说明");
+        Assertions.assertThat(event(trace, "验收待补充资料").at("/details/acceptance/documentCheckResult").asText()).isEqualTo("资料缺失");
+        Assertions.assertThat(event(trace, "验收待补充资料").at("/details/acceptance/acceptanceNote").asText()).isEqualTo("缺少来源照片");
+        Assertions.assertThat(event(trace, "验收资料已补充").at("/details/supplement/supplementNote").asText()).isEqualTo("补充来源照片说明");
+        Assertions.assertThat(event(trace, "验收不通过").at("/details/acceptance/acceptanceNote").asText()).isEqualTo("外观严重破损");
     }
 
     @Test
     void validationFailuresKeepBatteryBatchAndHistoryUnchanged() throws Exception {
         String token = recycleToken();
-        long batchId = createSubmittedBatch(token, "i3-validation", List.of("ORI-I3-VAL"));
-        long batteryId = activeBatteryIds(batchId).get(0);
+        long batchId = createSubmittedBatch(token, "i3-validation", List.of("ORI-I3-VAL-A", "ORI-I3-VAL-B", "ORI-I3-VAL-C"));
+        List<Long> batteryIds = activeBatteryIds(batchId);
+        long batteryId = batteryIds.get(0);
         int recordsBefore = acceptanceCount(batteryId);
+        int auditBefore = failedAuditCount("ACCEPTANCE_REJECTED_BY_VALIDATION", batteryId);
 
         createAcceptance(token, batteryId, "i3-validation-missing", "PASS", "", "外观完整", "资料完整", null)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ACCEPTANCE_REQUIRED_FIELD_MISSING"));
+        createAcceptance(token, batteryId, "i3-validation-appearance-missing", "PASS", "身份一致", "", "资料完整", null)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ACCEPTANCE_REQUIRED_FIELD_MISSING"));
+        createAcceptance(token, batteryId, "i3-validation-document-missing", "PASS", "身份一致", "外观完整", "", null)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("ACCEPTANCE_REQUIRED_FIELD_MISSING"));
         createAcceptance(token, batteryId, "i3-validation-note", "NEED_SUPPLEMENT", "身份一致", "外观完整", "资料缺失", null)
@@ -107,10 +126,20 @@ class I3AcceptanceIntegrationTest {
         createAcceptance(token, batteryId, "i3-validation-length", "PASS", "A".repeat(41), "外观完整", "资料完整", null)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        createAcceptance(token, batteryId, "i3-validation-note-length", "REJECT", "身份一致", "外观破损", "资料完整", "A".repeat(501))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        createAcceptance(token, batteryIds.get(1), "i3-validation-length-40", "PASS", "A".repeat(40), "B".repeat(40), "C".repeat(40), null)
+                .andExpect(status().isOk());
+        createAcceptance(token, batteryIds.get(2), "i3-validation-note-500", "NEED_SUPPLEMENT", "身份一致", "外观完整", "资料缺失", "N".repeat(500))
+                .andExpect(status().isOk());
 
         Assertions.assertThat(batteryStatus(batteryId)).isEqualTo("PENDING_ACCEPTANCE");
-        Assertions.assertThat(batchStatus(batchId)).isEqualTo("PENDING_ACCEPTANCE");
+        Assertions.assertThat(batchStatus(batchId)).isEqualTo("ACCEPTANCE_PROCESSING");
         Assertions.assertThat(acceptanceCount(batteryId)).isEqualTo(recordsBefore);
+        Assertions.assertThat(failedAuditCount("ACCEPTANCE_REJECTED_BY_VALIDATION", batteryId)).isGreaterThanOrEqualTo(auditBefore + 4);
+        Assertions.assertThat(failedAuditCount("REQUEST_VALIDATION_FAILED")).isGreaterThanOrEqualTo(2);
     }
 
     @Test
@@ -118,9 +147,21 @@ class I3AcceptanceIntegrationTest {
         String token = recycleToken();
         long batchId = createSubmittedBatch(token, "i3-attachment", List.of("ORI-I3-ATT"));
         long batteryId = activeBatteryIds(batchId).get(0);
+        String sameKey = "i3-upload-same-content";
+        uploadAttachmentResponse(token, "same.txt", "aa", sameKey)
+                .andExpect(status().isOk());
+        uploadAttachmentResponse(token, "same.txt", "bb", sameKey)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSED"));
+
         createAcceptance(token, batteryId, "i3-attachment-need", "NEED_SUPPLEMENT", "身份一致", "外观完整", "资料缺失", "缺附件")
                 .andExpect(status().isOk());
-        long attachmentId = uploadAttachment(token, "i3-proof.txt");
+        String proofContent = "proof-real-bytes";
+        JsonNode uploaded = uploadAttachmentResponse(token, "i3-proof.txt", proofContent, "i3-upload-i3-proof.txt")
+                .andExpect(status().isOk())
+                .andReturnJson();
+        long attachmentId = uploaded.get("data").get("id").asLong();
+        Assertions.assertThat(uploaded.get("data").get("contentSha256").asText()).isEqualTo(sha256Hex(proofContent));
 
         supplement(token, batteryId, "i3-attachment-only", """
                 {"attachmentIds":[%d]}
@@ -130,21 +171,35 @@ class I3AcceptanceIntegrationTest {
         Assertions.assertThat(attachmentStatus(attachmentId)).isEqualTo("BOUND");
         Assertions.assertThat(attachmentObjectType(attachmentId)).isEqualTo("ACCEPTANCE_SUPPLEMENT");
         Assertions.assertThat(supplementNote(attachmentId)).isEqualTo("");
+        byte[] downloaded = mockMvc.perform(get("/api/v1/attachments/{id}/download", attachmentId).header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
+        Assertions.assertThat(new String(downloaded, StandardCharsets.UTF_8)).isEqualTo(proofContent);
+        String traceResponse = mockMvc.perform(get("/api/v1/batteries/{id}/trace", batteryId).header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode supplementEvent = event(objectMapper.readTree(traceResponse).get("data"), "验收资料已补充");
+        Assertions.assertThat(supplementEvent.at("/details/supplement/attachments/0/id").asLong()).isEqualTo(attachmentId);
+        Assertions.assertThat(supplementEvent.at("/details/supplement/attachments/0/downloadUrl").asText()).contains("/api/v1/attachments/" + attachmentId + "/download");
 
         createAcceptance(token, batteryId, "i3-attachment-need-again", "NEED_SUPPLEMENT", "身份一致", "外观完整", "资料仍缺", "再次补充")
                 .andExpect(status().isOk());
+        int invalidAttachmentAuditsBefore = failedAuditCount("ACCEPTANCE_SUPPLEMENT_INVALID_ATTACHMENT", batteryId);
         supplement(token, batteryId, "i3-attachment-bound-again", """
                 {"attachmentIds":[%d]}
                 """.formatted(attachmentId))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_ATTACHMENT"));
         Assertions.assertThat(batteryStatus(batteryId)).isEqualTo("PENDING_SUPPLEMENT");
+        Assertions.assertThat(failedAuditCount("ACCEPTANCE_SUPPLEMENT_INVALID_ATTACHMENT", batteryId)).isGreaterThan(invalidAttachmentAuditsBefore);
     }
 
     @Test
     void permissionsAndEnterpriseIsolationAreEnforced() throws Exception {
         String recycleToken = recycleToken();
         String warehouseToken = tokenFor("warehouse_admin", "password");
+        String supervisorToken = tokenFor("supervisor", "password");
+        String adminToken = tokenFor("admin", "password");
         ensureEnterpriseBRecycleUser();
         String enterpriseBToken = tokenFor("i3_enterprise_b_recycle", "password");
         long batchId = createSubmittedBatch(recycleToken, "i3-permission", List.of("ORI-I3-PERM"));
@@ -152,9 +207,20 @@ class I3AcceptanceIntegrationTest {
 
         createAcceptance(warehouseToken, batteryId, "i3-warehouse-denied", "PASS", "身份一致", "外观完整", "资料完整", null)
                 .andExpect(status().isForbidden());
+        createAcceptance(supervisorToken, batteryId, "i3-supervisor-denied", "PASS", "身份一致", "外观完整", "资料完整", null)
+                .andExpect(status().isForbidden());
+        createAcceptance(adminToken, batteryId, "i3-admin-denied", "PASS", "身份一致", "外观完整", "资料完整", null)
+                .andExpect(status().isForbidden());
         createAcceptance(enterpriseBToken, batteryId, "i3-cross-denied", "PASS", "身份一致", "外观完整", "资料完整", null)
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("CROSS_ENTERPRISE_ACCESS_DENIED"));
+        mockMvc.perform(post("/api/v1/batteries/{id}/acceptances", batteryId)
+                        .header("Idempotency-Key", "i3-no-token-denied")
+                        .contentType("application/json")
+                        .content("""
+                                {"acceptanceResult":"PASS","identityCheckResult":"身份一致","appearanceCheckResult":"外观完整","documentCheckResult":"资料完整"}
+                                """))
+                .andExpect(status().isUnauthorized());
         Assertions.assertThat(batteryStatus(batteryId)).isEqualTo("PENDING_ACCEPTANCE");
     }
 
@@ -279,14 +345,17 @@ class I3AcceptanceIntegrationTest {
     }
 
     private long uploadAttachment(String token, String fileName) throws Exception {
-        MockMultipartFile file = new MockMultipartFile("file", fileName, "text/plain", "proof".getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        String response = mockMvc.perform(multipart("/api/v1/attachments")
+        return uploadAttachmentResponse(token, fileName, "proof", "i3-upload-" + fileName)
+                .andExpect(status().isOk())
+                .andReturnJson().get("data").get("id").asLong();
+    }
+
+    private JsonResult uploadAttachmentResponse(String token, String fileName, String content, String key) throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", fileName, "text/plain", content.getBytes(StandardCharsets.UTF_8));
+        return new JsonResult(mockMvc.perform(multipart("/api/v1/attachments")
                         .file(file)
                         .header("Authorization", bearer(token))
-                        .header("Idempotency-Key", "i3-upload-" + fileName))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        return objectMapper.readTree(response).get("data").get("id").asLong();
+                        .header("Idempotency-Key", key)));
     }
 
     private String recycleToken() throws Exception {
@@ -362,6 +431,27 @@ class I3AcceptanceIntegrationTest {
 
     private int forbiddenAuditCount(String actionCode) {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action_code = ? AND result = 'FORBIDDEN'", Integer.class, actionCode);
+    }
+
+    private int failedAuditCount(String actionCode, long objectId) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action_code = ? AND result = 'FAILED' AND object_id = ?", Integer.class, actionCode, objectId);
+    }
+
+    private int failedAuditCount(String actionCode) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action_code = ? AND result = 'FAILED'", Integer.class, actionCode);
+    }
+
+    private JsonNode event(JsonNode events, String eventName) {
+        for (JsonNode event : events) {
+            if (eventName.equals(event.get("eventName").asText())) {
+                return event;
+            }
+        }
+        throw new AssertionError("Trace event not found: " + eventName);
+    }
+
+    private String sha256Hex(String content) throws Exception {
+        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8)));
     }
 
     private void ensureEnterpriseBRecycleUser() {
