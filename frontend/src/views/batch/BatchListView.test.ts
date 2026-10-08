@@ -15,8 +15,8 @@ vi.mock('../../api/i2', () => ({
 }));
 
 const draftBatch = {
-  id: 101,
-  enterpriseId: 1,
+  id: '9007199254740997',
+  enterpriseId: '1',
   batchNo: 'RB-20260929-0001',
   sourceType: 'ENTERPRISE',
   sourceSubjectName: '动力电池回收企业A',
@@ -26,7 +26,7 @@ const draftBatch = {
   handoverPerson: '张三',
   remark: '草稿备注',
   batchStatus: 'DRAFT',
-  createdBy: 1,
+  createdBy: '1',
   createdAt: '2026-09-29T12:00:00+08:00',
   updatedAt: '2026-09-29T12:00:00+08:00',
   version: 0,
@@ -35,7 +35,7 @@ const draftBatch = {
 
 const submittedBatch = {
   ...draftBatch,
-  id: 102,
+  id: '9007199254740998',
   batchNo: 'RB-20260929-0002',
   sourceSubjectName: '已提交企业',
   batchStatus: 'PENDING_ACCEPTANCE',
@@ -51,8 +51,8 @@ describe('BatchListView', () => {
     setActivePinia(createPinia());
     const authStore = useAuthStore();
     authStore.currentUser = {
-      id: 1,
-      enterpriseId: 1,
+      id: '1',
+      enterpriseId: '1',
       username: 'recycle_operator',
       displayName: '回收操作员',
       enabledStatus: 'ENABLED',
@@ -90,7 +90,7 @@ describe('BatchListView', () => {
     await (wrapper.vm as unknown as { save: () => Promise<void> }).save();
     await flush();
 
-    expect(updateBatch).toHaveBeenCalledWith(101, expect.objectContaining({
+    expect(updateBatch).toHaveBeenCalledWith('9007199254740997', expect.objectContaining({
       sourceSubjectName: '动力电池回收企业A',
       handoverLocation: '上海仓',
       relatedDocumentNo: 'DOC-001',

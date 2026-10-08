@@ -31,8 +31,8 @@ describe('router', () => {
     authStore.currentUser = null;
     authStore.loadCurrentUser = vi.fn(async () => {
       authStore.currentUser = {
-        id: 1,
-        enterpriseId: 1,
+        id: '1',
+        enterpriseId: '1',
         username: 'admin',
         displayName: '系统管理员',
         enabledStatus: 'ENABLED',
@@ -49,8 +49,8 @@ describe('router', () => {
     const authStore = useAuthStore();
     authStore.token = 'token';
     authStore.currentUser = {
-      id: 2,
-      enterpriseId: 1,
+      id: '2',
+      enterpriseId: '1',
       username: 'supervisor',
       displayName: '业务主管',
       enabledStatus: 'ENABLED',

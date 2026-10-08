@@ -44,7 +44,7 @@ import { useRoute } from 'vue-router';
 import { downloadAttachment, getBatteryTrace, type TraceEvent } from '../../api/i2';
 
 const route = useRoute();
-const batteryId = computed(() => Number(route.params.id));
+const batteryId = computed(() => String(route.params.id));
 const events = ref<TraceEvent[]>([]);
 const loading = ref(false);
 
@@ -59,7 +59,7 @@ async function load() {
 
 onMounted(load);
 
-async function download(attachmentId: number, fileName: string) {
+async function download(attachmentId: string, fileName: string) {
   await downloadAttachment(attachmentId, fileName);
 }
 </script>

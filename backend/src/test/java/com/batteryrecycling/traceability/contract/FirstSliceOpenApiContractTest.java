@@ -24,10 +24,23 @@ class FirstSliceOpenApiContractTest {
 
             Map<String, Object> components = (Map<String, Object>) openApi.get("components");
             Map<String, Object> schemas = (Map<String, Object>) components.get("schemas");
+            Map<String, Object> longId = (Map<String, Object>) schemas.get("LongId");
+            Assertions.assertThat(longId).containsEntry("type", "string").containsEntry("pattern", "^[0-9]+$");
+            Map<String, Object> parameters = (Map<String, Object>) components.get("parameters");
+            Map<String, Object> pathId = (Map<String, Object>) parameters.get("PathId");
+            Assertions.assertThat((Map<String, Object>) pathId.get("schema"))
+                    .containsEntry("$ref", "#/components/schemas/LongId");
+
             Map<String, Object> duplicateCheck = (Map<String, Object>) schemas.get("DuplicateCheckRequest");
             Map<String, Object> properties = (Map<String, Object>) duplicateCheck.get("properties");
             Map<String, Object> originalCode = (Map<String, Object>) properties.get("originalCode");
             Assertions.assertThat(originalCode).containsEntry("maxLength", 100);
+            Map<String, Object> recycleBatch = (Map<String, Object>) schemas.get("RecycleBatch");
+            Map<String, Object> recycleBatchProperties = (Map<String, Object>) recycleBatch.get("properties");
+            Assertions.assertThat((Map<String, Object>) recycleBatchProperties.get("id"))
+                    .containsEntry("$ref", "#/components/schemas/LongId");
+            Assertions.assertThat((Map<String, Object>) recycleBatchProperties.get("createdBy"))
+                    .containsEntry("$ref", "#/components/schemas/LongId");
 
             Map<String, Object> supplementPost = (Map<String, Object>) ((Map<String, Object>) paths.get("/batteries/{id}/acceptance-supplements")).get("post");
             Map<String, Object> supplementResponses = (Map<String, Object>) supplementPost.get("responses");

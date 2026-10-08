@@ -17,7 +17,7 @@ import { onMounted, ref } from 'vue';
 import { http } from '../../api/http';
 
 interface Permission {
-  id: number;
+  id: string;
   permissionCode: string;
   permissionName: string;
 }

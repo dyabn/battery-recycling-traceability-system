@@ -40,13 +40,13 @@ vi.mock('vue-router', () => ({
 
 function battery(overrides: Partial<Battery> = {}): Battery {
   return {
-    id: 701,
-    enterpriseId: 1,
+    id: '9007199254741001',
+    enterpriseId: '1',
     systemTraceCode: 'BAT-701',
     originalCode: 'ORI-I3-FE',
     batteryType: 'PACK',
     batteryChemistry: 'UNKNOWN',
-    currentResponsibleEnterpriseId: 1,
+    currentResponsibleEnterpriseId: '1',
     lifecycleStatus: 'PENDING_ACCEPTANCE',
     duplicateStatus: 'NORMAL',
     version: 1,
@@ -67,22 +67,22 @@ function mountWithPlugins(component: object) {
 
 function batch(): RecycleBatch {
   return {
-    id: 701,
-    enterpriseId: 1,
+    id: '701',
+    enterpriseId: '1',
     batchNo: 'RB-I3-FE',
     sourceType: 'ENTERPRISE',
     sourceSubjectName: '测试来源',
     handoverDate: '2026-10-08',
     batchStatus: 'ACCEPTANCE_PROCESSING',
-    createdBy: 3,
+    createdBy: '3',
     createdAt: '2026-10-08T10:00:00+08:00',
     updatedAt: '2026-10-08T10:00:00+08:00',
     version: 1,
     batteries: [
-      battery({ id: 1, lifecycleStatus: 'PENDING_ACCEPTANCE' }),
-      battery({ id: 2, lifecycleStatus: 'PENDING_SUPPLEMENT' }),
-      battery({ id: 3, lifecycleStatus: 'ACCEPTED_PENDING_INBOUND' }),
-      battery({ id: 4, lifecycleStatus: 'ACCEPTANCE_REJECTED' }),
+      battery({ id: '1', lifecycleStatus: 'PENDING_ACCEPTANCE' }),
+      battery({ id: '2', lifecycleStatus: 'PENDING_SUPPLEMENT' }),
+      battery({ id: '3', lifecycleStatus: 'ACCEPTED_PENDING_INBOUND' }),
+      battery({ id: '4', lifecycleStatus: 'ACCEPTANCE_REJECTED' }),
     ],
   };
 }
@@ -98,7 +98,7 @@ function traceEvents(): TraceEvent[] {
       result: 'SUCCESS',
       details: {
         acceptance: {
-          id: 801,
+          id: '801',
           acceptanceResult: 'NEED_SUPPLEMENT',
           identityCheckResult: '身份一致',
           appearanceCheckResult: '外观需说明',
@@ -118,17 +118,17 @@ function traceEvents(): TraceEvent[] {
       result: 'SUCCESS',
       details: {
         supplement: {
-          id: 901,
-          acceptanceRecordId: 801,
+          id: '901',
+          acceptanceRecordId: '801',
           supplementNote: '补充来源照片说明',
           supplementedBy: '回收操作员',
           supplementedAt: '2026-10-08T10:05:00+08:00',
           attachments: [
             {
-              id: 902,
+              id: '902',
               fileName: 'proof.txt',
               fileExt: 'txt',
-              fileSizeBytes: 5,
+              fileSizeBytes: '5',
               downloadUrl: '/api/v1/attachments/902/download',
             },
           ],
@@ -148,8 +148,8 @@ describe('I3 acceptance page', () => {
     setActivePinia(createPinia());
     const authStore = useAuthStore();
     authStore.currentUser = {
-      id: 3,
-      enterpriseId: 1,
+      id: '3',
+      enterpriseId: '1',
       username: 'recycle_operator',
       displayName: '回收操作员',
       enabledStatus: 'ENABLED',
@@ -164,7 +164,7 @@ describe('I3 acceptance page', () => {
   });
 
   it('loads pending batteries and saves an acceptance result', async () => {
-    vi.mocked(createAcceptance).mockResolvedValue({ acceptanceRecordId: 801, batteryStatus: 'ACCEPTED_PENDING_INBOUND' });
+    vi.mocked(createAcceptance).mockResolvedValue({ acceptanceRecordId: '801', batteryStatus: 'ACCEPTED_PENDING_INBOUND' });
     const wrapper = mountWithPlugins(AcceptancePendingView);
     await flush();
 
@@ -178,19 +178,19 @@ describe('I3 acceptance page', () => {
     });
     await (wrapper.vm as unknown as { saveAcceptance: () => Promise<void> }).saveAcceptance();
 
-    expect(createAcceptance).toHaveBeenCalledWith(701, expect.objectContaining({
+    expect(createAcceptance).toHaveBeenCalledWith('9007199254741001', expect.objectContaining({
       acceptanceResult: 'PASS',
       identityCheckResult: '身份一致',
     }));
   });
 
   it('uploads evidence and supplements a pending battery', async () => {
-    const pendingSupplement = battery({ id: 702, lifecycleStatus: 'PENDING_SUPPLEMENT', systemTraceCode: 'BAT-702' });
+    const pendingSupplement = battery({ id: '9007199254741002', lifecycleStatus: 'PENDING_SUPPLEMENT', systemTraceCode: 'BAT-702' });
     const attachment: Attachment = {
-      id: 901,
+      id: '901',
       fileName: 'proof.txt',
       fileExt: 'txt',
-      fileSizeBytes: 5,
+      fileSizeBytes: '5',
       bindingStatus: 'TEMP',
       expiresAt: '2026-10-08T00:00:00+08:00',
     };
@@ -208,9 +208,9 @@ describe('I3 acceptance page', () => {
     await (wrapper.vm as unknown as { saveSupplement: () => Promise<void> }).saveSupplement();
 
     expect(uploadAttachment).toHaveBeenCalledWith(expect.objectContaining({ name: 'proof.txt' }));
-    expect(supplementAcceptance).toHaveBeenCalledWith(702, {
+    expect(supplementAcceptance).toHaveBeenCalledWith('9007199254741002', {
       supplementNote: '补充说明',
-      attachmentIds: [901],
+      attachmentIds: ['901'],
     });
   });
 
@@ -219,7 +219,7 @@ describe('I3 acceptance page', () => {
     const wrapper = mountWithPlugins(BatteryTraceView);
     await flush();
 
-    expect(getBatteryTrace).toHaveBeenCalledWith(701);
+    expect(getBatteryTrace).toHaveBeenCalledWith('701');
     expect(wrapper.text()).toContain('身份一致');
     expect(wrapper.text()).toContain('外观需说明');
     expect(wrapper.text()).toContain('资料缺失');
@@ -228,14 +228,14 @@ describe('I3 acceptance page', () => {
     expect(wrapper.text()).toContain('proof.txt');
 
     await wrapper.findAll('button').find((button) => button.text().includes('proof.txt'))?.trigger('click');
-    expect(downloadAttachment).toHaveBeenCalledWith(902, 'proof.txt');
+    expect(downloadAttachment).toHaveBeenCalledWith('902', 'proof.txt');
   });
 
   it('shows batch acceptance progress summary in the batch detail page', async () => {
     const wrapper = mountWithPlugins(BatchDetailView);
     await flush();
 
-    expect(getBatch).toHaveBeenCalledWith(701);
+    expect(getBatch).toHaveBeenCalledWith('701');
     expect(wrapper.text()).toContain('待验收 1');
     expect(wrapper.text()).toContain('待补充 1');
     expect(wrapper.text()).toContain('通过待入库 1');

@@ -21,10 +21,10 @@ import { onMounted, ref } from 'vue';
 import { http } from '../../api/http';
 
 interface AuditLog {
-  id: number;
+  id: string;
   actionCode: string;
   objectType: string;
-  objectId: number;
+  objectId: string;
   result: string;
   rejectReason: string;
   operatedAt: string;

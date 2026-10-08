@@ -43,9 +43,9 @@ import { useRoute } from 'vue-router';
 import { resolveDuplicate, type Battery } from '../../api/i2';
 
 const route = useRoute();
-const candidateId = computed(() => Number(route.params.id));
-const matchedIds = computed(() => String(route.query.matches || '').split(',').filter(Boolean).map(Number));
-const existingBatteryId = ref<number | undefined>(matchedIds.value[0]);
+const candidateId = computed(() => String(route.params.id));
+const matchedIds = computed(() => String(route.query.matches || '').split(',').filter(Boolean));
+const existingBatteryId = ref<string | undefined>(matchedIds.value[0]);
 const reviewResult = ref('SAME_BATTERY');
 const duplicateReason = ref('');
 const saving = ref(false);

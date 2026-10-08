@@ -20,7 +20,7 @@ import { onMounted, ref } from 'vue';
 import { http } from '../../api/http';
 
 interface Role {
-  id: number;
+  id: string;
   roleCode: string;
   roleName: string;
   permissions: string[];

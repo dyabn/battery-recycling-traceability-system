@@ -1,6 +1,8 @@
 import { http } from './http';
 import { clearPendingI2IdempotencyKeys, completeIdempotencyKey, nextIdempotencyKey } from './idempotencyRegistry';
 
+export type ApiId = string;
+
 export interface ApiEnvelope<T> {
   code: string;
   message: string;
@@ -9,8 +11,8 @@ export interface ApiEnvelope<T> {
 }
 
 export interface Battery {
-  id: number;
-  enterpriseId: number;
+  id: ApiId;
+  enterpriseId: ApiId;
   systemTraceCode: string;
   originalCode?: string | null;
   batteryType: 'PACK';
@@ -19,15 +21,15 @@ export interface Battery {
   batteryChemistry: string;
   nominalCapacity?: number | null;
   productionDate?: string | null;
-  currentResponsibleEnterpriseId: number;
+  currentResponsibleEnterpriseId: ApiId;
   lifecycleStatus: string;
   duplicateStatus: string;
   version: number;
 }
 
 export interface RecycleBatch {
-  id: number;
-  enterpriseId: number;
+  id: ApiId;
+  enterpriseId: ApiId;
   batchNo: string;
   sourceType: string;
   sourceSubjectName: string;
@@ -38,9 +40,9 @@ export interface RecycleBatch {
   remark?: string | null;
   batchStatus: string;
   submittedAt?: string | null;
-  createdBy: number;
+  createdBy: ApiId;
   createdAt: string;
-  updatedBy?: number | null;
+  updatedBy?: ApiId | null;
   updatedAt: string;
   version: number;
   batteries: Battery[];
@@ -54,7 +56,7 @@ export interface BatchPayload {
   relatedDocumentNo?: string;
   handoverPerson?: string;
   remark?: string;
-  attachmentIds?: number[];
+  attachmentIds?: ApiId[];
 }
 
 export interface BatteryPayload {
@@ -70,9 +72,9 @@ export interface BatteryPayload {
 export interface BatteryRegistrationResult {
   resultType: 'BATTERY_CREATED' | 'DUPLICATE_REVIEW_REQUIRED';
   battery?: Battery;
-  candidateId?: number;
+  candidateId?: ApiId;
   candidateStatus?: string;
-  matchedBatteryIds: number[];
+  matchedBatteryIds: ApiId[];
 }
 
 export interface TraceEvent {
@@ -84,7 +86,7 @@ export interface TraceEvent {
   result: string;
   details?: {
     acceptance?: {
-      id: number;
+      id: ApiId;
       acceptanceResult: string;
       identityCheckResult: string;
       appearanceCheckResult: string;
@@ -94,16 +96,16 @@ export interface TraceEvent {
       acceptedAt: string;
     };
     supplement?: {
-      id: number;
-      acceptanceRecordId?: number | string;
+      id: ApiId;
+      acceptanceRecordId?: ApiId;
       supplementNote: string;
       supplementedBy: string;
       supplementedAt: string;
       attachments: Array<{
-        id: number;
+        id: ApiId;
         fileName: string;
         fileExt: string;
-        fileSizeBytes: number;
+        fileSizeBytes: string;
         downloadUrl: string;
       }>;
     };
@@ -119,20 +121,20 @@ export interface AcceptancePayload {
 }
 
 export interface AcceptanceResult {
-  acceptanceRecordId: number;
+  acceptanceRecordId: ApiId;
   batteryStatus: string;
 }
 
 export interface AcceptanceSupplementPayload {
   supplementNote?: string;
-  attachmentIds?: number[];
+  attachmentIds?: ApiId[];
 }
 
 export interface Attachment {
-  id: number;
+  id: ApiId;
   fileName: string;
   fileExt: string;
-  fileSizeBytes: number;
+  fileSizeBytes: string;
   contentSha256?: string | null;
   bindingStatus: 'TEMP' | 'BOUND';
   expiresAt?: string | null;
@@ -188,7 +190,7 @@ export async function listBatches(status?: string) {
   return response.data.data;
 }
 
-export async function getBatch(id: number) {
+export async function getBatch(id: ApiId) {
   const response = await http.get<ApiEnvelope<RecycleBatch>>(`/recycle-batches/${id}`);
   return response.data.data;
 }
@@ -200,7 +202,7 @@ export async function createBatch(payload: BatchPayload, key?: string) {
   }, key);
 }
 
-export async function updateBatch(id: number, payload: BatchPayload, key?: string) {
+export async function updateBatch(id: ApiId, payload: BatchPayload, key?: string) {
   return withIdempotency('UPDATE_RECYCLE_BATCH', fingerprint({ id, payload }), async (idempotencyKeyValue) => {
     const response = await http.put<ApiEnvelope<RecycleBatch>>(`/recycle-batches/${id}`, payload, { headers: { 'Idempotency-Key': idempotencyKeyValue } });
     return response.data.data;
@@ -215,32 +217,32 @@ export async function createBattery(payload: BatteryPayload, key?: string) {
 }
 
 export async function checkDuplicate(originalCode: string) {
-  const response = await http.post<ApiEnvelope<{ duplicated: boolean; matchedBatteryIds: number[] }>>('/batteries/duplicate-check', { originalCode });
+  const response = await http.post<ApiEnvelope<{ duplicated: boolean; matchedBatteryIds: ApiId[] }>>('/batteries/duplicate-check', { originalCode });
   return response.data.data;
 }
 
-export async function resolveDuplicate(candidateId: number, payload: { reviewResult: string; existingBatteryId?: number; duplicateReason?: string }, key?: string) {
+export async function resolveDuplicate(candidateId: ApiId, payload: { reviewResult: string; existingBatteryId?: ApiId; duplicateReason?: string }, key?: string) {
   return withIdempotency('RESOLVE_DUPLICATE', fingerprint({ candidateId, payload }), async (idempotencyKeyValue) => {
     const response = await http.post<ApiEnvelope<Battery>>(`/battery-registration-candidates/${candidateId}/duplicate-resolution`, payload, { headers: { 'Idempotency-Key': idempotencyKeyValue } });
     return response.data.data;
   }, key);
 }
 
-export async function addBatteryToBatch(batchId: number, batteryId: number, key?: string) {
+export async function addBatteryToBatch(batchId: ApiId, batteryId: ApiId, key?: string) {
   return withIdempotency('ADD_BATTERY_TO_BATCH', fingerprint({ batchId, batteryId }), async (idempotencyKeyValue) => {
     const response = await http.post<ApiEnvelope<RecycleBatch>>(`/recycle-batches/${batchId}/batteries`, { batteryId }, { headers: { 'Idempotency-Key': idempotencyKeyValue } });
     return response.data.data;
   }, key);
 }
 
-export async function submitBatch(batchId: number, key?: string) {
+export async function submitBatch(batchId: ApiId, key?: string) {
   return withIdempotency('SUBMIT_RECYCLE_BATCH', String(batchId), async (idempotencyKeyValue) => {
     const response = await http.post<ApiEnvelope<RecycleBatch>>(`/recycle-batches/${batchId}/submit`, undefined, { headers: { 'Idempotency-Key': idempotencyKeyValue } });
     return response.data.data;
   }, key);
 }
 
-export async function getBatteryTrace(batteryId: number) {
+export async function getBatteryTrace(batteryId: ApiId) {
   const response = await http.get<ApiEnvelope<TraceEvent[]>>(`/batteries/${batteryId}/trace`);
   return response.data.data;
 }
@@ -250,14 +252,14 @@ export async function listPendingAcceptances() {
   return response.data.data;
 }
 
-export async function createAcceptance(batteryId: number, payload: AcceptancePayload, key?: string) {
+export async function createAcceptance(batteryId: ApiId, payload: AcceptancePayload, key?: string) {
   return withIdempotency('CREATE_ACCEPTANCE', fingerprint({ batteryId, payload }), async (idempotencyKeyValue) => {
     const response = await http.post<ApiEnvelope<AcceptanceResult>>(`/batteries/${batteryId}/acceptances`, payload, { headers: { 'Idempotency-Key': idempotencyKeyValue } });
     return response.data.data;
   }, key);
 }
 
-export async function supplementAcceptance(batteryId: number, payload: AcceptanceSupplementPayload, key?: string) {
+export async function supplementAcceptance(batteryId: ApiId, payload: AcceptanceSupplementPayload, key?: string) {
   return withIdempotency('SUPPLEMENT_ACCEPTANCE', fingerprint({ batteryId, payload }), async (idempotencyKeyValue) => {
     const response = await http.post<ApiEnvelope<Battery>>(`/batteries/${batteryId}/acceptance-supplements`, payload, { headers: { 'Idempotency-Key': idempotencyKeyValue } });
     return response.data.data;
@@ -276,7 +278,7 @@ export async function uploadAttachment(file: File, key?: string) {
   }, key);
 }
 
-export async function downloadAttachment(attachmentId: number, fileName: string) {
+export async function downloadAttachment(attachmentId: ApiId, fileName: string) {
   const response = await http.get<Blob>(`/attachments/${attachmentId}/download`, { responseType: 'blob' });
   const blob = response.data instanceof Blob ? response.data : new Blob([response.data]);
   const url = URL.createObjectURL(blob);

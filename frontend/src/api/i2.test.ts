@@ -31,14 +31,14 @@ describe('i2 api idempotency', () => {
     const response = {
       data: {
         data: {
-          id: 1,
-          enterpriseId: 1,
+          id: '9007199254740993',
+          enterpriseId: '1',
           batchNo: 'RB-20260929-0001',
           sourceType: 'ENTERPRISE',
           sourceSubjectName: '测试来源企业',
           handoverDate: '2026-09-29',
           batchStatus: 'DRAFT',
-          createdBy: 1,
+          createdBy: '1',
           createdAt: '2026-09-29T12:00:00+08:00',
           updatedAt: '2026-09-29T12:00:00+08:00',
           version: 0,
@@ -62,14 +62,14 @@ describe('i2 api idempotency', () => {
     vi.mocked(http.post).mockResolvedValue({
       data: {
         data: {
-          id: 1,
-          enterpriseId: 1,
+          id: '9007199254740993',
+          enterpriseId: '1',
           batchNo: 'RB-20260929-0001',
           sourceType: 'ENTERPRISE',
           sourceSubjectName: '测试来源企业',
           handoverDate: '2026-09-29',
           batchStatus: 'DRAFT',
-          createdBy: 1,
+          createdBy: '1',
           createdAt: '2026-09-29T12:00:00+08:00',
           updatedAt: '2026-09-29T12:00:00+08:00',
           version: 0,
@@ -102,14 +102,14 @@ describe('i2 api idempotency', () => {
     const response = {
       data: {
         data: {
-          id: 1,
-          enterpriseId: 1,
+          id: '9007199254740993',
+          enterpriseId: '1',
           batchNo: 'RB-20260929-0001',
           sourceType: 'ENTERPRISE',
           sourceSubjectName: '测试来源企业',
           handoverDate: '2026-09-29',
           batchStatus: 'DRAFT',
-          createdBy: 1,
+          createdBy: '1',
           createdAt: '2026-09-29T12:00:00+08:00',
           updatedAt: '2026-09-29T12:00:00+08:00',
           version: 0,
@@ -133,10 +133,10 @@ describe('i2 api idempotency', () => {
     vi.mocked(http.post).mockResolvedValue({
       data: {
         data: {
-          id: 1,
+          id: '9007199254740994',
           fileName: 'proof.txt',
           fileExt: 'txt',
-          fileSizeBytes: 2,
+          fileSizeBytes: '2',
           contentSha256: 'hash',
           bindingStatus: 'TEMP',
           expiresAt: '2026-10-08T12:00:00',

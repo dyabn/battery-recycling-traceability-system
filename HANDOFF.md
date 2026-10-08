@@ -38,6 +38,7 @@
 - I3 代码验证提交：`6fee83009925d4fdec505c7f2dfbaeb5b7755425`
 - I3 最新通过的 GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37734497499`
 - I3 当前状态：`completed / 复核通过`；I4 未启动。
+- 测试阶段缺陷修复：后端 Long/long 响应统一序列化为字符串，前端 ID 类型同步为字符串，避免 JavaScript `number` 精度丢失导致详情、编辑保存或加入电池找错对象。
 
 ## 3. 已完成的前置工作
 
@@ -391,6 +392,7 @@ Implementation CI run 37734497499 已确认提交 6fee83009925d4fdec505c7f2dfbae
 - 所有写接口必须保留 `Idempotency-Key`。
 - 企业 ID 必须来自 JWT/当前用户上下文，不能由请求体或查询参数决定。
 - 当前 I3 的目标止于“验收完成并形成待入库资格”，不要提前实现真实入库、库存或数据治理处理器。
+- 前后端交互中的后端 Long ID 必须按字符串处理，不要在前端使用 `Number(route.params.id)` 或 `number` 类型接收业务 ID。
 - 如果要继续开发，优先读取：
   - `project-state.yaml`
   - `docs/implementation/i3-acceptance-verification.md`

@@ -4,8 +4,8 @@ import { clearPendingI2IdempotencyKeys } from '../api/idempotencyRegistry';
 import { http } from '../api/http';
 
 export interface CurrentUser {
-  id: number;
-  enterpriseId: number;
+  id: string;
+  enterpriseId: string;
   username: string;
   displayName: string;
   enabledStatus: string;
@@ -16,7 +16,7 @@ export interface CurrentUser {
 interface LoginResponse {
   accessToken: string;
   tokenType: string;
-  expiresIn: number;
+  expiresIn: string;
   currentUser: CurrentUser;
 }
 

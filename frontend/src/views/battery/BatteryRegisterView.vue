@@ -64,8 +64,8 @@ import { checkDuplicate, createBattery, type Battery, type BatteryPayload } from
 const formRef = ref<FormInstance>();
 const saving = ref(false);
 const createdBattery = ref<Battery | null>(null);
-const candidateId = ref<number | null>(null);
-const matchedBatteryIds = ref<number[]>([]);
+const candidateId = ref<string | null>(null);
+const matchedBatteryIds = ref<string[]>([]);
 const duplicateMessage = ref('');
 const duplicateType = ref<'success' | 'warning'>('success');
 const form = reactive<BatteryPayload>({

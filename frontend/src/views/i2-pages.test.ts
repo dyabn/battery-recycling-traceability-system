@@ -31,27 +31,27 @@ vi.mock('vue-router', () => ({
 }));
 
 const battery: Battery = {
-  id: 301,
-  enterpriseId: 1,
+  id: '9007199254740993',
+  enterpriseId: '1',
   systemTraceCode: 'BAT-301',
   originalCode: 'ORI-I2-FE',
   batteryType: 'PACK',
   batteryChemistry: 'UNKNOWN',
-  currentResponsibleEnterpriseId: 1,
+  currentResponsibleEnterpriseId: '1',
   lifecycleStatus: 'REGISTERED',
   duplicateStatus: 'NORMAL',
   version: 0,
 };
 
 const batch: RecycleBatch = {
-  id: 501,
-  enterpriseId: 1,
+  id: '9007199254740995',
+  enterpriseId: '1',
   batchNo: 'RB-501',
   sourceType: 'ENTERPRISE',
   sourceSubjectName: '测试来源',
   handoverDate: '2026-09-29',
   batchStatus: 'DRAFT',
-  createdBy: 1,
+  createdBy: '1',
   createdAt: '2026-09-29T12:00:00+08:00',
   updatedAt: '2026-09-29T12:00:00+08:00',
   version: 0,
@@ -79,8 +79,8 @@ describe('I2 pages', () => {
     setActivePinia(createPinia());
     const authStore = useAuthStore();
     authStore.currentUser = {
-      id: 3,
-      enterpriseId: 1,
+      id: '3',
+      enterpriseId: '1',
       username: 'recycle_operator',
       displayName: '回收操作员',
       enabledStatus: 'ENABLED',
@@ -93,7 +93,7 @@ describe('I2 pages', () => {
   });
 
   it('checks duplicate codes and registers batteries from the registration page', async () => {
-    vi.mocked(checkDuplicate).mockResolvedValue({ duplicated: true, matchedBatteryIds: [301] });
+    vi.mocked(checkDuplicate).mockResolvedValue({ duplicated: true, matchedBatteryIds: ['9007199254740993'] });
     vi.mocked(createBattery).mockResolvedValue({ resultType: 'BATTERY_CREATED', battery, matchedBatteryIds: [] });
     const wrapper = mountWithPlugins(BatteryRegisterView);
 
@@ -113,9 +113,9 @@ describe('I2 pages', () => {
 
     await (wrapper.vm as unknown as { save: () => Promise<void> }).save();
 
-    expect(resolveDuplicate).toHaveBeenCalledWith(601, expect.objectContaining({
+    expect(resolveDuplicate).toHaveBeenCalledWith('601', expect.objectContaining({
       reviewResult: 'SAME_BATTERY',
-      existingBatteryId: 301,
+      existingBatteryId: '301',
     }));
     expect(wrapper.text()).toContain('核实完成');
   });
@@ -127,13 +127,13 @@ describe('I2 pages', () => {
     const wrapper = mountWithPlugins(BatchDetailView);
     await flush();
 
-    (wrapper.vm as unknown as { batteryId: number }).batteryId = 301;
+    (wrapper.vm as unknown as { batteryId: string }).batteryId = '9007199254740993';
     await (wrapper.vm as unknown as { addBattery: () => Promise<void>; submit: () => Promise<void> }).addBattery();
     await (wrapper.vm as unknown as { submit: () => Promise<void> }).submit();
 
-    expect(getBatch).toHaveBeenCalledWith(501);
-    expect(addBatteryToBatch).toHaveBeenCalledWith(501, 301);
-    expect(submitBatch).toHaveBeenCalledWith(501);
+    expect(getBatch).toHaveBeenCalledWith('501');
+    expect(addBatteryToBatch).toHaveBeenCalledWith('501', '9007199254740993');
+    expect(submitBatch).toHaveBeenCalledWith('501');
   });
 
   it('loads trace events on the trace page', async () => {
@@ -149,7 +149,7 @@ describe('I2 pages', () => {
     const wrapper = mountWithPlugins(BatteryTraceView);
     await flush();
 
-    expect(getBatteryTrace).toHaveBeenCalledWith(301);
+    expect(getBatteryTrace).toHaveBeenCalledWith('301');
     expect(wrapper.text()).toContain('电池登记');
   });
 });

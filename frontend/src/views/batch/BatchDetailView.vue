@@ -41,7 +41,7 @@
     <el-dialog v-model="addDialog" title="加入电池" width="420px">
       <el-form label-width="100px">
         <el-form-item label="电池ID">
-          <el-input-number v-model="batteryId" :min="1" />
+          <el-input v-model="batteryId" placeholder="请输入电池ID" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -67,8 +67,8 @@ const loading = ref(false);
 const submitting = ref(false);
 const adding = ref(false);
 const addDialog = ref(false);
-const batteryId = ref(1);
-const batchId = computed(() => Number(route.params.id));
+const batteryId = ref('');
+const batchId = computed(() => String(route.params.id));
 const canAdd = computed(() => authStore.hasPermission('battery:create') && batch.value?.batchStatus === 'DRAFT');
 const canSubmit = computed(() => authStore.hasPermission('batch:submit') && batch.value?.batchStatus === 'DRAFT');
 const progress = computed(() => {
@@ -93,7 +93,7 @@ async function load() {
 async function addBattery() {
   adding.value = true;
   try {
-    batch.value = await addBatteryToBatch(batchId.value, batteryId.value);
+    batch.value = await addBatteryToBatch(batchId.value, batteryId.value.trim());
     ElMessage.success('电池已加入批次');
     addDialog.value = false;
   } finally {

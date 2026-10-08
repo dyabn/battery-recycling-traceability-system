@@ -363,8 +363,7 @@ paths:
               required: [batteryId]
               properties:
                 batteryId:
-                  type: integer
-                  format: int64
+                  $ref: '#/components/schemas/LongId'
       responses:
         '200':
           $ref: '#/components/responses/BatchResponse'
@@ -854,8 +853,7 @@ components:
       in: path
       required: true
       schema:
-        type: integer
-        format: int64
+        $ref: '#/components/schemas/LongId'
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -1004,6 +1002,16 @@ components:
           schema:
             $ref: '#/components/schemas/AttachmentEnvelope'
   schemas:
+    LongId:
+      type: string
+      pattern: '^[0-9]+$'
+      description: Java Long identifier serialized as a string to avoid JavaScript precision loss.
+      example: '9007199254740993'
+    LongString:
+      type: string
+      pattern: '^[0-9]+$'
+      description: Java long value serialized as a string to avoid JavaScript precision loss.
+      example: '9007199254740993'
     Envelope:
       type: object
       required: [code, message, traceId]
@@ -1049,7 +1057,7 @@ components:
                   type: string
                   enum: [Bearer]
                 expiresIn:
-                  type: integer
+                  $ref: '#/components/schemas/LongString'
                 currentUser:
                   $ref: '#/components/schemas/CurrentUser'
     CurrentUserEnvelope:
@@ -1063,11 +1071,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         enterpriseId:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         username:
           type: string
         displayName:
@@ -1110,8 +1116,7 @@ components:
         attachmentIds:
           type: array
           items:
-            type: integer
-            format: int64
+            $ref: '#/components/schemas/LongId'
     RecycleBatchUpdateRequest:
       $ref: '#/components/schemas/RecycleBatchCreateRequest'
     RecycleBatchEnvelope:
@@ -1135,11 +1140,9 @@ components:
       required: [id, batchNo, sourceType, sourceSubjectName, handoverDate, batchStatus, version, batteries]
       properties:
         id:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         enterpriseId:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         batchNo:
           type: string
         sourceType:
@@ -1168,14 +1171,13 @@ components:
           format: date-time
           nullable: true
         createdBy:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         createdAt:
           type: string
           format: date-time
         updatedBy:
-          type: integer
-          format: int64
+          type: string
+          pattern: '^[0-9]+$'
           nullable: true
         updatedAt:
           type: string
@@ -1234,16 +1236,14 @@ components:
         battery:
           $ref: '#/components/schemas/Battery'
         candidateId:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         candidateStatus:
           type: string
           enum: [PENDING_REVIEW]
         matchedBatteryIds:
           type: array
           items:
-            type: integer
-            format: int64
+            $ref: '#/components/schemas/LongId'
     BatteryListEnvelope:
       allOf:
         - $ref: '#/components/schemas/Envelope'
@@ -1258,11 +1258,9 @@ components:
       required: [id, systemTraceCode, batteryType, batteryChemistry, lifecycleStatus, duplicateStatus]
       properties:
         id:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         enterpriseId:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         systemTraceCode:
           type: string
         originalCode:
@@ -1288,8 +1286,7 @@ components:
           format: date
           nullable: true
         currentResponsibleEnterpriseId:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         lifecycleStatus:
           type: string
         duplicateStatus:
@@ -1316,8 +1313,7 @@ components:
                 matchedBatteryIds:
                   type: array
                   items:
-                    type: integer
-                    format: int64
+                    $ref: '#/components/schemas/LongId'
     DuplicateResolutionRequest:
       type: object
       required: [reviewResult]
@@ -1326,8 +1322,7 @@ components:
           type: string
           enum: [SAME_BATTERY, DIFFERENT_BATTERY]
         existingBatteryId:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         duplicateReason:
           type: string
           maxLength: 255
@@ -1359,8 +1354,7 @@ components:
               type: object
               properties:
                 acceptanceRecordId:
-                  type: integer
-                  format: int64
+                  $ref: '#/components/schemas/LongId'
                 batteryStatus:
                   type: string
     AcceptanceSupplementRequest:
@@ -1372,18 +1366,15 @@ components:
         attachmentIds:
           type: array
           items:
-            type: integer
-            format: int64
+            $ref: '#/components/schemas/LongId'
     InboundCreateRequest:
       type: object
       required: [warehouseId, locationId]
       properties:
         warehouseId:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         locationId:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
     InboundEnvelope:
       allOf:
         - $ref: '#/components/schemas/Envelope'
@@ -1393,11 +1384,9 @@ components:
               type: object
               properties:
                 inboundRecordId:
-                  type: integer
-                  format: int64
+                  $ref: '#/components/schemas/LongId'
                 inventoryId:
-                  type: integer
-                  format: int64
+                  $ref: '#/components/schemas/LongId'
                 batteryStatus:
                   type: string
     InventoryListEnvelope:
@@ -1462,21 +1451,17 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         enterpriseId:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         operatorUserId:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         actionCode:
           type: string
         objectType:
           type: string
         objectId:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         result:
           type: string
         rejectReason:
@@ -1513,8 +1498,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         roleCode:
           type: string
         roleName:
@@ -1536,8 +1520,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         permissionCode:
           type: string
         permissionName:
@@ -1555,8 +1538,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         warehouseCode:
           type: string
         warehouseName:
@@ -1576,11 +1558,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         warehouseId:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         locationCode:
           type: string
         enabledStatus:
@@ -1603,15 +1583,13 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongId'
         fileName:
           type: string
         fileExt:
           type: string
         fileSizeBytes:
-          type: integer
-          format: int64
+          $ref: '#/components/schemas/LongString'
         contentSha256:
           type: string
           minLength: 64
