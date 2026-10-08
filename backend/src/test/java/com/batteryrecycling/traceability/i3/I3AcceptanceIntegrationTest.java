@@ -185,6 +185,33 @@ class I3AcceptanceIntegrationTest {
         createAcceptance(token, batteryId, "i3-attachment-need-again", "NEED_SUPPLEMENT", "身份一致", "外观完整", "资料仍缺", "再次补充")
                 .andExpect(status().isOk());
         int invalidAttachmentAuditsBefore = failedAuditCount("ACCEPTANCE_SUPPLEMENT_INVALID_ATTACHMENT", batteryId);
+        String warehouseToken = tokenFor("warehouse_admin", "password");
+        long otherUserAttachmentId = uploadAttachment(warehouseToken, "i3-other-user-proof.txt");
+        supplement(token, batteryId, "i3-attachment-other-user", """
+                {"attachmentIds":[%d]}
+                """.formatted(otherUserAttachmentId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_ATTACHMENT"));
+        long expiredAttachmentId = uploadAttachment(token, "i3-expired-proof.txt");
+        jdbcTemplate.update("UPDATE business_attachment SET expires_at = TIMESTAMPADD(SECOND, -1, CURRENT_TIMESTAMP(3)) WHERE id = ?", expiredAttachmentId);
+        supplement(token, batteryId, "i3-attachment-expired", """
+                {"attachmentIds":[%d]}
+                """.formatted(expiredAttachmentId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_ATTACHMENT"));
+        ensureEnterpriseBRecycleUser();
+        String enterpriseBToken = tokenFor("i3_enterprise_b_recycle", "password");
+        long otherEnterpriseAttachmentId = uploadAttachment(enterpriseBToken, "i3-other-enterprise-proof.txt");
+        supplement(token, batteryId, "i3-attachment-other-enterprise", """
+                {"attachmentIds":[%d]}
+                """.formatted(otherEnterpriseAttachmentId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_ATTACHMENT"));
+        supplement(token, batteryId, "i3-attachment-not-found", """
+                {"attachmentIds":[999999999999]}
+                """)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_ATTACHMENT"));
         supplement(token, batteryId, "i3-attachment-bound-again", """
                 {"attachmentIds":[%d]}
                 """.formatted(attachmentId))
@@ -216,6 +243,14 @@ class I3AcceptanceIntegrationTest {
                 .andExpect(jsonPath("$.code").value("CROSS_ENTERPRISE_ACCESS_DENIED"));
         mockMvc.perform(post("/api/v1/batteries/{id}/acceptances", batteryId)
                         .header("Idempotency-Key", "i3-no-token-denied")
+                        .contentType("application/json")
+                        .content("""
+                                {"acceptanceResult":"PASS","identityCheckResult":"身份一致","appearanceCheckResult":"外观完整","documentCheckResult":"资料完整"}
+                                """))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/v1/batteries/{id}/acceptances", batteryId)
+                        .header("Authorization", "Bearer invalid-token")
+                        .header("Idempotency-Key", "i3-invalid-token-denied")
                         .contentType("application/json")
                         .content("""
                                 {"acceptanceResult":"PASS","identityCheckResult":"身份一致","appearanceCheckResult":"外观完整","documentCheckResult":"资料完整"}
