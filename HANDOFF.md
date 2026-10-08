@@ -24,9 +24,9 @@
 | I0 | 工程骨架、Flyway、CI | 已完成 |
 | I1 | 登录、JWT、RBAC、企业隔离、审计、幂等基础 | 已完成 |
 | I2 | 回收批次、电池登记、重复编码核实、加入批次、提交待验收 | 已完成，复核通过 |
-| I3 | 验收、资料补充、验收不通过、入库前置 | 已实现，修改后复核 |
+| I3 | 验收、资料补充、验收不通过、入库前置 | 已完成，复核通过 |
 
-重要边界：I2 已关闭；I3 已按用户确认方案启动并实现完成，目前停在 `paused-for-review / 修改后复核`。不要关闭 I3，不要进入 I4，除非用户复核通过并明确要求。
+重要边界：I2、I3 均已关闭；I4 尚未启动。不要进入 I4，除非用户明确要求启动并确认范围。
 
 ## 2. 当前仓库与分支
 
@@ -35,9 +35,9 @@
 - 远程仓库：`https://github.com/dyabn/battery-recycling-traceability-system.git`
 - 当前最新本地/远程实现提交：以 `git rev-parse HEAD` 和 `git rev-parse origin/feature/first-slice-implementation` 为准
 - I2 代码验证提交：`0571da07eb8e22427a2376603d0605d606cf4a39`
-- I3 最新整改提交：`6fee83009925d4fdec505c7f2dfbaeb5b7755425`
+- I3 代码验证提交：`6fee83009925d4fdec505c7f2dfbaeb5b7755425`
 - I3 最新通过的 GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37734497499`
-- I3 当前状态：第二轮修改后复核整改已完成，MySQL 8.4 GitHub Actions 验证通过；人工复核通过前不关闭 I3。
+- I3 当前状态：`completed / 复核通过`；I4 未启动。
 
 ## 3. 已完成的前置工作
 
@@ -90,7 +90,7 @@
 
 ## 4. I2 完成情况
 
-I2 最终复核已通过。最新实现提交 `0571da07eb8e22427a2376603d0605d606cf4a39` 已由 Implementation CI run `37629609561` 验证通过；I2 已关闭。I3 已按用户确认方案启动并完成实现，第二轮修改后复核整改提交 `6fee83009925d4fdec505c7f2dfbaeb5b7755425` 已由 Implementation CI run `37734497499` 验证通过，等待人工复核。
+I2 最终复核已通过。最新实现提交 `0571da07eb8e22427a2376603d0605d606cf4a39` 已由 Implementation CI run `37629609561` 验证通过；I2 已关闭。I3 最终复核已通过，验证提交 `6fee83009925d4fdec505c7f2dfbaeb5b7755425` 已由 Implementation CI run `37734497499` 验证通过；I3 已关闭，I4 未启动。
 
 ### 4.1 后端修复
 
@@ -167,7 +167,7 @@ I3 已按用户确认方案实现，尚未复核关闭。
 - 结果：通过
 - `RUN_MYSQL_TESTS=true` 下实际执行 I1/I2/I3 集成测试，`I3AcceptanceIntegrationTest` 6 个测试通过，覆盖真实附件下载、附件内容幂等、无效附件组合、追溯历史详情、重建服务实例后下载、回滚文件清理和拒绝审计。
 
-本轮第二轮整改提交 `6fee83009925d4fdec505c7f2dfbaeb5b7755425` 已通过最新 GitHub Actions 验证；人工复核通过前不关闭 I3，不进入 I4。
+本轮第二轮整改提交 `6fee83009925d4fdec505c7f2dfbaeb5b7755425` 已通过最新 GitHub Actions 验证并通过人工复核；I3 已关闭，不进入 I4。
 
 ### 4.2 前端修复
 
@@ -221,7 +221,7 @@ I3 已按用户确认方案实现，尚未复核关闭。
 - 数据字典补充 `recycle_batch_battery.active_battery_id`。
 - 追踪索引补充 `FR-C4-008 -> V6 -> I2-TC-035/042` 关系。
 - I2 验证记录扩展到 `I2-TC-001..046`。
-- `project-state.yaml` 中 I2 已更新为 `completed / 复核通过`，I3 为 `paused-for-review / 修改后复核`。
+- `project-state.yaml` 中 I2 和 I3 均已更新为 `completed / 复核通过`，I4 为 `not-started`。
 - `contracts/change-log.md` 增加 `CHG-038`、`CHG-039` 和 I2 最终复核通过记录。
 
 ## 6. 验证结果
@@ -328,7 +328,7 @@ git rev-parse HEAD
 
 ## 8. 当前停在什么位置
 
-当前停在：I3 已完成第二轮修改后复核整改和 GitHub Actions MySQL 8.4 验证，等待用户人工复核。
+当前停在：I3 已完成最终复核并关闭，I4 未启动。
 
 当前状态应保持：
 
@@ -342,12 +342,16 @@ implementation_progress:
       confirmed_date: 2026-10-07
       I2_started: true
     I3:
-      status: paused-for-review
-      review_result: 修改后复核
+      status: completed
+      review_result: 复核通过
+      confirmed_date: 2026-10-08
       I3_started: true
+    I4:
+      status: not-started
+      I4_started: false
 ```
 
-不要关闭 I3，不要进入 I4，除非用户复核通过并明确要求。
+I3 已关闭。不要进入 I4，除非用户明确要求启动并确认范围。
 
 ## 9. 下一步应该做什么
 
@@ -368,7 +372,7 @@ git log --oneline -5
 Implementation CI run 37734497499 已确认提交 6fee83009925d4fdec505c7f2dfbaeb5b7755425 通过，覆盖 MySQL 8.4、Flyway V1..V6、RUN_MYSQL_TESTS=true、I3AcceptanceIntegrationTest 6 个测试、Redocly、前端测试和构建。
 ```
 
-4. 等待用户人工复核决定是否关闭 I3；关闭前保持 `paused-for-review / 修改后复核`，不进入 I4。
+4. 确认 I3 已关闭且 I4 未启动；启动 I4 前需重新确认真实入库范围。
 
 后续 I4 启动前应重新确认范围，默认只考虑真实入库相关能力：
 

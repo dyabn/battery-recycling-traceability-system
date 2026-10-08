@@ -1,6 +1,6 @@
 # I3 验收闭环验证记录
 
-文档状态：待复核
+文档状态：已确认
 
 ## 验证对象
 
@@ -8,7 +8,8 @@
 - 分支：feature/first-slice-implementation
 - 验证提交：`6fee83009925d4fdec505c7f2dfbaeb5b7755425`
 - GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37734497499`
-- 结论：I3 修改后复核阻断项已完成代码、本地验证和 MySQL 8.4 GitHub Actions 验证，状态保持 `paused-for-review / 修改后复核`，等待人工复核；不进入 I4。
+- 结论：I3 复核通过，已收口为 `completed / 复核通过`；I4 仍为未启动。
+- 确认日期：2026-10-08
 
 ## I3 范围
 
@@ -156,7 +157,8 @@ CI 已验证：
 - `I3AcceptanceIntegrationTest` 6 个测试通过，覆盖验收结果、补充闭环、真实附件下载、附件内容幂等、无效附件组合、权限隔离、拒绝审计、追溯历史详情、真实并发、批次完成汇总、重建服务实例后下载、回滚文件清理和删除保护。
 - Redocly OpenAPI lint、前端 Vitest 和前端生产构建通过。
 
-## 待复核事项
+## 复核结论
 
-- 等待用户对 I3 进行人工复核。
-- 人工复核通过前，I3 继续保持 `paused-for-review / 修改后复核`，不关闭 I3，不进入 I4。
+- I3 评审包复核通过，三项阻断项均已关闭。
+- I3 状态更新为 `completed / 复核通过`。
+- I4 不启动，后续启动 I4 前需重新确认真实入库范围。
