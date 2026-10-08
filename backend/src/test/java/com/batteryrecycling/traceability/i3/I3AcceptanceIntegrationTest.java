@@ -92,7 +92,7 @@ class I3AcceptanceIntegrationTest {
                 .andExpect(jsonPath("$.data[*].eventName", hasItem("验收待补充资料")))
                 .andExpect(jsonPath("$.data[*].eventName", hasItem("验收资料已补充")))
                 .andExpect(jsonPath("$.data[*].eventName", hasItem("验收不通过")))
-                .andReturn().getResponse().getContentAsString();
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         JsonNode trace = objectMapper.readTree(traceResponse).get("data");
         Assertions.assertThat(event(trace, "验收待补充资料").at("/details/acceptance/identityCheckResult").asText()).isEqualTo("身份一致");
         Assertions.assertThat(event(trace, "验收待补充资料").at("/details/acceptance/appearanceCheckResult").asText()).isEqualTo("外观需说明");
@@ -177,7 +177,7 @@ class I3AcceptanceIntegrationTest {
         Assertions.assertThat(new String(downloaded, StandardCharsets.UTF_8)).isEqualTo(proofContent);
         String traceResponse = mockMvc.perform(get("/api/v1/batteries/{id}/trace", batteryId).header("Authorization", bearer(token)))
                 .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         JsonNode supplementEvent = event(objectMapper.readTree(traceResponse).get("data"), "验收资料已补充");
         Assertions.assertThat(supplementEvent.at("/details/supplement/attachments/0/id").asLong()).isEqualTo(attachmentId);
         Assertions.assertThat(supplementEvent.at("/details/supplement/attachments/0/downloadUrl").asText()).contains("/api/v1/attachments/" + attachmentId + "/download");
