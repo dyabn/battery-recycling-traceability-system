@@ -44,6 +44,7 @@
 | CHG-040 | 2026-10-07 | I2 最终复核通过 | Implementation CI run 37629609561 对提交 0571da07eb8e22427a2376603d0605d606cf4a39 验证通过，MySQL 8.4、Flyway V1..V6、RUN_MYSQL_TESTS=true、I2BatchBatteryIntegrationTest 17 个测试均通过；确认 I2 复核通过并关闭，I3 保持未启动。 | `project-state.yaml`、I2 验证记录、追踪索引、`HANDOFF.md` | 否 |
 | CHG-041 | 2026-10-07 | I3 实现完成待复核 | 按确认方案启动并完成 I3 验收闭环，实现待处理验收、三种验收结论、资料补充、附件临时上传绑定、批次进度联动、删除保护和前端闭环；新增 I3AcceptanceIntegrationTest 6 个 MySQL 集成测试与前端 I3 测试。I3 停在 `paused-for-review / 修改后复核`，等待 GitHub Actions MySQL 8.4 验证和人工复核，不进入 I4。 | `backend/`、`frontend/`、OpenAPI、I3 验证记录、追踪索引、`project-state.yaml` | 否 |
 | CHG-042 | 2026-10-07 | I3 CI 验证通过待复核 | Implementation CI run 37638275006 对提交 97373104c990c2fef6978ed7aa45b526f10b3d0d 验证通过，MySQL 8.4、Flyway V1..V6、RUN_MYSQL_TESTS=true、I1/I2/I3 集成测试、Redocly、前端测试和构建均通过；I3 继续保持 `paused-for-review / 修改后复核`，等待人工复核，不进入 I4。 | I3 验证记录、追踪索引、`project-state.yaml`、`HANDOFF.md` | 否 |
+| CHG-043 | 2026-10-08 | I3 修改后复核阻断项修订 | 修复附件仅占位问题，上传保存真实文件并按原始字节下载；附件上传幂等摘要纳入文件内容 SHA-256，前端同步区分不同内容；追溯返回验收三项、说明、补充说明和附件下载入口；补齐业务拒绝和 DTO 校验拒绝审计；扩展 I3 测试证据映射。Implementation CI run 37723213070 对提交 0736e201595daccbe3485a3f48e56822f3f70e3f 验证通过，I3 继续保持 `paused-for-review / 修改后复核`，不进入 I4。 | `backend/`、`frontend/`、OpenAPI、I3 验证记录、追踪索引、`project-state.yaml`、`HANDOFF.md` | 否 |
 
 ## C3 第一条业务切片确认
 

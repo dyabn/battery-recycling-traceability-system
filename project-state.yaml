@@ -405,6 +405,7 @@ implementation_progress:
     - GitHub Actions 验证 V1/V2/V3/V4/V5/V6 迁移、I1 回归、I2 集成测试、前端测试和构建通过
     - 启动并完成 I3 验收闭环实现，覆盖待验收任务、验收登记、资料补充、批次进度联动、附件绑定、删除保护和前端待处理验收页面
     - GitHub Actions 验证 I3 验收闭环、I1/I2 回归、前端测试和构建通过
+    - 完成 I3 修改后复核整改，补齐真实附件保存下载、附件内容幂等、追溯历史详情、拒绝审计和测试证据映射
   pending_items:
     - I3 人工复核确认
     - 数据治理规则处理器和质量问题闭环实现
@@ -473,21 +474,21 @@ implementation_progress:
       - 前端 npm run build 通过
   i3_validation:
     workflow: Implementation CI
-    run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37638275006
-    commit: 97373104c990c2fef6978ed7aa45b526f10b3d0d
+    run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37723213070
+    commit: 0736e201595daccbe3485a3f48e56822f3f70e3f
     result: passed
     verified_items:
       - 后端 mvn test 通过
       - MySQL 8.4 启动成功
       - Flyway 依次执行 V1、V2、V3、V4、V5 和 V6 成功
       - RUN_MYSQL_TESTS=true 下实际执行 I1、I2 和 I3 集成测试
-      - I3AcceptanceIntegrationTest 6 个 MySQL 集成测试通过，覆盖三种验收结果、补充闭环、附件绑定、权限隔离、幂等、真实并发、批次完成汇总和删除保护
-      - OpenAPI YAML 可解析，补齐验收/补充字段长度、补充接口错误响应和验收记录删除保护入口
+      - I3AcceptanceIntegrationTest 6 个 MySQL 集成测试通过，覆盖三种验收结果、补充闭环、真实附件下载、附件内容幂等、无效附件组合、权限隔离、拒绝审计、追溯历史详情、真实并发、批次完成汇总和删除保护
+      - OpenAPI YAML 可解析，补齐验收/补充字段长度、补充接口错误响应、验收记录删除保护入口、附件 contentSha256 和追溯 details
       - Redocly OpenAPI lint 通过，保留删除保护接口无 2xx 的语义警告
-      - 前端 Vitest 通过，新增 I3 待处理验收页面测试
+      - 前端 Vitest 通过，新增 I3 待处理验收页面测试和附件内容幂等测试
       - 前端 npm run build 通过
       - Spring Boot 连接迁移后的数据库成功
-  review_result: I2复核通过
+  review_result: I3修改后复核
 
 technical_design_progress:
   status: completed

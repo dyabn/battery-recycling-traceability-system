@@ -6,8 +6,8 @@
 
 - 增量：I3-acceptance-supplement
 - 分支：feature/first-slice-implementation
-- 验证提交：`97373104c990c2fef6978ed7aa45b526f10b3d0d`
-- GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37638275006`
+- 验证提交：`0736e201595daccbe3485a3f48e56822f3f70e3f`
+- GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37723213070`
 - 结论：I3 已完成实现、本地验证和 MySQL 8.4 GitHub Actions 验证，状态保持 `paused-for-review / 修改后复核`，等待人工复核；不进入 I4。
 
 ## I3 范围
@@ -25,7 +25,7 @@
 | `POST /api/v1/batteries/{id}/acceptance-supplements` | 已实现 |
 | `POST /api/v1/attachments` | 已实现 |
 | `GET /api/v1/attachments/{id}/download` | 已实现 |
-| `GET /api/v1/batteries/{id}/trace` | 已增强显示验收和补充生命周期事件 |
+| `GET /api/v1/batteries/{id}/trace` | 已增强显示验收和补充生命周期事件、验收三项详情、补充说明和附件下载入口 |
 | `GET /api/v1/recycle-batches/{id}` | 已复用成员状态支撑批次验收进度展示 |
 | `DELETE /api/v1/acceptance-records/{id}` | 已实现删除保护，拒绝删除并写审计 |
 
@@ -41,6 +41,16 @@
 | `PENDING_ACCEPTANCE` | 验收不通过 | `ACCEPTANCE_REJECTED` |
 
 批次状态根据成员验收进度从 `PENDING_ACCEPTANCE` 推进到 `ACCEPTANCE_PROCESSING` 或 `COMPLETED`；`COMPLETED` 表示验收完成，不表示已入库。
+
+## 本轮复核阻断项处理
+
+| 阻断项 | 处理结果 | 证据 |
+| --- | --- | --- |
+| 附件没有实际保存 | 上传时写入 `target/attachments/{enterpriseId}/...`，下载读取原始字节，不再返回占位文本 | `AttachmentService`、`supplementWithAttachmentsIsAtomicAndRejectsInvalidAttachments` |
+| 附件幂等摘要不包含文件内容 | 后端幂等 canonical 纳入文件 SHA-256；前端上传 fingerprint 纳入文件内容 fingerprint | `AttachmentService.upload`、`frontend/src/api/i2.ts`、前后端测试 |
+| 验收历史无法完整查看 | 追溯事件新增兼容 `details` 字段，返回验收三项、说明、补充说明及附件下载入口 | `BatteryService.trace`、I3 追溯断言 |
+| 部分拒绝路径没有审计 | 业务校验、无效附件和 DTO 校验失败均写拒绝审计，拒绝审计使用独立事务 | `AcceptanceService`、`GlobalExceptionHandler`、I3 审计断言 |
+| 验证记录超出测试覆盖 | 增加 `I3-TC -> 测试方法/断言` 映射，未验证项不再扩大表述 | 本文件“测试证据映射” |
 
 ## 实现页面
 
@@ -79,7 +89,7 @@
 | I3-TC-016 | 补充内容全部为空拒绝 | MySQL 8.4 CI 通过 |
 | I3-TC-017 | 多轮补充再验收保留历史 | MySQL 8.4 CI 通过 |
 | I3-TC-018 | 其他企业、其他用户、过期、已绑定或不存在附件被拒绝 | MySQL 8.4 CI 通过 |
-| I3-TC-019 | 四类角色权限矩阵和未登录/过期 Token 保护 | MySQL 8.4 CI 通过 |
+| I3-TC-019 | 四类角色权限矩阵和未登录/无效 Token 保护 | MySQL 8.4 CI 通过 |
 | I3-TC-020 | 企业隔离覆盖列表、验收、补充、追溯和附件 | MySQL 8.4 CI 通过 |
 | I3-TC-021 | 同幂等键同请求返回首个结果 | MySQL 8.4 CI 通过 |
 | I3-TC-022 | 同幂等键不同请求返回冲突 | MySQL 8.4 CI 通过 |
@@ -91,6 +101,20 @@
 | I3-TC-028 | 批次详情验收进度展示 | 通过 |
 | I3-TC-029 | OpenAPI 与运行时字段、错误码和路径一致 | 通过 |
 | I3-TC-030 | I1/I2 回归、前端测试和构建 | 通过 |
+
+## 测试证据映射
+
+| 测试方法 / 文件 | 覆盖编号 | 关键断言 |
+| --- | --- | --- |
+| `I3AcceptanceIntegrationTest.acceptanceResultsSupplementLoopAndBatchProgressAreClosed` | I3-TC-001..006、017 | 待验收列表、通过/待补充/补充/拒绝状态流转、批次完成、追溯详情包含三项检查、验收说明和补充说明 |
+| `I3AcceptanceIntegrationTest.validationFailuresKeepBatteryBatchAndHistoryUnchanged` | I3-TC-007..009、012 | 三项检查分别缺失、条件说明缺失、40/41 和 500/501 边界、失败后状态和历史不变、拒绝审计存在 |
+| `I3AcceptanceIntegrationTest.supplementWithAttachmentsIsAtomicAndRejectsInvalidAttachments` | I3-TC-014、016、018、020、022 | 真实附件字节下载、内容 SHA-256、同 Key 不同内容冲突、附件绑定、其他用户/企业/过期/已绑定/不存在附件拒绝、补充追溯附件入口 |
+| `I3AcceptanceIntegrationTest.permissionsAndEnterpriseIsolationAreEnforced` | I3-TC-019、020 | 回收操作员以外角色拒绝、跨企业拒绝、未登录和无效 Token 拒绝 |
+| `I3AcceptanceIntegrationTest.idempotencyAndConcurrentAcceptanceAllowOnlyOneStateTransition` | I3-TC-021..023 | 同键同请求复用结果、同键异请求冲突、不同键并发同电池只成功一次 |
+| `I3AcceptanceIntegrationTest.concurrentFinalMembersCompleteBatchAndDeleteEffectiveAcceptanceIsProtected` | I3-TC-024、025 | 同批次不同电池并发完成汇总 `COMPLETED`，删除生效验收记录返回保护错误并审计 |
+| `frontend/src/api/i2.test.ts` | I3-TC-022、027 | 附件上传内容不同会生成不同幂等 Key，会话清理后不复用旧 Key |
+| `frontend/src/views/i3-pages.test.ts` | I3-TC-026..028 | 待处理验收页面、验收登记、补充资料和批次进度展示 |
+| `FirstSliceOpenApiContractTest` | I3-TC-029 | 验收/补充字段长度、补充接口响应码、附件 `contentSha256` 和追溯 `details` 契约 |
 
 ## 本地验证命令
 
@@ -111,15 +135,15 @@ npx @redocly/cli lint contracts/api/openapi-first-slice.yaml
 本地结果：
 
 - 后端 `mvn -B test` 通过；`I3AcceptanceIntegrationTest` 在未设置 `RUN_MYSQL_TESTS=true` 时跳过。
-- 前端 Vitest 14 个测试通过。
+- 前端 Vitest 15 个测试通过。
 - 前端生产构建通过。
 - Redocly OpenAPI lint 退出码为 0；保留删除保护接口无 2xx 响应的语义警告。
 
 ## GitHub Actions 验证
 
 - Workflow：Implementation CI
-- Run：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37638275006`
-- 验证提交：`97373104c990c2fef6978ed7aa45b526f10b3d0d`
+- Run：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37723213070`
+- 验证提交：`0736e201595daccbe3485a3f48e56822f3f70e3f`
 - 结果：通过
 
 CI 已验证：
@@ -128,7 +152,7 @@ CI 已验证：
 - MySQL 8.4 启动成功。
 - Flyway V1..V6 迁移通过。
 - `RUN_MYSQL_TESTS=true` 下实际执行 I1、I2 和 I3 集成测试。
-- `I3AcceptanceIntegrationTest` 6 个测试通过，覆盖验收结果、补充闭环、附件绑定、权限隔离、幂等、真实并发、批次完成汇总和删除保护。
+- `I3AcceptanceIntegrationTest` 6 个测试通过，覆盖验收结果、补充闭环、真实附件下载、附件内容幂等、无效附件组合、权限隔离、拒绝审计、追溯历史详情、真实并发、批次完成汇总和删除保护。
 - Redocly OpenAPI lint、前端 Vitest 和前端生产构建通过。
 
 ## 待复核事项
