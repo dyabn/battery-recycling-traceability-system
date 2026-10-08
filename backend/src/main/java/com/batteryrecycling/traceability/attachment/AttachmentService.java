@@ -17,7 +17,10 @@ import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -26,12 +29,14 @@ public class AttachmentService {
     private final IdGenerator idGenerator;
     private final IdempotencyService idempotencyService;
     private final AuditService auditService;
+    private final Path storageRoot;
 
-    public AttachmentService(JdbcTemplate jdbcTemplate, IdGenerator idGenerator, IdempotencyService idempotencyService, AuditService auditService) {
+    public AttachmentService(JdbcTemplate jdbcTemplate, IdGenerator idGenerator, IdempotencyService idempotencyService, AuditService auditService, @Value("${app.attachment.storage-dir}") String storageDir) {
         this.jdbcTemplate = jdbcTemplate;
         this.idGenerator = idGenerator;
         this.idempotencyService = idempotencyService;
         this.auditService = auditService;
+        this.storageRoot = Path.of(storageDir).toAbsolutePath().normalize();
     }
 
     public AttachmentDto upload(CurrentUser currentUser, MultipartFile file, String idempotencyKey, HttpServletRequest servletRequest) {
@@ -47,8 +52,9 @@ public class AttachmentService {
     public AttachmentDto uploadInTransaction(CurrentUser currentUser, byte[] bytes, String originalName, String contentHash, HttpServletRequest servletRequest) {
         long attachmentId = idGenerator.nextId();
         String ext = extension(originalName);
-        Path storagePath = storagePath(currentUser.enterpriseId(), attachmentId, originalName);
+        Path storagePath = storagePath(currentUser.enterpriseId(), attachmentId, ext);
         writeBytes(storagePath, bytes);
+        deleteOnRollback(storagePath);
         jdbcTemplate.update("""
                 INSERT INTO business_attachment (
                   id, enterprise_id, object_type, object_id, binding_status, file_name,
@@ -167,8 +173,9 @@ public class AttachmentService {
         }
     }
 
-    private Path storagePath(Long enterpriseId, Long attachmentId, String originalName) {
-        return Path.of("target", "attachments", String.valueOf(enterpriseId), attachmentId + "-" + originalName).toAbsolutePath().normalize();
+    private Path storagePath(Long enterpriseId, Long attachmentId, String ext) {
+        String fileName = ext == null || ext.isBlank() ? String.valueOf(attachmentId) : attachmentId + "." + ext;
+        return storageRoot.resolve(String.valueOf(enterpriseId)).resolve(fileName).normalize();
     }
 
     private void writeBytes(Path path, byte[] bytes) {
@@ -212,6 +219,24 @@ public class AttachmentService {
         } catch (Exception exception) {
             throw ApiException.badRequest("VALIDATION_FAILED", "附件摘要计算失败");
         }
+    }
+
+    private void deleteOnRollback(Path path) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == STATUS_ROLLED_BACK) {
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (IOException ignored) {
+                        // Best-effort cleanup after failed upload transaction.
+                    }
+                }
+            }
+        });
     }
 
     public record AttachmentDownload(String fileName, byte[] bytes) {

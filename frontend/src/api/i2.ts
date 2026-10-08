@@ -82,7 +82,32 @@ export interface TraceEvent {
   occurredAt: string;
   statusChange: string;
   result: string;
-  details?: Record<string, unknown>;
+  details?: {
+    acceptance?: {
+      id: number;
+      acceptanceResult: string;
+      identityCheckResult: string;
+      appearanceCheckResult: string;
+      documentCheckResult: string;
+      acceptanceNote?: string;
+      acceptedBy: string;
+      acceptedAt: string;
+    };
+    supplement?: {
+      id: number;
+      acceptanceRecordId?: number | string;
+      supplementNote: string;
+      supplementedBy: string;
+      supplementedAt: string;
+      attachments: Array<{
+        id: number;
+        fileName: string;
+        fileExt: string;
+        fileSizeBytes: number;
+        downloadUrl: string;
+      }>;
+    };
+  };
 }
 
 export interface AcceptancePayload {
@@ -249,4 +274,17 @@ export async function uploadAttachment(file: File, key?: string) {
     });
     return response.data.data;
   }, key);
+}
+
+export async function downloadAttachment(attachmentId: number, fileName: string) {
+  const response = await http.get<Blob>(`/attachments/${attachmentId}/download`, { responseType: 'blob' });
+  const blob = response.data instanceof Blob ? response.data : new Blob([response.data]);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
