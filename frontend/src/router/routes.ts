@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router';
 
 import ForbiddenView from '../views/ForbiddenView.vue';
+import HomeRedirectView from '../views/HomeRedirectView.vue';
 import LoginView from '../views/LoginView.vue';
 import ShellView from '../views/ShellView.vue';
 import AcceptancePendingView from '../views/acceptance/AcceptancePendingView.vue';
@@ -21,7 +22,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/',
     component: ShellView,
     children: [
-      { path: '', redirect: '/batches' },
+      { path: '', name: 'home', component: HomeRedirectView },
       { path: 'batches', name: 'batches', component: BatchListView, meta: { permission: 'batch:read' } },
       { path: 'batches/:id', name: 'batch-detail', component: BatchDetailView, meta: { permission: 'batch:read' } },
       { path: 'acceptances', name: 'acceptances', component: AcceptancePendingView, meta: { permission: 'acceptance:create' } },

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useAuthStore } from '../stores/auth';
 import { authGuard } from './authGuard';
+import { defaultHomePath } from './defaultHome';
 import { routes } from './routes';
 
 describe('router', () => {
@@ -12,10 +13,20 @@ describe('router', () => {
 
   it('marks protected routes with required permissions', () => {
     const childRoutes = routes.flatMap((route) => route.children || []);
+    expect(childRoutes.find((route) => route.path === '')?.name).toBe('home');
+    expect(childRoutes.find((route) => route.path === '')?.redirect).toBeUndefined();
     expect(childRoutes.find((route) => route.path === 'batches')?.meta?.permission).toBe('batch:read');
     expect(childRoutes.find((route) => route.path === 'batteries/register')?.meta?.permission).toBe('battery:create');
     expect(childRoutes.find((route) => route.path === 'system/users')?.meta?.permission).toBe('permission:manage');
     expect(childRoutes.find((route) => route.path === 'system/audit')?.meta?.permission).toBe('audit:read');
+  });
+
+  it('chooses the default home from the current user permissions', () => {
+    expect(defaultHomePath(['permission:manage', 'batch:read'])).toBe('/system/users');
+    expect(defaultHomePath(['batch:read', 'battery:create'])).toBe('/batches');
+    expect(defaultHomePath(['battery:create'])).toBe('/batteries/register');
+    expect(defaultHomePath(['audit:read'])).toBe('/system/audit');
+    expect(defaultHomePath([])).toBe('/403');
   });
 
   it('redirects unauthenticated users to login', async () => {
