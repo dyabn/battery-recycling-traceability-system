@@ -150,7 +150,7 @@ I2 实现阶段继续沿用同一 Envelope；回收批次详情响应必须包�
 - 库位必须属于所选仓库。
 - 电池必须为 `ACCEPTED_PENDING_INBOUND`。
 - 成功响应返回 `inboundRecordId`、`inventoryId` 和 `batteryStatus=IN_STOCK`。
-- `GET /inventory` 只返回 `is_current=1` 的当前库存，支持按 `systemTraceCode` 筛选。
+- `GET /inventory` 只返回 `is_current=1` 的当前库存，支持按 `systemTraceCode` 筛选，并返回当前责任企业、仓库、库位和电池状态。
 - `GET /batteries/{id}/trace` 的 `details.inbound` 兼容字段返回入库单号、入库时间、仓库编码、仓库名称、库位编码、库存记录 ID 和入库人。
 
 ## 5. 幂等要求

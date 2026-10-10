@@ -383,7 +383,7 @@ implementation_progress:
       status: paused-for-review
       review_result: 修改后复核
       I4_started: true
-      implementation_commit: abab5fd864703a180fad59ed3b08947870aa49a9
+      implementation_commit: df9b2de9afabea1032747506335e25b24f210969
       validation_run: 待 GitHub Actions MySQL 8.4 验证
       validated_commit: 待 GitHub Actions MySQL 8.4 验证
   outputs:
@@ -420,9 +420,10 @@ implementation_progress:
     - 完成 I3 最终复核确认，I3 收口为 completed / 复核通过；当时 I4 仍保持 not-started
     - 修复 I2/I3 Long ID 前端精度缺陷，后端 Long/long 响应序列化为字符串，前端和 OpenAPI 同步使用数字字符串 ID；该缺陷修复本身未启动 I4
     - 启动并完成 I4 入库库存本地实现，覆盖待入库列表、仓库库位查询、单块电池入库、当前库存、入库追溯、删除保护、幂等并发、企业隔离和前端待入库/库存页面
+    - 完成 I4 修改后复核阻断项整改，库存补齐当前责任企业和状态字段，补齐缺字段、缺幂等头、真实事务回滚、越权审计、历史库存过滤和仓库切换竞态测试
   pending_items:
     - I4 Implementation CI MySQL 8.4 真实执行验证
-    - I4 评审包生成与人工复核
+    - I4 修改后复核人工确认
     - 数据治理规则处理器和质量问题闭环实现
     - 集成测试、权限测试和端到端测试
   ci_validation:
@@ -507,18 +508,19 @@ implementation_progress:
   i4_validation:
     workflow: Implementation CI
     run: 待 GitHub Actions MySQL 8.4 验证
-    implementation_commit: abab5fd864703a180fad59ed3b08947870aa49a9
+    implementation_commit: df9b2de9afabea1032747506335e25b24f210969
     commit: 待 GitHub Actions MySQL 8.4 验证
     result: pending
     local_verified_items:
       - 后端 mvn test 通过；本地未设置 RUN_MYSQL_TESTS=true，I2/I3/I4 MySQL 集成测试按条件跳过
-      - 前端 Vitest 通过，新增 I4 待入库、仓库切换清库位、库存查询和追溯入库详情组件测试
+      - 前端 Vitest 通过，新增 I4 待入库、仓库切换清库位、快速切换竞态、库存责任企业和状态展示、库存查询和追溯入库详情组件测试
       - 前端 npm run build 通过
-      - OpenAPI YAML 契约测试通过，I4 入库响应码、删除保护路径和 LongId 字段已断言
+      - OpenAPI YAML 契约测试通过，I4 入库响应码、删除保护路径、LongId 字段、库存责任企业和状态字段已断言
     required_ci_items:
       - MySQL 8.4 启动成功
       - Flyway V1..V6 完整通过且未修改历史迁移
       - RUN_MYSQL_TESTS=true 下实际执行 I4InboundInventoryIntegrationTest
+      - Surefire XML 显示 I4InboundInventoryIntegrationTest skipped=0、failures=0、errors=0
       - I1/I2/I3 回归、I4 入库库存集成测试、Redocly、前端测试和构建全部通过
 
 technical_design_progress:

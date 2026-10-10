@@ -2,7 +2,7 @@
 
 当前阶段：implementation-and-test / 测试通过。
 
-当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已复核通过并关闭；I3 验收闭环已复核通过并关闭，Implementation CI run 37734497499 对提交 `6fee83009925d4fdec505c7f2dfbaeb5b7755425` 验证通过；I4 未启动。
+当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已复核通过并关闭；I3 验收闭环已复核通过并关闭，Implementation CI run 37734497499 对提交 `6fee83009925d4fdec505c7f2dfbaeb5b7755425` 验证通过；I4 已启动并完成本轮修改后复核整改，当前保持 `paused-for-review / 修改后复核`，等待 MySQL 8.4 CI 和人工复核。
 
 ## I3 实现追踪项
 
@@ -401,7 +401,7 @@
 | 待入库列表 | FR-C4-015、DQ-004 | `GET /api/v1/inbounds/pending` | `InboundController`、`InboundService.listPending` | `InboundPendingView.vue` | `I4InboundInventoryIntegrationTest.inboundCreatesEffectiveRecordCurrentInventoryTraceAndInventoryView` |
 | 仓库库位查询 | FR-C4-016、DQ-005、DQ-007 | `GET /api/v1/warehouses`、`GET /api/v1/warehouses/{id}/locations` | `WarehouseController`、`WarehouseService` | `InboundPendingView.vue` | `I4InboundInventoryIntegrationTest.inboundCreatesEffectiveRecordCurrentInventoryTraceAndInventoryView`、`validationWarehouseLocationAndInvalidStatesAreRejectedAtomically` |
 | 单块电池入库 | FR-C4-015..017、DQ-004..007 | `POST /api/v1/batteries/{id}/inbounds` | `InboundService.createInboundInTransaction` | `InboundPendingView.vue` | `I4InboundInventoryIntegrationTest` 四个测试方法 |
-| 当前库存查询 | FR-C4-018 | `GET /api/v1/inventory?systemTraceCode=` | `InventoryController`、`InventoryService` | `InventoryView.vue` | `I4InboundInventoryIntegrationTest.inboundCreatesEffectiveRecordCurrentInventoryTraceAndInventoryView`、`frontend/src/views/i4-pages.test.ts` |
+| 当前库存查询 | FR-C4-018 | `GET /api/v1/inventory?systemTraceCode=` | `InventoryController`、`InventoryService`，返回当前责任企业、仓库、库位和电池状态 | `InventoryView.vue` | `I4InboundInventoryIntegrationTest.inboundCreatesEffectiveRecordCurrentInventoryTraceAndInventoryView`、`frontend/src/views/i4-pages.test.ts` |
 | 入库追溯 | FR-C4-019 | `GET /api/v1/batteries/{id}/trace` | `BatteryService.trace` 的 `details.inbound` | `BatteryTraceView.vue` | `I4InboundInventoryIntegrationTest.inboundCreatesEffectiveRecordCurrentInventoryTraceAndInventoryView`、`frontend/src/views/i4-pages.test.ts` |
 | 入库删除保护 | FR-C4-022、AC-014 | `DELETE /api/v1/inbound-records/{id}` | `InboundService.rejectDelete` | 无成功入口 | `I4InboundInventoryIntegrationTest.inboundCreatesEffectiveRecordCurrentInventoryTraceAndInventoryView` |
-| 幂等、并发、企业隔离和审计 | NFR-C4-002、NFR-C4-003、AC-013 | 入库、仓库、库存和追溯接口 | `IdempotencyService`、`AuditService`、I4 服务企业过滤 | 路由权限、字符串 ID | `I4InboundInventoryIntegrationTest.idempotencyAndConcurrentInboundAllowOnlyOneEffectiveInventory`、`enterpriseIsolationAndRolePermissionsAreEnforced` |
+| 幂等、并发、企业隔离和审计 | NFR-C4-002、NFR-C4-003、AC-013 | 入库、仓库、库存和追溯接口 | `IdempotencyService`、`AuditService`、I4 服务企业过滤，CI 检查 I4 MySQL 测试 `skipped=0` | 路由权限、字符串 ID | `I4InboundInventoryIntegrationTest.idempotencyAndConcurrentInboundAllowOnlyOneEffectiveInventory`、`enterpriseIsolationAndRolePermissionsAreEnforced` |

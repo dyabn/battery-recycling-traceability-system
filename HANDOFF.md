@@ -40,7 +40,7 @@
 - I3 最新通过的 GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37734497499`
 - I3 当前状态：`completed / 复核通过`。
 - I4 当前状态：`paused-for-review / 修改后复核`；GitHub Actions MySQL 8.4 验证待取得。
-- I4 实现提交：`abab5fd864703a180fad59ed3b08947870aa49a9`。
+- I4 实现提交：`df9b2de9afabea1032747506335e25b24f210969`。
 - 测试阶段缺陷修复：后端 Long/long 响应统一序列化为字符串，前端 ID 类型同步为字符串，避免 JavaScript `number` 精度丢失导致详情、编辑保存或加入电池找错对象。
 
 ## 3. 已完成的前置工作
@@ -84,8 +84,8 @@
 
 - `contracts/api/openapi-first-slice.yaml`
 - `contracts/database/first-slice-schema-design.sql`
-- `backend/src/main/resources/db/migration/V1__first_slice_baseline.sql`
-- `backend/src/main/resources/db/migration/V2__data_governance_v1_1.sql`
+- `backend/src/main/resources/db/migration/V1__create_first_slice_schema.sql`
+- `backend/src/main/resources/db/migration/V2__add_data_governance_v1_1.sql`
 - `backend/src/main/resources/db/migration/V3__initialize_core_roles_and_permissions.sql`
 - `backend/src/main/resources/db/migration/V4__expand_idempotency_key_length.sql`
 - `backend/src/main/resources/db/migration/V5__correct_core_role_permission_matrix.sql`
@@ -184,13 +184,13 @@ I4 已按用户确认范围实现入库库存闭环，不包含数据治理闭�
 - `GET /api/v1/warehouses` 查询本企业启用仓库；
 - `GET /api/v1/warehouses/{id}/locations` 查询启用库位；
 - `POST /api/v1/batteries/{id}/inbounds` 办理单块电池入库；
-- `GET /api/v1/inventory?systemTraceCode=` 查询当前库存并支持追溯编码筛选；
+- `GET /api/v1/inventory?systemTraceCode=` 查询当前库存并支持追溯编码筛选，返回当前责任企业、仓库、库位和电池状态；
 - `DELETE /api/v1/inbound-records/{id}` 拒绝删除生效入库记录并审计；
 - 入库在同一事务中生成 `inbound_record`、`inventory`、电池 `IN_STOCK` 状态、`INBOUND_COMPLETED` 生命周期事件、成功审计和幂等结果；
 - 仓库停用、库位停用、仓库库位错配、跨企业访问、非待入库状态和重复提交均拒绝并保持业务数据不变；
 - `BatteryService.trace` 的兼容 `details.inbound` 返回入库单、仓库、库位、库存记录和入库人；
 - dev profile 新增 `R__dev_demo_warehouses.sql`，提供演示仓库和库位数据，不修改生产迁移；
-- 前端新增待入库和当前库存页面，仓库切换会清空旧库位，所有 ID 继续按字符串处理；
+- 前端新增待入库和当前库存页面，仓库切换会清空旧库位并忽略旧仓库的迟到库位响应，所有 ID 继续按字符串处理；
 - 默认首页对仓库管理员优先跳转到 `/inbounds/pending`。
 
 新增测试：
@@ -201,9 +201,9 @@ I4 已按用户确认范围实现入库库存闭环，不包含数据治理闭�
 本地已验证：
 
 - 后端 `mvn -B test` 通过；本地未设置 `RUN_MYSQL_TESTS=true`，I2/I3/I4 MySQL 集成测试按环境变量跳过；
-- 前端 Vitest 22 个测试通过；
+- 前端 Vitest 23 个测试通过；
 - 前端生产构建通过；
-- OpenAPI 契约测试通过，I4 入库响应码、删除保护路径和 LongId 字符串字段已断言。
+- OpenAPI 契约测试通过，I4 入库响应码、删除保护路径、LongId 字符串字段、库存责任企业和状态字段已断言。
 
 待验证：
 
@@ -330,13 +330,13 @@ I3 最新通过的 GitHub Actions：
 
 ## 10. 评审包
 
-本轮 I3 评审包已生成在仓库根目录，文件名为：
+本轮 I4 评审包重新生成在仓库根目录，文件名为：
 
 ```text
-D:\ruanjiankaifajishu\battery-recycling-traceability-system\i3-acceptance-supplement-review.zip
+D:\ruanjiankaifajishu\battery-recycling-traceability-system\i4-inbound-inventory-review.zip
 ```
 
-该包由当前 HEAD 生成，已排除所有旧版 ZIP，避免评审材料混淆。旧 I2 评审包如仍存在，仅代表 I2 收口材料，不应用作 I3 复核材料。
+该包由当前 HEAD 生成，重新打包时应排除所有旧版 ZIP 和原型 ZIP，避免评审材料混淆。旧 I2/I3 评审包如仍存在，仅代表对应增量收口材料，不应用作 I4 复核材料。
 
 I2 旧包路径：
 

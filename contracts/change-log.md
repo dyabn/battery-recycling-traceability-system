@@ -49,6 +49,7 @@
 | CHG-045 | 2026-10-08 | I3 最终复核通过 | I3 评审包复核通过，确认前端追溯历史详情、附件真实存储下载、可配置存储目录、事务回滚清理、重建服务实例后下载及缺口测试证据均已收口；I3 状态更新为 `completed / 复核通过`，验证 run 为 37734497499，验证提交为 6fee83009925d4fdec505c7f2dfbaeb5b7755425；I4 保持未启动。 | `project-state.yaml`、I3 验证记录、追踪索引、`HANDOFF.md` | 否 |
 | CHG-046 | 2026-10-08 | I2/I3 Long ID 精度缺陷修复 | 修复后端雪花/时间型 Long ID 返回给前端后被 JavaScript `number` 精度截断的问题：后端 Jackson 全局将 `Long/long` 序列化为字符串，前端 I2/I3 API、批次详情、批次编辑、重复核实、追溯、验收和系统只读页同步使用字符串 ID，OpenAPI 将 int64 契约改为数字字符串；本修复不启动 I4、不新增业务需求。 | `backend/`、`frontend/`、OpenAPI、前端测试、后端契约测试、`HANDOFF.md` | 否 |
 | CHG-047 | 2026-10-10 | I4 入库库存启动与本地实现 | 按确认范围启动 I4-inbound-inventory，实现待入库电池、启用仓库库位查询、单块电池入库、当前库存、入库追溯、删除保护、幂等并发、事务和企业隔离；新增开发环境演示仓库库位数据、I4 MySQL 集成测试和前端待入库/库存页面。I4 停在 `paused-for-review / 修改后复核`，等待 GitHub Actions MySQL 8.4 验证和人工复核，不启动后续增量。 | `backend/`、`frontend/`、OpenAPI、I4 验证记录、追踪索引、`project-state.yaml`、`HANDOFF.md` | 否 |
+| CHG-048 | 2026-10-10 | I4 修改后复核阻断项修订 | 修复库存查询缺少当前责任企业和电池状态字段的问题；补齐缺仓库/缺库位/缺幂等头 400 响应与审计断言、仓库/库位不存在拒绝审计、真实写入后异常整体回滚、越权审计、历史库存过滤和空筛选结果测试；前端库存页面展示责任企业和状态，并避免快速切换仓库时旧库位响应覆盖新库位；CI 新增 I4 MySQL 集成测试 skipped=0 检查。I4 继续保持 `paused-for-review / 修改后复核`，等待 GitHub Actions MySQL 8.4 验证和人工复核。 | `backend/`、`frontend/`、OpenAPI、I4 验证记录、追踪索引、`project-state.yaml`、`HANDOFF.md`、`.github/workflows/implementation-ci.yml` | 否 |
 
 ## C3 第一条业务切片确认
 
