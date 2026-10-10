@@ -90,6 +90,9 @@ class FirstSliceOpenApiContractTest {
                     .containsEntry("$ref", "#/components/schemas/LongId");
             Assertions.assertThat((Map<String, Object>) inventoryProperties.get("batteryId"))
                     .containsEntry("$ref", "#/components/schemas/LongId");
+            Assertions.assertThat((Map<String, Object>) inventoryProperties.get("currentResponsibleEnterpriseId"))
+                    .containsEntry("$ref", "#/components/schemas/LongId");
+            Assertions.assertThat(inventoryProperties).containsKeys("currentResponsibleEnterpriseName", "lifecycleStatus");
             Assertions.assertThat((Map<String, Object>) inventoryProperties.get("warehouseId"))
                     .containsEntry("$ref", "#/components/schemas/LongId");
             Assertions.assertThat((Map<String, Object>) inventoryProperties.get("locationId"))

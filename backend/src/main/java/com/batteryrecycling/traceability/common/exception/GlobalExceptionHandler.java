@@ -10,6 +10,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -29,7 +30,7 @@ public class GlobalExceptionHandler {
         return build(exception.status(), exception.code(), exception.getMessage(), request);
     }
 
-    @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class})
+    @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class, MissingRequestHeaderException.class})
     ResponseEntity<ApiErrorResponse> handleValidation(Exception exception, HttpServletRequest request) {
         currentUserService.currentUser().ifPresent(user -> auditService.recordRejected(
                 user.enterpriseId(),

@@ -108,8 +108,16 @@ async function openInbound(battery: Battery) {
 }
 
 async function onWarehouseChange() {
+  const selectedWarehouseId = inboundForm.warehouseId;
   inboundForm.locationId = '';
-  locations.value = inboundForm.warehouseId ? await listWarehouseLocations(inboundForm.warehouseId) : [];
+  locations.value = [];
+  if (!selectedWarehouseId) {
+    return;
+  }
+  const nextLocations = await listWarehouseLocations(selectedWarehouseId);
+  if (inboundForm.warehouseId === selectedWarehouseId) {
+    locations.value = nextLocations;
+  }
 }
 
 async function saveInbound() {

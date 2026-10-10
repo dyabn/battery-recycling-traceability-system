@@ -72,6 +72,25 @@ jobs:
             done
             exit "${STATUS}"
           fi
+      - name: Verify I4 MySQL integration test executed
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import pathlib
+          import xml.etree.ElementTree as ET
+
+          report = pathlib.Path("target/surefire-reports/TEST-com.batteryrecycling.traceability.i4.I4InboundInventoryIntegrationTest.xml")
+          if not report.exists():
+              raise SystemExit("Missing I4InboundInventoryIntegrationTest Surefire XML report")
+          root = ET.parse(report).getroot()
+          tests = int(root.attrib.get("tests", "0"))
+          failures = int(root.attrib.get("failures", "0"))
+          errors = int(root.attrib.get("errors", "0"))
+          skipped = int(root.attrib.get("skipped", "0"))
+          print(f"I4InboundInventoryIntegrationTest tests={tests} failures={failures} errors={errors} skipped={skipped}")
+          if tests < 4 or failures != 0 or errors != 0 or skipped != 0:
+              raise SystemExit("I4InboundInventoryIntegrationTest did not fully execute successfully")
+          PY
       - name: Run Flyway V1.0, V1.1, I1 and I2 migrations on MySQL 8.4
         working-directory: backend
         run: >

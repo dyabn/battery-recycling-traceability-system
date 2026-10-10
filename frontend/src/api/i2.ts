@@ -182,6 +182,9 @@ export interface InventoryItem {
   enterpriseId: ApiId;
   batteryId: ApiId;
   systemTraceCode: string;
+  currentResponsibleEnterpriseId: ApiId;
+  currentResponsibleEnterpriseName: string;
+  lifecycleStatus: string;
   warehouseId: ApiId;
   warehouseCode: string;
   warehouseName: string;

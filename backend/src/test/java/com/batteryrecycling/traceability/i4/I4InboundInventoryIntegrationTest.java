@@ -103,12 +103,20 @@ class I4InboundInventoryIntegrationTest {
         Assertions.assertThat(inboundEvent.at("/details/inbound/locationCode").asText()).isEqualTo("WH-101-A01-R01-L01");
 
         String traceCode = systemTraceCode(batteryId);
+        long historicalInventoryId = insertHistoricalInventoryFixture(batteryId, inboundRecordId);
         mockMvc.perform(get("/api/v1/inventory").param("systemTraceCode", traceCode).header("Authorization", bearer(warehouseToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[*].id", hasItem(String.valueOf(inventoryId))));
+                .andExpect(jsonPath("$.data[*].id", hasItem(String.valueOf(inventoryId))))
+                .andExpect(jsonPath("$.data[*].id", not(hasItem(String.valueOf(historicalInventoryId)))))
+                .andExpect(jsonPath("$.data[0].currentResponsibleEnterpriseId").value("1"))
+                .andExpect(jsonPath("$.data[0].currentResponsibleEnterpriseName").value("演示回收利用企业A"))
+                .andExpect(jsonPath("$.data[0].lifecycleStatus").value("IN_STOCK"));
         mockMvc.perform(get("/api/v1/inventory").param("systemTraceCode", traceCode).header("Authorization", bearer(supervisorToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[*].id", hasItem(String.valueOf(inventoryId))));
+        mockMvc.perform(get("/api/v1/inventory").param("systemTraceCode", "BAT-NO-MATCH-I4").header("Authorization", bearer(warehouseToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(0));
         mockMvc.perform(get("/api/v1/inventory").header("Authorization", bearer(recycleToken)))
                 .andExpect(status().isForbidden());
 
@@ -134,6 +142,13 @@ class I4InboundInventoryIntegrationTest {
         createInbound(warehouseToken, batteries.get(3), "i4-invalid-stock", ENABLED_WAREHOUSE_ID, ENABLED_LOCATION_ID)
                 .andExpect(status().isOk());
 
+        mockMvc.perform(get("/api/v1/inbounds/pending").header("Authorization", bearer(warehouseToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].id", not(hasItem(String.valueOf(batteries.get(0))))))
+                .andExpect(jsonPath("$.data[*].id", not(hasItem(String.valueOf(batteries.get(1))))))
+                .andExpect(jsonPath("$.data[*].id", not(hasItem(String.valueOf(batteries.get(2))))))
+                .andExpect(jsonPath("$.data[*].id", not(hasItem(String.valueOf(batteries.get(3))))));
+
         for (long batteryId : batteries) {
             createInbound(warehouseToken, batteryId, "i4-invalid-state-" + batteryId, ENABLED_WAREHOUSE_ID, ENABLED_LOCATION_ID)
                     .andExpect(status().isConflict())
@@ -143,11 +158,29 @@ class I4InboundInventoryIntegrationTest {
         long accepted = acceptedBatteryDirect(1L, 3L, "ORI-I4-WAREHOUSE-RULES");
         int inboundBefore = inboundCount(accepted);
         String statusBefore = batteryStatus(accepted);
+        int validationAuditBefore = failedAuditCount("REQUEST_VALIDATION_FAILED");
         postRawInbound(warehouseToken, accepted, "i4-validation-empty-warehouse", """
                 {"locationId":%d}
                 """.formatted(ENABLED_LOCATION_ID))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        postRawInbound(warehouseToken, accepted, "i4-validation-empty-location", """
+                {"warehouseId":%d}
+                """.formatted(ENABLED_WAREHOUSE_ID))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        postRawInboundWithoutKey(warehouseToken, accepted, """
+                {"warehouseId":%d,"locationId":%d}
+                """.formatted(ENABLED_WAREHOUSE_ID, ENABLED_LOCATION_ID))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        Assertions.assertThat(failedAuditCount("REQUEST_VALIDATION_FAILED")).isGreaterThanOrEqualTo(validationAuditBefore + 3);
+        createInbound(warehouseToken, accepted, "i4-validation-warehouse-not-found", 999999001L, ENABLED_LOCATION_ID)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("WAREHOUSE_NOT_FOUND"));
+        createInbound(warehouseToken, accepted, "i4-validation-location-not-found", ENABLED_WAREHOUSE_ID, 999999002L)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("LOCATION_NOT_FOUND"));
         createInbound(warehouseToken, accepted, "i4-validation-disabled-warehouse", DISABLED_WAREHOUSE_ID, MISMATCH_LOCATION_ID)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("WAREHOUSE_DISABLED"));
@@ -161,7 +194,21 @@ class I4InboundInventoryIntegrationTest {
         Assertions.assertThat(batteryStatus(accepted)).isEqualTo(statusBefore);
         Assertions.assertThat(inboundCount(accepted)).isEqualTo(inboundBefore);
         Assertions.assertThat(currentInventoryCount(accepted)).isZero();
-        Assertions.assertThat(failedAuditCount("INBOUND_VALIDATION_FAILED", accepted)).isGreaterThanOrEqualTo(1);
+        Assertions.assertThat(failedAuditCount("INBOUND_WAREHOUSE_NOT_FOUND", 999999001L)).isGreaterThanOrEqualTo(1);
+        Assertions.assertThat(failedAuditCount("INBOUND_LOCATION_NOT_FOUND", 999999002L)).isGreaterThanOrEqualTo(1);
+
+        long rollbackBattery = acceptedBatteryDirect(1L, 3L, "ORI-I4-ROLLBACK-AFTER-RECORD");
+        insertCurrentInventoryFixture(rollbackBattery);
+        int rollbackInboundBefore = inboundCount(rollbackBattery);
+        int rollbackInventoryBefore = currentInventoryCount(rollbackBattery);
+        int rollbackEventBefore = lifecycleEventCount(rollbackBattery, "INBOUND_COMPLETED");
+        createInbound(warehouseToken, rollbackBattery, "i4-rollback-after-inbound-record", ENABLED_WAREHOUSE_ID, ENABLED_LOCATION_ID)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DUPLICATE_SUBMISSION"));
+        Assertions.assertThat(inboundCount(rollbackBattery)).isEqualTo(rollbackInboundBefore);
+        Assertions.assertThat(currentInventoryCount(rollbackBattery)).isEqualTo(rollbackInventoryBefore);
+        Assertions.assertThat(batteryStatus(rollbackBattery)).isEqualTo("ACCEPTED_PENDING_INBOUND");
+        Assertions.assertThat(lifecycleEventCount(rollbackBattery, "INBOUND_COMPLETED")).isEqualTo(rollbackEventBefore);
     }
 
     @Test
@@ -223,12 +270,14 @@ class I4InboundInventoryIntegrationTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("CROSS_ENTERPRISE_ACCESS_DENIED"));
 
+        int roleAuditBefore = forbiddenAuditCount("POST /api/v1/batteries/" + enterpriseABatteryForWarehouse + "/inbounds");
         createInbound(supervisorToken, enterpriseABatteryForWarehouse, "i4-role-supervisor", ENABLED_WAREHOUSE_ID, ENABLED_LOCATION_ID)
                 .andExpect(status().isForbidden());
         createInbound(recycleToken, enterpriseABatteryForWarehouse, "i4-role-recycle", ENABLED_WAREHOUSE_ID, ENABLED_LOCATION_ID)
                 .andExpect(status().isForbidden());
         createInbound(adminToken, enterpriseABatteryForWarehouse, "i4-role-admin", ENABLED_WAREHOUSE_ID, ENABLED_LOCATION_ID)
                 .andExpect(status().isForbidden());
+        Assertions.assertThat(forbiddenAuditCount("POST /api/v1/batteries/" + enterpriseABatteryForWarehouse + "/inbounds")).isGreaterThanOrEqualTo(roleAuditBefore + 3);
 
         mockMvc.perform(get("/api/v1/warehouses").header("Authorization", bearer(supervisorToken)))
                 .andExpect(status().isForbidden());
@@ -295,6 +344,13 @@ class I4InboundInventoryIntegrationTest {
                 .content(body)));
     }
 
+    private JsonResult postRawInboundWithoutKey(String token, long batteryId, String body) throws Exception {
+        return new JsonResult(mockMvc.perform(post("/api/v1/batteries/{id}/inbounds", batteryId)
+                .header("Authorization", bearer(token))
+                .contentType("application/json")
+                .content(body)));
+    }
+
     private Callable<Integer> concurrentInbound(String token, long batteryId, String key, CountDownLatch ready, CountDownLatch start) {
         return () -> {
             ready.countDown();
@@ -353,6 +409,37 @@ class I4InboundInventoryIntegrationTest {
                     SELECT 1 FROM sys_user_role ur WHERE ur.user_id = 880000400000000002 AND ur.role_id = r.id
                   )
                 """);
+    }
+
+    private long insertHistoricalInventoryFixture(long batteryId, long inboundRecordId) {
+        long inventoryId = idGenerator.nextId();
+        jdbcTemplate.update("""
+                INSERT INTO inventory (
+                  id, enterprise_id, battery_id, warehouse_id, location_id, inbound_record_id,
+                  is_current, created_at, updated_at, version
+                )
+                VALUES (?, 1, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), 0)
+                """, inventoryId, batteryId, ENABLED_WAREHOUSE_ID, ENABLED_LOCATION_ID, inboundRecordId);
+        return inventoryId;
+    }
+
+    private void insertCurrentInventoryFixture(long batteryId) {
+        long inboundRecordId = idGenerator.nextId();
+        long inventoryId = idGenerator.nextId();
+        jdbcTemplate.update("""
+                INSERT INTO inbound_record (
+                  id, enterprise_id, inbound_no, battery_id, warehouse_id, location_id,
+                  inbound_status, inbound_by, inbound_at, created_at, version
+                )
+                VALUES (?, 1, ?, ?, ?, ?, 'EFFECTIVE', 4, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), 0)
+                """, inboundRecordId, "IB-FIX-" + inboundRecordId, batteryId, ENABLED_WAREHOUSE_ID, ENABLED_LOCATION_ID);
+        jdbcTemplate.update("""
+                INSERT INTO inventory (
+                  id, enterprise_id, battery_id, warehouse_id, location_id, inbound_record_id,
+                  is_current, created_at, updated_at, version
+                )
+                VALUES (?, 1, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), 0)
+                """, inventoryId, batteryId, ENABLED_WAREHOUSE_ID, ENABLED_LOCATION_ID, inboundRecordId);
     }
 
     private String tokenFor(String username, String password) throws Exception {
@@ -416,12 +503,20 @@ class I4InboundInventoryIntegrationTest {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action_code = ? AND result = 'FAILED' AND object_id = ?", Integer.class, actionCode, objectId);
     }
 
+    private int failedAuditCount(String actionCode) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action_code = ? AND result = 'FAILED'", Integer.class, actionCode);
+    }
+
     private int successAuditCount(String actionCode, String objectType) {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action_code = ? AND object_type = ? AND result = 'SUCCESS'", Integer.class, actionCode, objectType);
     }
 
     private int forbiddenAuditCount(String actionCode) {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action_code = ? AND result = 'FORBIDDEN'", Integer.class, actionCode);
+    }
+
+    private int lifecycleEventCount(long batteryId, String eventType) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM lifecycle_event WHERE battery_id = ? AND event_type = ?", Integer.class, batteryId, eventType);
     }
 
     private JsonNode event(JsonNode events, String eventName) {

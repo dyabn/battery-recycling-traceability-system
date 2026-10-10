@@ -10,6 +10,8 @@
 
     <el-table :data="items" v-loading="loading" stripe>
       <el-table-column prop="systemTraceCode" label="系统追溯编码" min-width="190" />
+      <el-table-column prop="currentResponsibleEnterpriseName" label="当前责任企业" min-width="160" />
+      <el-table-column prop="lifecycleStatus" label="电池状态" width="130" />
       <el-table-column prop="warehouseName" label="仓库" min-width="160" />
       <el-table-column prop="warehouseCode" label="仓库编码" width="120" />
       <el-table-column prop="locationCode" label="库位" min-width="190" />

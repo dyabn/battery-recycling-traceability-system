@@ -1441,6 +1441,12 @@ components:
           $ref: '#/components/schemas/LongId'
         systemTraceCode:
           type: string
+        currentResponsibleEnterpriseId:
+          $ref: '#/components/schemas/LongId'
+        currentResponsibleEnterpriseName:
+          type: string
+        lifecycleStatus:
+          type: string
         warehouseId:
           $ref: '#/components/schemas/LongId'
         warehouseCode:

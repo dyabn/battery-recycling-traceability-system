@@ -118,6 +118,9 @@ describe('I4 inbound inventory pages', () => {
         enterpriseId: '1',
         batteryId: '9007199254742001',
         systemTraceCode: 'BAT-9007199254742001',
+        currentResponsibleEnterpriseId: '1',
+        currentResponsibleEnterpriseName: '演示回收利用企业A',
+        lifecycleStatus: 'IN_STOCK',
         warehouseId: '20101',
         warehouseCode: 'WH-101',
         warehouseName: 'A企业启用仓库',
@@ -161,6 +164,39 @@ describe('I4 inbound inventory pages', () => {
     });
   });
 
+  it('keeps the newest warehouse locations when location requests return out of order', async () => {
+    let resolveFirst!: (value: Array<{ id: string; enterpriseId: string; warehouseId: string; locationCode: string; enabledStatus: string }>) => void;
+    let resolveSecond!: (value: Array<{ id: string; enterpriseId: string; warehouseId: string; locationCode: string; enabledStatus: string }>) => void;
+    vi.mocked(listWarehouseLocations).mockImplementation((warehouseId: string) => new Promise((resolve) => {
+      if (warehouseId === '20101') {
+        resolveFirst = resolve;
+      } else {
+        resolveSecond = resolve;
+      }
+    }));
+    const wrapper = mountWithPlugins(InboundPendingView);
+    await flush();
+    await (wrapper.vm as unknown as { openInbound: (row: Battery) => Promise<void> }).openInbound(battery());
+    const vm = wrapper.vm as unknown as {
+      inboundForm: { warehouseId: string; locationId: string };
+      locations: Array<{ id: string; warehouseId: string; locationCode: string }>;
+      onWarehouseChange: () => Promise<void>;
+    };
+
+    vm.inboundForm.warehouseId = '20101';
+    const first = vm.onWarehouseChange();
+    vm.inboundForm.warehouseId = '20199';
+    const second = vm.onWarehouseChange();
+    resolveSecond([{ id: '29901', enterpriseId: '1', warehouseId: '20199', locationCode: 'NEW-WH-LOC', enabledStatus: 'ENABLED' }]);
+    await second;
+    resolveFirst([{ id: '21101', enterpriseId: '1', warehouseId: '20101', locationCode: 'STALE-WH-LOC', enabledStatus: 'ENABLED' }]);
+    await first;
+
+    expect(vm.locations).toEqual([
+      expect.objectContaining({ id: '29901', warehouseId: '20199', locationCode: 'NEW-WH-LOC' }),
+    ]);
+  });
+
   it('queries current inventory by system trace code', async () => {
     const wrapper = mountWithPlugins(InventoryView);
     await flush();
@@ -170,6 +206,8 @@ describe('I4 inbound inventory pages', () => {
 
     expect(listInventory).toHaveBeenLastCalledWith('BAT-9007199254742001');
     expect(wrapper.text()).toContain('WH-101-A01-R01-L01');
+    expect(wrapper.text()).toContain('演示回收利用企业A');
+    expect(wrapper.text()).toContain('IN_STOCK');
   });
 
   it('shows inbound details in the trace page', async () => {

@@ -169,6 +169,7 @@ public class InboundService {
             auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "WAREHOUSE_CROSS_ENTERPRISE_DENIED", "WAREHOUSE", warehouseId, "FORBIDDEN", "拒绝跨企业仓库访问", request);
             throw ApiException.forbidden("CROSS_ENTERPRISE_ACCESS_DENIED", "不能访问其他企业的仓库");
         }
+        auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "INBOUND_WAREHOUSE_NOT_FOUND", "WAREHOUSE", warehouseId, "FAILED", "仓库不存在", request);
         throw new ApiException("WAREHOUSE_NOT_FOUND", "仓库不存在", HttpStatus.NOT_FOUND);
     }
 
@@ -185,6 +186,7 @@ public class InboundService {
             auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "LOCATION_CROSS_ENTERPRISE_DENIED", "WAREHOUSE_LOCATION", locationId, "FORBIDDEN", "拒绝跨企业库位访问", request);
             throw ApiException.forbidden("CROSS_ENTERPRISE_ACCESS_DENIED", "不能访问其他企业的库位");
         }
+        auditService.recordRejected(currentUser.enterpriseId(), currentUser.id(), "INBOUND_LOCATION_NOT_FOUND", "WAREHOUSE_LOCATION", locationId, "FAILED", "库位不存在", request);
         throw new ApiException("LOCATION_NOT_FOUND", "库位不存在", HttpStatus.NOT_FOUND);
     }
 
