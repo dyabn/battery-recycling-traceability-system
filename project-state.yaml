@@ -383,8 +383,9 @@ implementation_progress:
       status: paused-for-review
       review_result: 修改后复核
       I4_started: true
+      implementation_commit: abab5fd864703a180fad59ed3b08947870aa49a9
       validation_run: 待 GitHub Actions MySQL 8.4 验证
-      validated_commit: 待授权推送后由 GitHub Actions 验证
+      validated_commit: 待 GitHub Actions MySQL 8.4 验证
   outputs:
     backend: backend/
     frontend: frontend/
@@ -506,7 +507,8 @@ implementation_progress:
   i4_validation:
     workflow: Implementation CI
     run: 待 GitHub Actions MySQL 8.4 验证
-    commit: 待授权推送后由 GitHub Actions 验证
+    implementation_commit: abab5fd864703a180fad59ed3b08947870aa49a9
+    commit: 待 GitHub Actions MySQL 8.4 验证
     result: pending
     local_verified_items:
       - 后端 mvn test 通过；本地未设置 RUN_MYSQL_TESTS=true，I2/I3/I4 MySQL 集成测试按条件跳过

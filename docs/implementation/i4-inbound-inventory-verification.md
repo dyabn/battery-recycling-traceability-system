@@ -6,7 +6,8 @@
 
 - 增量：I4-inbound-inventory
 - 分支：feature/first-slice-implementation
-- 验证提交：待授权推送后由 GitHub Actions 验证
+- 实现提交：`abab5fd864703a180fad59ed3b08947870aa49a9`
+- 验证提交：待 GitHub Actions MySQL 8.4 验证
 - GitHub Actions：待执行
 - 结论：I4 已完成本地实现并停在 `paused-for-review / 修改后复核`；等待 MySQL 8.4 CI 证据和人工复核后才能关闭。
 
@@ -107,7 +108,7 @@ npm run build
 
 ## GitHub Actions 验证
 
-待授权推送后由 Implementation CI 取得 MySQL 8.4 证据。必须确认：
+已推送实现提交 `abab5fd864703a180fad59ed3b08947870aa49a9`。待 GitHub API 限流解除或 Actions 页面可访问后，由 Implementation CI 取得 MySQL 8.4 证据。必须确认：
 
 - MySQL 8.4 启动成功。
 - Flyway V1..V6 完整通过且未修改历史迁移。

@@ -40,6 +40,7 @@
 - I3 最新通过的 GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37734497499`
 - I3 当前状态：`completed / 复核通过`。
 - I4 当前状态：`paused-for-review / 修改后复核`；GitHub Actions MySQL 8.4 验证待取得。
+- I4 实现提交：`abab5fd864703a180fad59ed3b08947870aa49a9`。
 - 测试阶段缺陷修复：后端 Long/long 响应统一序列化为字符串，前端 ID 类型同步为字符串，避免 JavaScript `number` 精度丢失导致详情、编辑保存或加入电池找错对象。
 
 ## 3. 已完成的前置工作
