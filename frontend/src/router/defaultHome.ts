@@ -5,6 +5,14 @@ export function defaultHomePath(permissions: string[] = []) {
     return '/system/users';
   }
 
+  if (can('inbound:create')) {
+    return '/inbounds/pending';
+  }
+
+  if (can('inventory:read')) {
+    return '/inventory';
+  }
+
   if (can('batch:read')) {
     return '/batches';
   }

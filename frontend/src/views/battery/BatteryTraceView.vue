@@ -32,6 +32,16 @@
             </el-button>
           </div>
         </div>
+        <div v-if="event.details?.inbound" class="trace-detail">
+          <el-descriptions :column="2" size="small" border>
+            <el-descriptions-item label="入库单号">{{ event.details.inbound.inboundNo }}</el-descriptions-item>
+            <el-descriptions-item label="入库时间">{{ event.details.inbound.inboundAt }}</el-descriptions-item>
+            <el-descriptions-item label="仓库">{{ event.details.inbound.warehouseCode }} {{ event.details.inbound.warehouseName }}</el-descriptions-item>
+            <el-descriptions-item label="库位">{{ event.details.inbound.locationCode }}</el-descriptions-item>
+            <el-descriptions-item label="库存记录">{{ event.details.inbound.inventoryId }}</el-descriptions-item>
+            <el-descriptions-item label="入库人">{{ event.details.inbound.inboundBy }}</el-descriptions-item>
+          </el-descriptions>
+        </div>
       </el-timeline-item>
     </el-timeline>
   </section>

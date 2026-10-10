@@ -109,6 +109,16 @@ export interface TraceEvent {
         downloadUrl: string;
       }>;
     };
+    inbound?: {
+      id: ApiId;
+      inboundNo: string;
+      inboundAt: string;
+      warehouseCode: string;
+      warehouseName: string;
+      locationCode: string;
+      inventoryId: ApiId;
+      inboundBy: string;
+    };
   };
 }
 
@@ -138,6 +148,47 @@ export interface Attachment {
   contentSha256?: string | null;
   bindingStatus: 'TEMP' | 'BOUND';
   expiresAt?: string | null;
+}
+
+export interface Warehouse {
+  id: ApiId;
+  enterpriseId: ApiId;
+  warehouseCode: string;
+  warehouseName: string;
+  enabledStatus: string;
+}
+
+export interface WarehouseLocation {
+  id: ApiId;
+  enterpriseId: ApiId;
+  warehouseId: ApiId;
+  locationCode: string;
+  enabledStatus: string;
+}
+
+export interface InboundPayload {
+  warehouseId: ApiId;
+  locationId: ApiId;
+}
+
+export interface InboundResult {
+  inboundRecordId: ApiId;
+  inventoryId: ApiId;
+  batteryStatus: string;
+}
+
+export interface InventoryItem {
+  id: ApiId;
+  enterpriseId: ApiId;
+  batteryId: ApiId;
+  systemTraceCode: string;
+  warehouseId: ApiId;
+  warehouseCode: string;
+  warehouseName: string;
+  locationId: ApiId;
+  locationCode: string;
+  inboundRecordId: ApiId;
+  inboundAt: string;
 }
 
 function normalizeForFingerprint(value: unknown): unknown {
@@ -289,4 +340,31 @@ export async function downloadAttachment(attachmentId: ApiId, fileName: string) 
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+export async function listPendingInbounds() {
+  const response = await http.get<ApiEnvelope<Battery[]>>('/inbounds/pending');
+  return response.data.data;
+}
+
+export async function listWarehouses() {
+  const response = await http.get<ApiEnvelope<Warehouse[]>>('/warehouses');
+  return response.data.data;
+}
+
+export async function listWarehouseLocations(warehouseId: ApiId) {
+  const response = await http.get<ApiEnvelope<WarehouseLocation[]>>(`/warehouses/${warehouseId}/locations`);
+  return response.data.data;
+}
+
+export async function createInbound(batteryId: ApiId, payload: InboundPayload, key?: string) {
+  return withIdempotency('CREATE_INBOUND', fingerprint({ batteryId, payload }), async (idempotencyKeyValue) => {
+    const response = await http.post<ApiEnvelope<InboundResult>>(`/batteries/${batteryId}/inbounds`, payload, { headers: { 'Idempotency-Key': idempotencyKeyValue } });
+    return response.data.data;
+  }, key);
+}
+
+export async function listInventory(systemTraceCode?: string) {
+  const response = await http.get<ApiEnvelope<InventoryItem[]>>('/inventory', { params: { systemTraceCode: systemTraceCode || undefined } });
+  return response.data.data;
 }

@@ -347,8 +347,8 @@ technical_design_v1_1:
 implementation_progress:
   status: in-progress
   branch: feature/first-slice-implementation
-  current_step: I3验收闭环
-  current_increment: I3-acceptance-supplement
+  current_step: I4入库库存
+  current_increment: I4-inbound-inventory
   scope: 第一切片和数据治理 V1.1 的可运行工程骨架
   skeleton_initialized: true
   skeleton_ci_passed: true
@@ -380,8 +380,11 @@ implementation_progress:
       validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37734497499
       validated_commit: 6fee83009925d4fdec505c7f2dfbaeb5b7755425
     I4:
-      status: not-started
-      I4_started: false
+      status: paused-for-review
+      review_result: 修改后复核
+      I4_started: true
+      validation_run: 待 GitHub Actions MySQL 8.4 验证
+      validated_commit: 待授权推送后由 GitHub Actions 验证
   outputs:
     backend: backend/
     frontend: frontend/
@@ -413,9 +416,12 @@ implementation_progress:
     - GitHub Actions 验证 I3 验收闭环、I1/I2 回归、前端测试和构建通过
     - 完成 I3 修改后复核整改，补齐真实附件保存下载、附件内容幂等、追溯历史详情、拒绝审计和测试证据映射
     - 完成 I3 第二轮修改后复核整改，补齐前端追溯详情展示与 JWT 附件下载、可配置附件存储目录、事务回滚文件清理、重建服务实例后下载断言和缺口测试映射
-    - 完成 I3 最终复核确认，I3 收口为 completed / 复核通过，I4 仍保持 not-started
-    - 修复 I2/I3 Long ID 前端精度缺陷，后端 Long/long 响应序列化为字符串，前端和 OpenAPI 同步使用数字字符串 ID；不启动 I4
+    - 完成 I3 最终复核确认，I3 收口为 completed / 复核通过；当时 I4 仍保持 not-started
+    - 修复 I2/I3 Long ID 前端精度缺陷，后端 Long/long 响应序列化为字符串，前端和 OpenAPI 同步使用数字字符串 ID；该缺陷修复本身未启动 I4
+    - 启动并完成 I4 入库库存本地实现，覆盖待入库列表、仓库库位查询、单块电池入库、当前库存、入库追溯、删除保护、幂等并发、企业隔离和前端待入库/库存页面
   pending_items:
+    - I4 Implementation CI MySQL 8.4 真实执行验证
+    - I4 评审包生成与人工复核
     - 数据治理规则处理器和质量问题闭环实现
     - 集成测试、权限测试和端到端测试
   ci_validation:
@@ -497,6 +503,21 @@ implementation_progress:
       - 前端 npm run build 通过
       - Spring Boot 连接迁移后的数据库成功
   review_result: I3复核通过
+  i4_validation:
+    workflow: Implementation CI
+    run: 待 GitHub Actions MySQL 8.4 验证
+    commit: 待授权推送后由 GitHub Actions 验证
+    result: pending
+    local_verified_items:
+      - 后端 mvn test 通过；本地未设置 RUN_MYSQL_TESTS=true，I2/I3/I4 MySQL 集成测试按条件跳过
+      - 前端 Vitest 通过，新增 I4 待入库、仓库切换清库位、库存查询和追溯入库详情组件测试
+      - 前端 npm run build 通过
+      - OpenAPI YAML 契约测试通过，I4 入库响应码、删除保护路径和 LongId 字段已断言
+    required_ci_items:
+      - MySQL 8.4 启动成功
+      - Flyway V1..V6 完整通过且未修改历史迁移
+      - RUN_MYSQL_TESTS=true 下实际执行 I4InboundInventoryIntegrationTest
+      - I1/I2/I3 回归、I4 入库库存集成测试、Redocly、前端测试和构建全部通过
 
 technical_design_progress:
   status: completed

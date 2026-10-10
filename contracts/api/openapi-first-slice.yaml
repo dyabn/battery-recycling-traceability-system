@@ -539,10 +539,38 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/InboundResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /inbound-records/{id}:
+    delete:
+      tags: [Inbound]
+      summary: 删除保护入口
+      operationId: deleteInboundRecord
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      x-traceability:
+        fr: [FR-C4-022]
+        ac: [AC-014]
+        tc: [TC-C4-013]
+        ui: [UI-C4-014]
+        permission: authenticated
+        module: MOD-AUDIT
+        db: [inbound_record, audit_log]
+      responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
   /inventory:
@@ -692,10 +720,14 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/WarehouseLocationListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /attachments:
     post:
       tags: [System]
@@ -1401,14 +1433,29 @@ components:
     InventoryItem:
       type: object
       properties:
+        id:
+          $ref: '#/components/schemas/LongId'
+        enterpriseId:
+          $ref: '#/components/schemas/LongId'
+        batteryId:
+          $ref: '#/components/schemas/LongId'
         systemTraceCode:
           type: string
+        warehouseId:
+          $ref: '#/components/schemas/LongId'
         warehouseCode:
           type: string
+        warehouseName:
+          type: string
+        locationId:
+          $ref: '#/components/schemas/LongId'
         locationCode:
           type: string
-        lifecycleStatus:
+        inboundRecordId:
+          $ref: '#/components/schemas/LongId'
+        inboundAt:
           type: string
+          format: date-time
     TraceEnvelope:
       allOf:
         - $ref: '#/components/schemas/Envelope'
@@ -1436,7 +1483,7 @@ components:
           type: string
         details:
           type: object
-          description: Compatible extension for stage-specific trace details, such as acceptance checks, supplement notes and attachment download entries.
+          description: Compatible extension for stage-specific trace details, such as acceptance checks, supplement notes, attachment download entries and inbound warehouse/location details.
           additionalProperties: true
     AuditLogListEnvelope:
       allOf:
@@ -1539,6 +1586,8 @@ components:
       properties:
         id:
           $ref: '#/components/schemas/LongId'
+        enterpriseId:
+          $ref: '#/components/schemas/LongId'
         warehouseCode:
           type: string
         warehouseName:
@@ -1558,6 +1607,8 @@ components:
       type: object
       properties:
         id:
+          $ref: '#/components/schemas/LongId'
+        enterpriseId:
           $ref: '#/components/schemas/LongId'
         warehouseId:
           $ref: '#/components/schemas/LongId'

@@ -27,7 +27,7 @@ OpenAPI 文件：`contracts/api/openapi-first-slice.yaml`
 
 I1 实现阶段将登录、当前用户、用户列表、角色、权限和审计接口统一为 DTO Envelope；错误响应保留 `code`、`message`、`traceId`、`timestamp` 和 `data=null`。
 
-I2 实现阶段继续沿用同一 Envelope；回收批次详情响应必须包含来源信息、交接信息、备注、版本号以及批次中的电池列表，便于前端直接完成“批次 -> 电池 -> 提交待验收”的闭环。
+I2 实现阶段继续沿用同一 Envelope；回收批次详情响应必须包含来源信息、交接信息、备注、版本号以及批次中的电池列表，便于前端直接完成“批次 -> 电池 -> 提交待验收”的闭环。I4 实现阶段所有数据库 Long ID 继续按数字字符串返回给前端，避免 JavaScript `number` 精度丢失。
 
 ### 1.3 认证和权限
 
@@ -46,9 +46,10 @@ I2 实现阶段继续沿用同一 Envelope；回收批次详情响应必须包�
 | `BATTERY_DUPLICATE_UNRESOLVED` | 409 | 疑似重复未核实。 |
 | `INVALID_BATTERY_STATE` | 409 | 电池当前状态不允许操作。 |
 | `ACCEPTANCE_REQUIRED_FIELD_MISSING` | 400 | 验收必填字段缺失。 |
-| `WAREHOUSE_DISABLED` | 409 | 仓库未启用。 |
-| `LOCATION_DISABLED` | 409 | 库位未启用。 |
-| `LOCATION_WAREHOUSE_MISMATCH` | 409 | 库位不属于所选仓库。 |
+| `WAREHOUSE_DISABLED` | 400 | 仓库未启用。 |
+| `LOCATION_DISABLED` | 400 | 库位未启用。 |
+| `LOCATION_WAREHOUSE_MISMATCH` | 400 | 库位不属于所选仓库。 |
+| `CROSS_ENTERPRISE_ACCESS_DENIED` | 403 | 跨企业资源访问被拒绝。 |
 | `FORBIDDEN_OPERATION` | 403 | 无权限操作。 |
 | `EFFECTIVE_RECORD_DELETE_FORBIDDEN` | 409 | 已生效记录禁止删除。 |
 | `DUPLICATE_SUBMISSION` | 409 | 重复提交或重复入库。 |
@@ -98,7 +99,7 @@ I2 实现阶段继续沿用同一 Envelope；回收批次详情响应必须包�
 | `POST /recycle-batches/{id}/batteries` | 批次 `DRAFT`，电池有效 | 关系生效 | 写批次电池关系。 | 无 | 失败时审计。 |
 | `POST /recycle-batches/{id}/submit` | 批次 `DRAFT` | 批次 `PENDING_ACCEPTANCE`，电池 `PENDING_ACCEPTANCE` | 批次、电池、事件、审计。 | `BATCH_SUBMITTED` | 提交失败审计。 |
 | `POST /batteries/{id}/acceptances` | 电池 `PENDING_ACCEPTANCE` | 通过则 `ACCEPTED_PENDING_INBOUND`，资料不足则 `PENDING_SUPPLEMENT`，不通过则 `ACCEPTANCE_REJECTED` | 验收、电池、批次、事件、审计。 | `ACCEPTANCE_PASSED`、`ACCEPTANCE_NEED_SUPPLEMENT`、`ACCEPTANCE_REJECTED` | 验收失败审计。 |
-| `POST /acceptance-supplements` | 电池 `PENDING_SUPPLEMENT` | 电池 `PENDING_ACCEPTANCE` | 补充记录、电池、事件、审计。 | `ACCEPTANCE_SUPPLEMENTED` | 失败审计。 |
+| `POST /batteries/{id}/acceptance-supplements` | 电池 `PENDING_SUPPLEMENT` | 电池 `PENDING_ACCEPTANCE` | 补充记录、电池、事件、审计。 | `ACCEPTANCE_SUPPLEMENTED` | 失败审计。 |
 | `POST /batteries/{id}/inbounds` | 电池 `ACCEPTED_PENDING_INBOUND` | 电池 `IN_STOCK`，当前库存有效 | 入库、库存、电池、事件、审计。 | `INBOUND_COMPLETED` | 入库失败审计。 |
 | `POST /attachments` | 已登录且有附件权限 | 附件 `TEMP` 元数据有效 | 写临时附件元数据，保存文件，不绑定业务对象。 | 无 | 上传失败审计。 |
 | `PUT /users/{id}/roles` | 系统管理员 | 用户角色关系更新 | 写用户角色关系、审计和幂等记录。 | 无 | `PERMISSION_CHANGED`。 |
@@ -148,6 +149,9 @@ I2 实现阶段继续沿用同一 Envelope；回收批次详情响应必须包�
 - 仓库和库位必须启用。
 - 库位必须属于所选仓库。
 - 电池必须为 `ACCEPTED_PENDING_INBOUND`。
+- 成功响应返回 `inboundRecordId`、`inventoryId` 和 `batteryStatus=IN_STOCK`。
+- `GET /inventory` 只返回 `is_current=1` 的当前库存，支持按 `systemTraceCode` 筛选。
+- `GET /batteries/{id}/trace` 的 `details.inbound` 兼容字段返回入库单号、入库时间、仓库编码、仓库名称、库位编码、库存记录 ID 和入库人。
 
 ## 5. 幂等要求
 

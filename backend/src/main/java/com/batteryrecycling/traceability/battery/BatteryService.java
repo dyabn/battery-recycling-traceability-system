@@ -234,11 +234,13 @@ public class BatteryService {
                 currentUser.enterpriseId(), battery.id());
         List<AcceptanceTraceDetail> acceptances = acceptanceTraceDetails(currentUser, batteryId);
         List<SupplementTraceDetail> supplements = supplementTraceDetails(currentUser, batteryId);
+        List<InboundTraceDetail> inbounds = inboundTraceDetails(currentUser, batteryId);
         List<TraceEventDto> events = new ArrayList<>();
         int passIndex = 0;
         int needSupplementIndex = 0;
         int rejectIndex = 0;
         int supplementIndex = 0;
+        int inboundIndex = 0;
         for (TraceRow row : rows) {
             Map<String, Object> details = Map.of();
             if ("ACCEPTANCE_PASSED".equals(row.eventType())) {
@@ -252,6 +254,8 @@ public class BatteryService {
                 details = detail == null ? Map.of() : Map.of("acceptance", detail.toMap());
             } else if ("ACCEPTANCE_SUPPLEMENTED".equals(row.eventType()) && supplementIndex < supplements.size()) {
                 details = Map.of("supplement", supplements.get(supplementIndex++).toMap());
+            } else if ("INBOUND_COMPLETED".equals(row.eventType()) && inboundIndex < inbounds.size()) {
+                details = Map.of("inbound", inbounds.get(inboundIndex++).toMap());
             }
             events.add(new TraceEventDto(row.eventName(), row.objectCode(), row.operator(), row.occurredAt(), row.statusChange(), row.result(), details));
         }
@@ -470,6 +474,30 @@ public class BatteryService {
                 currentUser.enterpriseId(), supplementId);
     }
 
+    private List<InboundTraceDetail> inboundTraceDetails(CurrentUser currentUser, Long batteryId) {
+        return jdbcTemplate.query("""
+                SELECT r.id, r.inbound_no, r.inbound_at, w.warehouse_code, w.warehouse_name,
+                       l.location_code, i.id AS inventory_id, u.display_name
+                FROM inbound_record r
+                JOIN inventory i ON i.inbound_record_id = r.id
+                JOIN warehouse w ON w.id = r.warehouse_id
+                JOIN warehouse_location l ON l.id = r.location_id
+                JOIN sys_user u ON u.id = r.inbound_by
+                WHERE r.enterprise_id = ? AND r.battery_id = ?
+                ORDER BY r.inbound_at, r.id
+                """,
+                (rs, rowNum) -> new InboundTraceDetail(
+                        rs.getLong("id"),
+                        rs.getString("inbound_no"),
+                        rs.getObject("inbound_at", LocalDateTime.class),
+                        rs.getString("warehouse_code"),
+                        rs.getString("warehouse_name"),
+                        rs.getString("location_code"),
+                        rs.getLong("inventory_id"),
+                        rs.getString("display_name")),
+                currentUser.enterpriseId(), batteryId);
+    }
+
     private AcceptanceTraceDetail detailByResult(List<AcceptanceTraceDetail> details, String result, int index) {
         int seen = 0;
         for (AcceptanceTraceDetail detail : details) {
@@ -526,6 +554,20 @@ public class BatteryService {
                     "supplementedBy", supplementedBy,
                     "supplementedAt", supplementedAt,
                     "attachments", attachments);
+        }
+    }
+
+    private record InboundTraceDetail(Long id, String inboundNo, LocalDateTime inboundAt, String warehouseCode, String warehouseName, String locationCode, Long inventoryId, String inboundBy) {
+        private Map<String, Object> toMap() {
+            return Map.of(
+                    "id", id,
+                    "inboundNo", inboundNo,
+                    "inboundAt", inboundAt,
+                    "warehouseCode", warehouseCode,
+                    "warehouseName", warehouseName,
+                    "locationCode", locationCode,
+                    "inventoryId", inventoryId,
+                    "inboundBy", inboundBy);
         }
     }
 }

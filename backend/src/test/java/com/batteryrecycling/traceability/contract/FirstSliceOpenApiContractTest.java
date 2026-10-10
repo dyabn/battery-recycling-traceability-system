@@ -68,6 +68,34 @@ class FirstSliceOpenApiContractTest {
             Assertions.assertThat(traceProperties).containsKey("details");
 
             Assertions.assertThat(paths).containsKey("/acceptance-records/{id}");
+            Assertions.assertThat(paths).containsKey("/inbound-records/{id}");
+            Map<String, Object> inboundPost = (Map<String, Object>) ((Map<String, Object>) paths.get("/batteries/{id}/inbounds")).get("post");
+            Map<String, Object> inboundResponses = (Map<String, Object>) inboundPost.get("responses");
+            Assertions.assertThat(inboundResponses).containsKeys("200", "400", "401", "403", "404", "409");
+
+            Map<String, Object> inboundDelete = (Map<String, Object>) ((Map<String, Object>) paths.get("/inbound-records/{id}")).get("delete");
+            Map<String, Object> inboundDeleteResponses = (Map<String, Object>) inboundDelete.get("responses");
+            Assertions.assertThat(inboundDeleteResponses).containsKeys("401", "403", "404", "409");
+
+            Map<String, Object> inboundRequest = (Map<String, Object>) schemas.get("InboundCreateRequest");
+            Map<String, Object> inboundProperties = (Map<String, Object>) inboundRequest.get("properties");
+            Assertions.assertThat((Map<String, Object>) inboundProperties.get("warehouseId"))
+                    .containsEntry("$ref", "#/components/schemas/LongId");
+            Assertions.assertThat((Map<String, Object>) inboundProperties.get("locationId"))
+                    .containsEntry("$ref", "#/components/schemas/LongId");
+
+            Map<String, Object> inventoryItem = (Map<String, Object>) schemas.get("InventoryItem");
+            Map<String, Object> inventoryProperties = (Map<String, Object>) inventoryItem.get("properties");
+            Assertions.assertThat((Map<String, Object>) inventoryProperties.get("id"))
+                    .containsEntry("$ref", "#/components/schemas/LongId");
+            Assertions.assertThat((Map<String, Object>) inventoryProperties.get("batteryId"))
+                    .containsEntry("$ref", "#/components/schemas/LongId");
+            Assertions.assertThat((Map<String, Object>) inventoryProperties.get("warehouseId"))
+                    .containsEntry("$ref", "#/components/schemas/LongId");
+            Assertions.assertThat((Map<String, Object>) inventoryProperties.get("locationId"))
+                    .containsEntry("$ref", "#/components/schemas/LongId");
+            Assertions.assertThat((Map<String, Object>) inventoryProperties.get("inboundRecordId"))
+                    .containsEntry("$ref", "#/components/schemas/LongId");
         } catch (Exception exception) {
             throw new AssertionError("OpenAPI contract could not be parsed", exception);
         }

@@ -391,3 +391,17 @@
 | DG-Q-004 | 第一版规则范围 | 已解决：DQ-001..DQ-007 纳入，DQ-008 延期。 |
 | DG-Q-005 | 错误数据处理方式 | 已解决：不得直接覆盖已生效数据，需关联更正记录或处理证据。 |
 | DG-Q-006 | 问题关闭条件 | 已解决：处理证据、同规则复查通过、主管复核和完整审计齐备后关闭。 |
+
+## I4 入库库存实现追踪
+
+当前实现状态：`paused-for-review / 修改后复核`，等待 GitHub Actions MySQL 8.4 实执行证据。
+
+| I4 范围 | 需求/规则 | API | 后端实现 | 前端实现 | 测试证据 |
+| --- | --- | --- | --- | --- | --- |
+| 待入库列表 | FR-C4-015、DQ-004 | `GET /api/v1/inbounds/pending` | `InboundController`、`InboundService.listPending` | `InboundPendingView.vue` | `I4InboundInventoryIntegrationTest.inboundCreatesEffectiveRecordCurrentInventoryTraceAndInventoryView` |
+| 仓库库位查询 | FR-C4-016、DQ-005、DQ-007 | `GET /api/v1/warehouses`、`GET /api/v1/warehouses/{id}/locations` | `WarehouseController`、`WarehouseService` | `InboundPendingView.vue` | `I4InboundInventoryIntegrationTest.inboundCreatesEffectiveRecordCurrentInventoryTraceAndInventoryView`、`validationWarehouseLocationAndInvalidStatesAreRejectedAtomically` |
+| 单块电池入库 | FR-C4-015..017、DQ-004..007 | `POST /api/v1/batteries/{id}/inbounds` | `InboundService.createInboundInTransaction` | `InboundPendingView.vue` | `I4InboundInventoryIntegrationTest` 四个测试方法 |
+| 当前库存查询 | FR-C4-018 | `GET /api/v1/inventory?systemTraceCode=` | `InventoryController`、`InventoryService` | `InventoryView.vue` | `I4InboundInventoryIntegrationTest.inboundCreatesEffectiveRecordCurrentInventoryTraceAndInventoryView`、`frontend/src/views/i4-pages.test.ts` |
+| 入库追溯 | FR-C4-019 | `GET /api/v1/batteries/{id}/trace` | `BatteryService.trace` 的 `details.inbound` | `BatteryTraceView.vue` | `I4InboundInventoryIntegrationTest.inboundCreatesEffectiveRecordCurrentInventoryTraceAndInventoryView`、`frontend/src/views/i4-pages.test.ts` |
+| 入库删除保护 | FR-C4-022、AC-014 | `DELETE /api/v1/inbound-records/{id}` | `InboundService.rejectDelete` | 无成功入口 | `I4InboundInventoryIntegrationTest.inboundCreatesEffectiveRecordCurrentInventoryTraceAndInventoryView` |
+| 幂等、并发、企业隔离和审计 | NFR-C4-002、NFR-C4-003、AC-013 | 入库、仓库、库存和追溯接口 | `IdempotencyService`、`AuditService`、I4 服务企业过滤 | 路由权限、字符串 ID | `I4InboundInventoryIntegrationTest.idempotencyAndConcurrentInboundAllowOnlyOneEffectiveInventory`、`enterpriseIsolationAndRolePermissionsAreEnforced` |

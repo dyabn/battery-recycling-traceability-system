@@ -10,6 +10,8 @@ import BatteryTraceView from '../views/battery/BatteryTraceView.vue';
 import DuplicateResolutionView from '../views/battery/DuplicateResolutionView.vue';
 import BatchDetailView from '../views/batch/BatchDetailView.vue';
 import BatchListView from '../views/batch/BatchListView.vue';
+import InboundPendingView from '../views/inbound/InboundPendingView.vue';
+import InventoryView from '../views/inventory/InventoryView.vue';
 import AuditView from '../views/system/AuditView.vue';
 import PermissionsView from '../views/system/PermissionsView.vue';
 import RolesView from '../views/system/RolesView.vue';
@@ -26,6 +28,8 @@ export const routes: RouteRecordRaw[] = [
       { path: 'batches', name: 'batches', component: BatchListView, meta: { permission: 'batch:read' } },
       { path: 'batches/:id', name: 'batch-detail', component: BatchDetailView, meta: { permission: 'batch:read' } },
       { path: 'acceptances', name: 'acceptances', component: AcceptancePendingView, meta: { permission: 'acceptance:create' } },
+      { path: 'inbounds/pending', name: 'inbounds-pending', component: InboundPendingView, meta: { permission: 'inbound:create' } },
+      { path: 'inventory', name: 'inventory', component: InventoryView, meta: { permission: 'inventory:read' } },
       { path: 'batteries/register', name: 'battery-register', component: BatteryRegisterView, meta: { permission: 'battery:create' } },
       { path: 'duplicates/:id', name: 'duplicate-resolution', component: DuplicateResolutionView, meta: { permission: 'battery:duplicate:resolve' } },
       { path: 'batteries/:id/trace', name: 'battery-trace', component: BatteryTraceView, meta: { permission: 'trace:read' } },
