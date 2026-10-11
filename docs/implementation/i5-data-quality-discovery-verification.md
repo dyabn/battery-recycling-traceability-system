@@ -3,9 +3,9 @@
 文档状态：待复核  
 增量：I5-data-quality-discovery  
 当前结论：修改后复核  
-实现提交：`1457bb70bf567cddc167ef0f77146e3d7de43a67`
-验证提交：`ffe84993f04644bf0cb5618fde90b71408dfd401`
-GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/38136505578`
+实现提交：本轮整改提交后填写
+验证提交：待 GitHub Actions 验证当前 HEAD
+GitHub Actions：待取得当前 HEAD 的 MySQL 8.4 运行结果
 评审包：`i5-data-quality-discovery-review.zip`，SHA-256 以交付消息或本地 `Get-FileHash` 输出为准
 
 ## 范围
@@ -40,7 +40,7 @@ cd ..\frontend
 npm run test
 npm run build
 cd ..
-npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contracts/api/openapi-data-governance-v1.1.yaml
+npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contracts/api/openapi-data-governance-v1.1.yaml contracts/api/openapi-data-governance-i5-runtime.yaml
 ```
 
 结果：
@@ -48,18 +48,20 @@ npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contra
 - 后端常规测试通过。本地未设置 `RUN_MYSQL_TESTS=true`，MySQL 条件集成测试跳过。
 - 前端 Vitest 28 个测试通过。
 - 前端生产构建通过。
-- Redocly 两份 OpenAPI 均通过，保留保护性删除/规则启停接口无 2xx 的语义警告。
+- Redocly 三份 OpenAPI 均通过，当前 4 个 warning 分别为两个删除保护接口无 2xx、I5 规则启停保护接口无 2xx、完整 V1.1 设计基线保留未使用的 `RecheckId` 组件。
 
 ## CI 验证
 
-GitHub Actions run `38136505578` 对提交 `ffe84993f04644bf0cb5618fde90b71408dfd401` 验证通过：
+上一轮 GitHub Actions run `38136505578` 已不再作为本轮整改的最终证据。本轮修改新增和修正了 I5 规则、事务、审计、契约和前端测试，必须重新取得当前 HEAD 的 MySQL 8.4 CI 结果。
+
+待确认项：
 
 - MySQL 8.4 启动成功；
 - Flyway V1..V7 执行成功，V1..V6 未修改；
 - `RUN_MYSQL_TESTS=true`；
-- `I5DataQualityDiscoveryIntegrationTest` 实际执行，Tests run 4、Failures 0、Errors 0、Skipped 0；
+- `I5DataQualityDiscoveryIntegrationTest` 实际执行，Tests run 不少于 6、Failures 0、Errors 0、Skipped 0；
 - I2、I3、I4 MySQL 集成回归分别为 17、6、4 个测试通过且 Skipped 0；
-- 后端测试、前端测试、前端构建和 OpenAPI lint 全部通过。
+- 后端测试、前端测试、前端构建和三份 OpenAPI lint 全部通过。
 
 ## 自动化测试映射
 
@@ -72,13 +74,13 @@ GitHub Actions run `38136505578` 对提交 `ffe84993f04644bf0cb5618fde90b71408df
 | I5-TC-005 不存在算法/脚本编辑接口 | `FirstSliceOpenApiContractTest.i5DataQualityRuntimeContractIsDeclaredInOpenApi` |
 | I5-TC-006 范围映射 | `I5DataQualityDiscoveryIntegrationTest.manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` |
 | I5-TC-007 指定规则子集和范围不匹配拒绝 | `validationMissingConfigAndPermissionsAreAudited` |
-| I5-TC-008 DQ-001..DQ-007 处理器 | `manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency`；DQ-001 重复识别受生产唯一约束保护，集成测试验证正常数据路径 |
-| I5-TC-009 DQ-001 不泄露其他企业明细 | 由处理器企业过滤、契约范围约束和 CI 回归覆盖 |
+| I5-TC-008 DQ-001..DQ-007 处理器 | `manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` 验证 DQ-002..DQ-007 命中与 DQ-004 合规反例；DQ-001 重复识别受生产唯一约束保护，集成测试验证正常数据路径 |
+| I5-TC-009 DQ-001 不泄露其他企业明细 | DQ-001 处理器只返回当前企业对象；生产唯一约束下跨企业重复数据不能正常写入 |
 | I5-TC-010 无违规检查完成且不生成问题 | `crossEnterpriseRunsAndIssuesAreRejectedAndAudited` 的企业 B BATTERY 检查路径 |
 | I5-TC-011 违规检查生成结果和 OPEN 问题 | `manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` |
 | I5-TC-012 重复检查不重复创建未关闭问题 | 同上 |
-| I5-TC-013 并发开放问题去重 | 数据库 `uk_dq_issue_open` 约束兜底，CI 已验证 MySQL 约束路径 |
-| I5-TC-014 规则执行异常任务 FAILED 且结果回滚 | `validationMissingConfigAndPermissionsAreAudited` 缺配置 FAILED 路径 |
+| I5-TC-013 并发开放问题去重 | `concurrentChecksDeduplicateOpenIssues` 使用双线程不同幂等键真实并发检查 |
+| I5-TC-014 规则执行异常任务 FAILED 且结果回滚 | `partialWriteFailureRollsBackResultsIssuesAndSuccessAudit` 在写入结果后诱发异常并断言结果、问题和成功审计回滚 |
 | I5-TC-015 同幂等键同请求不重复执行 | `manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` |
 | I5-TC-016 同幂等键不同请求 409 | 同上 |
 | I5-TC-017 缺少或非法幂等键 400 | `validationMissingConfigAndPermissionsAreAudited` |
@@ -86,10 +88,10 @@ GitHub Actions run `38136505578` 对提交 `ffe84993f04644bf0cb5618fde90b71408df
 | I5-TC-019 系统管理员只能读取规则和问题 | 同上、I1 权限矩阵测试 |
 | I5-TC-020 回收/仓库角色仅能看到本人相关问题 | `validationMissingConfigAndPermissionsAreAudited` |
 | I5-TC-021 跨企业任务和问题拒绝并审计 | `crossEnterpriseRunsAndIssuesAreRejectedAndAudited` |
-| I5-TC-022 不存在资源 404 | 服务实现路径，CI 回归已覆盖 |
-| I5-TC-023 Long ID 为字符串 | 后端 Jackson 全局配置、OpenAPI 契约测试、前端类型 |
-| I5-TC-024 前端菜单、路由、表单、结果和问题页 | `frontend/src/views/i5-pages.test.ts` |
-| I5-TC-025 I1..I4 回归 | GitHub Actions run `38136505578` |
+| I5-TC-022 不存在资源 404 | `validationMissingConfigAndPermissionsAreAudited` |
+| I5-TC-023 Long ID 为字符串 | `FirstSliceOpenApiContractTest.i5DataQualityRuntimeContractIsDeclaredInOpenApi`、后端 Jackson 全局配置、前端类型 |
+| I5-TC-024 前端菜单、路由、表单、结果、完整规则元数据和问题页 | `frontend/src/views/i5-pages.test.ts` |
+| I5-TC-025 I1..I4 回归 | 待当前 HEAD GitHub Actions 验证 |
 
 ## CI 通过标准
 
@@ -104,7 +106,7 @@ I5 复核前必须取得 GitHub Actions 证据：
 
 ## 结论
 
-当前 I5 已完成本地实现与本地验证，状态保持：
+当前 I5 已完成本轮整改和本地验证，仍需取得当前 HEAD 的 GitHub Actions MySQL 8.4 证据，状态保持：
 
 ```yaml
 I5:

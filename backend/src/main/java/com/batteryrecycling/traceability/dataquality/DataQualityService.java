@@ -107,23 +107,26 @@ public class DataQualityService {
                   AND rule_code IN ('DQ-001','DQ-002','DQ-003','DQ-004','DQ-005','DQ-006','DQ-007')
                 """, currentUser.enterpriseId());
         if (!ruleByCode.keySet().containsAll(ALL_RULES) || configCount < ALL_RULES.size()) {
-            CheckRunDto failed = createRun(currentUser, scope, request.requestedRuleCodes(), List.of(), "FAILED", "当前企业缺少数据质量规则配置");
-            auditService.record(currentUser, "DQ_CHECK_FAILED", "DQ_CHECK_RUN", failed.id(), "FAILED", failed.failureReason(), servletRequest, keyHash);
+            CheckRunDto failed = createRun(currentUser, scope, request.requestedRuleCodes(), List.of(), "FAILED", "当前企业缺少数据质量规则配置", auditService.traceId(servletRequest));
+            auditService.record(currentUser, "DQ_CHECK_FAILED", "DQ_CHECK_RUN", failed.id(), "RUNNING", "FAILED", "FAILED", failed.failureReason(), servletRequest, keyHash);
             return failed;
         }
 
         List<String> selectedRules = selectedRules(currentUser, request.requestedRuleCodes(), scope, scopeRules, ruleByCode, servletRequest);
-        CheckRunDto running = createRun(currentUser, scope, request.requestedRuleCodes(), selectedRules, "RUNNING", null);
-        auditService.record(currentUser, "DQ_CHECK_CREATED", "DQ_CHECK_RUN", running.id(), "SUCCESS", "创建数据质量检查", servletRequest, keyHash);
+        String traceId = auditService.traceId(servletRequest);
+        CheckRunDto running = createRun(currentUser, scope, request.requestedRuleCodes(), selectedRules, "RUNNING", null, traceId);
+        auditService.record(currentUser, "DQ_CHECK_CREATED", "DQ_CHECK_RUN", running.id(), null, "RUNNING", "SUCCESS", "创建数据质量检查", servletRequest, keyHash);
         try {
-            ExecutionSummary summary = requiresNew.execute(status -> executeRules(currentUser, running.id(), selectedRules, ruleByCode, servletRequest));
-            updateRunCompleted(running.id(), summary);
-            auditService.record(currentUser, "DQ_CHECK_COMPLETED", "DQ_CHECK_RUN", running.id(), "SUCCESS", "数据质量检查完成", servletRequest, keyHash);
+            requiresNew.executeWithoutResult(status -> {
+                ExecutionSummary summary = executeRules(currentUser, running.id(), selectedRules, ruleByCode, servletRequest, keyHash);
+                updateRunCompletedInCurrentTransaction(running.id(), summary);
+                auditService.recordInCurrentTransaction(currentUser, "DQ_CHECK_COMPLETED", "DQ_CHECK_RUN", running.id(), "RUNNING", "COMPLETED", "SUCCESS", "数据质量检查完成", servletRequest, keyHash);
+            });
             return getCheckRunCommitted(currentUser, running.id(), servletRequest);
         } catch (RuntimeException exception) {
             String reason = "数据质量检查执行失败";
             updateRunFailed(running.id(), reason);
-            auditService.record(currentUser, "DQ_CHECK_FAILED", "DQ_CHECK_RUN", running.id(), "FAILED", reason, servletRequest, keyHash);
+            auditService.record(currentUser, "DQ_CHECK_FAILED", "DQ_CHECK_RUN", running.id(), "RUNNING", "FAILED", "FAILED", reason, servletRequest, keyHash);
             return getCheckRunCommitted(currentUser, running.id(), servletRequest);
         }
     }
@@ -159,6 +162,10 @@ public class DataQualityService {
 
     public List<IssueDto> listIssues(CurrentUser currentUser, String status, HttpServletRequest servletRequest) {
         String normalizedStatus = status == null || status.isBlank() ? null : status.trim().toUpperCase(Locale.ROOT);
+        if (normalizedStatus != null && !Set.of("OPEN", "ASSIGNED", "PROCESSING", "SUBMITTED", "RECHECKING", "REJECTED", "CLOSED").contains(normalizedStatus)) {
+            auditService.record(currentUser, "DQ_VALIDATION_FAILED", "DQ_ISSUE", null, "FAILED", "未知质量问题状态: " + status, servletRequest);
+            throw ApiException.badRequest("VALIDATION_FAILED", "未知质量问题状态");
+        }
         List<Object> args = new ArrayList<>();
         StringBuilder sql = new StringBuilder("""
                 SELECT id, enterprise_id, issue_no, rule_code, object_type, object_id, object_identity,
@@ -205,7 +212,7 @@ public class DataQualityService {
         return issue;
     }
 
-    private ExecutionSummary executeRules(CurrentUser currentUser, Long runId, List<String> selectedRules, Map<String, RuleDto> ruleByCode, HttpServletRequest request) {
+    private ExecutionSummary executeRules(CurrentUser currentUser, Long runId, List<String> selectedRules, Map<String, RuleDto> ruleByCode, HttpServletRequest request, String keyHash) {
         int checkedObjectCount = 0;
         int violationCount = 0;
         int passRuleCount = 0;
@@ -239,7 +246,7 @@ public class DataQualityService {
                     outcome.violations().size(),
                     json(ruleSnapshot(rule)));
             for (RuleViolation violation : outcome.violations()) {
-                boolean created = createOrRediscoverIssue(currentUser, runId, resultId, rule, violation, request);
+                boolean created = createOrRediscoverIssue(currentUser, runId, resultId, rule, violation, request, keyHash);
                 if (created) {
                     newIssueCount++;
                 } else {
@@ -256,7 +263,7 @@ public class DataQualityService {
                 ));
     }
 
-    private boolean createOrRediscoverIssue(CurrentUser currentUser, Long runId, Long resultId, RuleDto rule, RuleViolation violation, HttpServletRequest request) {
+    private boolean createOrRediscoverIssue(CurrentUser currentUser, Long runId, Long resultId, RuleDto rule, RuleViolation violation, HttpServletRequest request, String keyHash) {
         String openIssueKey = openIssueKey(rule.ruleCode(), rule.objectType(), violation.objectIdentity());
         List<Long> existing = jdbcTemplate.queryForList("""
                 SELECT id
@@ -265,7 +272,7 @@ public class DataQualityService {
                 """, Long.class, currentUser.enterpriseId(), openIssueKey);
         if (!existing.isEmpty()) {
             jdbcTemplate.update("UPDATE dq_issue SET last_detected_at = CURRENT_TIMESTAMP(3), updated_at = CURRENT_TIMESTAMP(3), version = version + 1 WHERE id = ?", existing.get(0));
-            auditService.record(currentUser, "DQ_ISSUE_REDISCOVERED", "DQ_ISSUE", existing.get(0), "SUCCESS", "再次发现未关闭质量问题", request);
+            auditService.recordInCurrentTransaction(currentUser, "DQ_ISSUE_REDISCOVERED", "DQ_ISSUE", existing.get(0), "OPEN", "OPEN", "SUCCESS", "再次发现未关闭质量问题", request, keyHash);
             return false;
         }
         long issueId = idGenerator.nextId();
@@ -294,7 +301,7 @@ public class DataQualityService {
                     rule.defaultOwnerRoleCode(),
                     runId,
                     resultId);
-            auditService.record(currentUser, "DQ_ISSUE_CREATED", "DQ_ISSUE", issueId, "SUCCESS", rule.ruleCode(), request);
+            auditService.recordInCurrentTransaction(currentUser, "DQ_ISSUE_CREATED", "DQ_ISSUE", issueId, null, "OPEN", "SUCCESS", rule.ruleCode(), request, keyHash);
             return true;
         } catch (DataIntegrityViolationException exception) {
             List<Long> concurrentExisting = jdbcTemplate.queryForList("""
@@ -304,7 +311,7 @@ public class DataQualityService {
                     """, Long.class, currentUser.enterpriseId(), openIssueKey);
             if (!concurrentExisting.isEmpty()) {
                 jdbcTemplate.update("UPDATE dq_issue SET last_detected_at = CURRENT_TIMESTAMP(3), updated_at = CURRENT_TIMESTAMP(3), version = version + 1 WHERE id = ?", concurrentExisting.get(0));
-                auditService.record(currentUser, "DQ_ISSUE_REDISCOVERED", "DQ_ISSUE", concurrentExisting.get(0), "SUCCESS", "并发检查命中既有质量问题", request);
+                auditService.recordInCurrentTransaction(currentUser, "DQ_ISSUE_REDISCOVERED", "DQ_ISSUE", concurrentExisting.get(0), "OPEN", "OPEN", "SUCCESS", "并发检查命中既有质量问题", request, keyHash);
                 return false;
             }
             throw exception;
@@ -348,8 +355,7 @@ public class DataQualityService {
                 FROM battery
                 WHERE enterprise_id = ?
                   AND (
-                    system_trace_code IS NULL OR TRIM(system_trace_code) = ''
-                    OR battery_type IS NULL OR TRIM(battery_type) = ''
+                    battery_type IS NULL OR TRIM(battery_type) = ''
                     OR battery_chemistry IS NULL OR TRIM(battery_chemistry) = ''
                     OR lifecycle_status IS NULL OR TRIM(lifecycle_status) = ''
                     OR current_responsible_enterprise_id IS NULL
@@ -362,10 +368,18 @@ public class DataQualityService {
     private RuleOutcome dq003(CurrentUser currentUser) {
         int checked = count("SELECT COUNT(*) FROM battery_registration_candidate WHERE enterprise_id = ?", currentUser.enterpriseId());
         List<RuleViolation> violations = jdbcTemplate.query("""
-                SELECT id, original_code
-                FROM battery_registration_candidate
-                WHERE enterprise_id = ? AND candidate_status = 'PENDING_REVIEW'
-                ORDER BY id
+                SELECT c.id, c.original_code, c.candidate_status, r.review_result
+                FROM battery_registration_candidate c
+                LEFT JOIN duplicate_code_review r
+                  ON r.enterprise_id = c.enterprise_id
+                 AND r.candidate_id = c.id
+                WHERE c.enterprise_id = ?
+                  AND (
+                    c.candidate_status = 'PENDING_REVIEW'
+                    OR r.review_result IS NULL
+                    OR r.review_result NOT IN ('SAME_BATTERY', 'DIFFERENT_BATTERY')
+                  )
+                ORDER BY c.id
                 """, (rs, rowNum) -> violation(rs.getLong("id"), String.valueOf(rs.getLong("id")), "存在未完成核实的重复编码候选: " + rs.getString("original_code")), currentUser.enterpriseId());
         return new RuleOutcome(checked, violations);
     }
@@ -375,17 +389,42 @@ public class DataQualityService {
         List<RuleViolation> violations = jdbcTemplate.query("""
                 SELECT ir.id, ir.inbound_no
                 FROM inbound_record ir
+                JOIN battery b ON b.id = ir.battery_id AND b.enterprise_id = ir.enterprise_id
                 WHERE ir.enterprise_id = ?
-                  AND NOT EXISTS (
+                  AND (
+                    ir.inbound_status <> 'EFFECTIVE'
+                    OR b.lifecycle_status <> 'IN_STOCK'
+                    OR NOT EXISTS (
                     SELECT 1
                     FROM acceptance_record ar
                     WHERE ar.enterprise_id = ir.enterprise_id
                       AND ar.battery_id = ir.battery_id
                       AND ar.acceptance_result = 'PASS'
                       AND ar.accepted_at <= ir.inbound_at
+                    )
+                    OR NOT EXISTS (
+                      SELECT 1
+                      FROM lifecycle_event le
+                      WHERE le.enterprise_id = ir.enterprise_id
+                        AND le.battery_id = ir.battery_id
+                        AND le.event_type = 'ACCEPTANCE_PASSED'
+                        AND le.to_status = 'ACCEPTED_PENDING_INBOUND'
+                        AND le.event_result = 'SUCCESS'
+                        AND le.occurred_at <= ir.inbound_at
+                    )
+                    OR NOT EXISTS (
+                      SELECT 1
+                      FROM lifecycle_event le
+                      WHERE le.enterprise_id = ir.enterprise_id
+                        AND le.battery_id = ir.battery_id
+                        AND le.event_type = 'INBOUND_COMPLETED'
+                        AND le.to_status = 'IN_STOCK'
+                        AND le.event_result = 'SUCCESS'
+                        AND le.occurred_at >= ir.inbound_at
+                    )
                   )
                 ORDER BY ir.id
-                """, (rs, rowNum) -> violation(rs.getLong("id"), String.valueOf(rs.getLong("id")), "入库前缺少验收通过事实: " + rs.getString("inbound_no")), currentUser.enterpriseId());
+                """, (rs, rowNum) -> violation(rs.getLong("id"), String.valueOf(rs.getLong("id")), rs.getString("inbound_no"), "入库前缺少验收通过事实: " + rs.getString("inbound_no")), currentUser.enterpriseId());
         return new RuleOutcome(checked, violations);
     }
 
@@ -398,7 +437,7 @@ public class DataQualityService {
                 WHERE ir.enterprise_id = ?
                   AND (wl.id IS NULL OR wl.warehouse_id <> ir.warehouse_id)
                 ORDER BY ir.id
-                """, (rs, rowNum) -> violation(rs.getLong("id"), String.valueOf(rs.getLong("id")), "入库库位不存在或不属于所选仓库: " + rs.getString("inbound_no")), currentUser.enterpriseId());
+                """, (rs, rowNum) -> violation(rs.getLong("id"), String.valueOf(rs.getLong("id")), rs.getString("inbound_no"), "入库库位不存在或不属于所选仓库: " + rs.getString("inbound_no")), currentUser.enterpriseId());
         return new RuleOutcome(checked, violations);
     }
 
@@ -411,6 +450,16 @@ public class DataQualityService {
                   ON later.enterprise_id = earlier.enterprise_id
                  AND later.battery_id = earlier.battery_id
                 WHERE earlier.enterprise_id = ?
+                  AND earlier.event_type IN (
+                    'BATTERY_REGISTERED', 'DUPLICATE_REVIEW_SAME', 'DUPLICATE_REVIEW_DIFFERENT',
+                    'BATCH_SUBMITTED', 'ACCEPTANCE_NEED_SUPPLEMENT', 'ACCEPTANCE_SUPPLEMENTED',
+                    'ACCEPTANCE_PASSED', 'ACCEPTANCE_REJECTED', 'INBOUND_COMPLETED'
+                  )
+                  AND later.event_type IN (
+                    'BATTERY_REGISTERED', 'DUPLICATE_REVIEW_SAME', 'DUPLICATE_REVIEW_DIFFERENT',
+                    'BATCH_SUBMITTED', 'ACCEPTANCE_NEED_SUPPLEMENT', 'ACCEPTANCE_SUPPLEMENTED',
+                    'ACCEPTANCE_PASSED', 'ACCEPTANCE_REJECTED', 'INBOUND_COMPLETED'
+                  )
                   AND CASE earlier.event_type
                         WHEN 'BATTERY_REGISTERED' THEN 10
                         WHEN 'DUPLICATE_REVIEW_SAME' THEN 15
@@ -480,7 +529,7 @@ public class DataQualityService {
         return selected;
     }
 
-    private CheckRunDto createRun(CurrentUser currentUser, String scope, List<String> requestedRuleCodes, List<String> selectedRules, String status, String failureReason) {
+    private CheckRunDto createRun(CurrentUser currentUser, String scope, List<String> requestedRuleCodes, List<String> selectedRules, String status, String failureReason, String traceId) {
         long runId = idGenerator.nextId();
         requiresNew.executeWithoutResult(tx -> jdbcTemplate.update("""
                 INSERT INTO dq_check_run (
@@ -489,7 +538,7 @@ public class DataQualityService {
                   result_summary, failure_reason, started_by, started_at, completed_at, trace_id, version
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP(3),
-                        CASE WHEN ? <> 'RUNNING' THEN CURRENT_TIMESTAMP(3) ELSE NULL END, NULL, 0)
+                        CASE WHEN ? <> 'RUNNING' THEN CURRENT_TIMESTAMP(3) ELSE NULL END, ?, 0)
                 """,
                 runId,
                 currentUser.enterpriseId(),
@@ -502,7 +551,8 @@ public class DataQualityService {
                 json(Map.of("passRuleCount", 0, "violationRuleCount", 0, "newIssueCount", 0, "dedupHitCount", 0)),
                 failureReason,
                 currentUser.id(),
-                status));
+                status,
+                traceId));
         return getCheckRunCommitted(currentUser, runId, null);
     }
 
@@ -510,8 +560,8 @@ public class DataQualityService {
         return requiresNew.execute(status -> getCheckRun(currentUser, runId, servletRequest));
     }
 
-    private void updateRunCompleted(Long runId, ExecutionSummary summary) {
-        requiresNew.executeWithoutResult(tx -> jdbcTemplate.update("""
+    private void updateRunCompletedInCurrentTransaction(Long runId, ExecutionSummary summary) {
+        jdbcTemplate.update("""
                 UPDATE dq_check_run
                 SET run_status = 'COMPLETED',
                     checked_object_count = ?,
@@ -521,7 +571,7 @@ public class DataQualityService {
                     completed_at = CURRENT_TIMESTAMP(3),
                     version = version + 1
                 WHERE id = ?
-                """, summary.checkedObjectCount(), summary.checkedRuleCount(), summary.issueCount(), json(summary.resultSummary()), runId));
+                """, summary.checkedObjectCount(), summary.checkedRuleCount(), summary.issueCount(), json(summary.resultSummary()), runId);
     }
 
     private void updateRunFailed(Long runId, String reason) {
@@ -658,6 +708,12 @@ public class DataQualityService {
     private RuleViolation violation(Long objectId, String identity, String description) {
         String normalizedIdentity = identity == null ? String.valueOf(objectId) : identity.trim();
         return new RuleViolation(objectId, normalizedIdentity, normalizedIdentity, description);
+    }
+
+    private RuleViolation violation(Long objectId, String identity, String objectKey, String description) {
+        String normalizedIdentity = identity == null ? String.valueOf(objectId) : identity.trim();
+        String normalizedKey = objectKey == null || objectKey.isBlank() ? normalizedIdentity : objectKey.trim();
+        return new RuleViolation(objectId, normalizedIdentity, normalizedKey, description);
     }
 
     private String openIssueKey(String ruleCode, String objectType, String objectIdentity) {

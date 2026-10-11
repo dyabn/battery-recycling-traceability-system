@@ -91,10 +91,12 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<ApiErrorResponse> build(HttpStatus status, String code, String message, HttpServletRequest request) {
-        String traceId = request.getHeader("X-Trace-Id");
+        Object existing = request.getAttribute("traceId");
+        String traceId = existing instanceof String value && !value.isBlank() ? value : request.getHeader("X-Trace-Id");
         if (traceId == null || traceId.isBlank()) {
             traceId = UUID.randomUUID().toString();
         }
+        request.setAttribute("traceId", traceId);
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(code, message, traceId, OffsetDateTime.now(), null));
     }

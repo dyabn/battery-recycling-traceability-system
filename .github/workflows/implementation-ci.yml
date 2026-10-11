@@ -107,7 +107,7 @@ jobs:
           errors = int(root.attrib.get("errors", "0"))
           skipped = int(root.attrib.get("skipped", "0"))
           print(f"I5DataQualityDiscoveryIntegrationTest tests={tests} failures={failures} errors={errors} skipped={skipped}")
-          if tests < 4 or failures != 0 or errors != 0 or skipped != 0:
+          if tests < 6 or failures != 0 or errors != 0 or skipped != 0:
               raise SystemExit("I5DataQualityDiscoveryIntegrationTest did not fully execute successfully")
           PY
       - name: Run Flyway V1-V7 migrations on MySQL 8.4
@@ -191,7 +191,7 @@ jobs:
         working-directory: frontend
         run: npm ci
       - name: Validate OpenAPI contracts
-        run: npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contracts/api/openapi-data-governance-v1.1.yaml
+        run: npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contracts/api/openapi-data-governance-v1.1.yaml contracts/api/openapi-data-governance-i5-runtime.yaml
       - name: Run frontend tests
         working-directory: frontend
         run: npm run test

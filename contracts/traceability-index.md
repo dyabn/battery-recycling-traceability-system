@@ -341,7 +341,7 @@
 | DG-TD-005 | 数据字典 | `docs/database/data-governance-v1.1-data-dictionary.md` | 已确认 |
 | DG-TD-006 | 增量 SQL | `contracts/database/data-governance-v1.1-migration.sql` | 已确认 |
 | DG-TD-007 | API 设计 | `docs/api/data-governance-v1.1-api-design.md` | 已确认 |
-| DG-TD-008 | OpenAPI 契约 | `contracts/api/openapi-data-governance-v1.1.yaml` | 已确认 |
+| DG-TD-008 | OpenAPI 契约 | `contracts/api/openapi-data-governance-v1.1.yaml`、`contracts/api/openapi-data-governance-i5-runtime.yaml` | 已确认 |
 | DG-TD-009 | 安全设计 | `docs/security/data-governance-v1.1-security-design.md` | 已确认 |
 | DG-TD-010 | 部署设计 | `docs/deployment/data-governance-v1.1-deployment-design.md` | 已确认 |
 | DG-TD-011 | 技术测试设计 | `docs/testing/data-governance-v1.1-technical-test-design.md` | 已确认 |
@@ -394,17 +394,17 @@
 
 ## I5 数据质量发现实现追踪
 
-当前实现状态：`paused-for-review / 修改后复核`，GitHub Actions MySQL 8.4 已验证 `I5DataQualityDiscoveryIntegrationTest` 实际执行 4 个测试且 `skipped=0`、`failures=0`、`errors=0`。I5 不包含问题分配、整改、复核、关闭、看板、治理审计查询、出库、企业间流转和综合利用。
+当前实现状态：`paused-for-review / 修改后复核`。本轮复核阻断项已进行代码和测试整改，等待当前 HEAD 的 GitHub Actions MySQL 8.4 重新验证 `I5DataQualityDiscoveryIntegrationTest` 实际执行不少于 6 个测试且 `skipped=0`、`failures=0`、`errors=0`。I5 不包含问题分配、整改、复核、关闭、看板、治理审计查询、出库、企业间流转和综合利用。
 
 | I5 范围 | 需求/规则 | API | 后端实现 | 前端实现 | 测试证据 |
 | --- | --- | --- | --- | --- | --- |
 | 固定规则查看 | FR-DG-001、DQ-001..DQ-007 | `GET /api/v1/data-quality/rules` | `DataQualityController`、`DataQualityService.listRules` | `DataQualityRulesView.vue` | `I5DataQualityDiscoveryIntegrationTest.rulesAndV7BackfillAreVisibleAndDoNotOverrideDisabledConfig`、`i5-pages.test.ts` |
 | 保护性规则启停拒绝 | FR-DG-002、FR-DG-003 | `PATCH /api/v1/data-quality/rules/{ruleCode}/status` | `DataQualityService.rejectRuleToggle`、`DataQualityAuditService` | 无启停按钮 | `I5DataQualityDiscoveryIntegrationTest.rulesAndV7BackfillAreVisibleAndDoNotOverrideDisabledConfig` |
-| 手工同步检查 | FR-DG-004..006 | `POST /api/v1/data-quality/check-runs` | `DataQualityService.createCheckRun`、`IdempotencyService` | `DataQualityChecksView.vue` | `I5DataQualityDiscoveryIntegrationTest.manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency`、`validationMissingConfigAndPermissionsAreAudited` |
+| 手工同步检查 | FR-DG-004..006 | `POST /api/v1/data-quality/check-runs` | `DataQualityService.createCheckRun`、`IdempotencyService` | `DataQualityChecksView.vue` | `I5DataQualityDiscoveryIntegrationTest.manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency`、`validationMissingConfigAndPermissionsAreAudited`、`partialWriteFailureRollsBackResultsIssuesAndSuccessAudit` |
 | 检查任务和逐规则结果 | FR-DG-005、FR-DG-007 | `GET /api/v1/data-quality/check-runs/{runId}`、`GET /api/v1/data-quality/check-runs/{runId}/results` | `DataQualityService.getCheckRun`、`listCheckResults` | `DataQualityCheckRunView.vue` | `I5DataQualityDiscoveryIntegrationTest.manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` |
 | DQ-001..DQ-007 处理器 | DQ-001..DQ-007 | 检查任务内部执行 | `DataQualityService.dq001..dq007` | 检查结果页展示 | `I5DataQualityDiscoveryIntegrationTest.manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` |
-| OPEN 问题生成与去重 | FR-DG-007、FR-DG-008 | `GET /api/v1/data-quality/issues`、`GET /api/v1/data-quality/issues/{issueId}` | `dq_issue`、`uk_dq_issue_open`、`DataQualityService.createOrRediscoverIssue` | `DataQualityIssuesView.vue`、`DataQualityIssueDetailView.vue` | `I5DataQualityDiscoveryIntegrationTest.manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency`、`i5-pages.test.ts` |
-| 治理审计、权限和企业隔离 | FR-DG-018、NFR-DG-002、NFR-DG-003 | I5 全部接口 | `DataQualityAuditService`、`GlobalExceptionHandler`、RBAC | 路由权限和菜单 | `I5DataQualityDiscoveryIntegrationTest.validationMissingConfigAndPermissionsAreAudited`、`crossEnterpriseRunsAndIssuesAreRejectedAndAudited` |
+| OPEN 问题生成与去重 | FR-DG-007、FR-DG-008 | `GET /api/v1/data-quality/issues`、`GET /api/v1/data-quality/issues/{issueId}` | `dq_issue`、`uk_dq_issue_open`、`DataQualityService.createOrRediscoverIssue` | `DataQualityIssuesView.vue`、`DataQualityIssueDetailView.vue` | `I5DataQualityDiscoveryIntegrationTest.manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency`、`concurrentChecksDeduplicateOpenIssues`、`i5-pages.test.ts` |
+| 治理审计、权限和企业隔离 | FR-DG-018、NFR-DG-002、NFR-DG-003 | I5 全部接口 | `DataQualityAuditService`、`GlobalExceptionHandler`、RBAC | 路由权限和菜单 | `I5DataQualityDiscoveryIntegrationTest.validationMissingConfigAndPermissionsAreAudited`、`crossEnterpriseRunsAndIssuesAreRejectedAndAudited`、`partialWriteFailureRollsBackResultsIssuesAndSuccessAudit` |
 | 企业规则配置回填 | V1.1 数据治理配置 | Flyway V7 | `V7__backfill_data_governance_rule_configs.sql`、`R__dev_demo_accounts.sql` | 无 | `I5DataQualityDiscoveryIntegrationTest.rulesAndV7BackfillAreVisibleAndDoNotOverrideDisabledConfig` |
 
 ## I5 测试追踪摘要

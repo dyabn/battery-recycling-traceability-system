@@ -47,8 +47,8 @@ function rule(code: string): DataQualityRule {
     handlerCode: `${code}_HANDLER`,
     severity: 'MEDIUM',
     defaultOwnerRoleCode: 'BUSINESS_SUPERVISOR',
-    dataStandardMetadata: {},
-    involvedFields: [],
+    dataStandardMetadata: { standard: `${code} 数据标准` },
+    involvedFields: ['battery.battery_type', 'battery.lifecycle_status'],
     checkCondition: '固定条件',
     remediationGuidance: '处理建议',
     allowExemption: false,
@@ -154,6 +154,10 @@ describe('I5 data quality pages', () => {
     expect(listDataQualityRules).toHaveBeenCalled();
     expect(wrapper.text()).toContain('DQ-001');
     expect(wrapper.text()).toContain('ENABLED');
+    expect(wrapper.text()).toContain('standard: DQ-001 数据标准');
+    expect(wrapper.text()).toContain('battery.battery_type、battery.lifecycle_status');
+    expect(wrapper.text()).toContain('处理建议');
+    expect(wrapper.text()).toContain('否');
   });
 
   it('starts a manual check and navigates to the result page with a string id', async () => {

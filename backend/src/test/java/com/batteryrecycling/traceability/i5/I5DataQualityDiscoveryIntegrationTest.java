@@ -4,8 +4,8 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -15,10 +15,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.batteryrecycling.traceability.common.api.IdGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.Connection;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -61,7 +67,11 @@ class I5DataQualityDiscoveryIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(7))
                 .andExpect(jsonPath("$.data[*].ruleCode", hasItem("DQ-001")))
-                .andExpect(jsonPath("$.data[*].id", everyItem(startsWith(""))))
+                .andExpect(jsonPath("$.data[*].id", everyItem(matchesPattern("^[0-9]+$"))))
+                .andExpect(jsonPath("$.data[*].dataStandardMetadata").exists())
+                .andExpect(jsonPath("$.data[*].involvedFields").exists())
+                .andExpect(jsonPath("$.data[*].remediationGuidance").exists())
+                .andExpect(jsonPath("$.data[*].allowExemption", everyItem(equalTo(false))))
                 .andExpect(jsonPath("$.data[*].enabledStatus", everyItem(equalTo("ENABLED"))));
 
         Assertions.assertThat(configCount(1L)).isEqualTo(7);
@@ -72,10 +82,9 @@ class I5DataQualityDiscoveryIntegrationTest {
                 SET enabled_status = 'DISABLED', toggled_reason = 'test keep disabled'
                 WHERE enterprise_id = 1 AND rule_code = 'DQ-007'
                 """);
-        ScriptUtils.executeSqlScript(
-                jdbcTemplate.getDataSource().getConnection(),
-                new ClassPathResource("db/migration/V7__backfill_data_governance_rule_configs.sql")
-        );
+        try (Connection connection = jdbcTemplate.getDataSource().getConnection()) {
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V7__backfill_data_governance_rule_configs.sql"));
+        }
         Assertions.assertThat(enabledStatus(1L, "DQ-007")).isEqualTo("DISABLED");
         jdbcTemplate.update("UPDATE dq_enterprise_rule_config SET enabled_status = 'ENABLED', toggled_reason = NULL WHERE enterprise_id = 1 AND rule_code = 'DQ-007'");
 
@@ -97,10 +106,12 @@ class I5DataQualityDiscoveryIntegrationTest {
         String supervisorToken = tokenFor("supervisor", "password");
         insertRuleViolationFixtures("MAIN");
 
-        JsonNode firstRun = postCheckRun(supervisorToken, "i5-check-main", """
+        String traceId = "trace-i5-main";
+        JsonNode firstRun = postCheckRun(supervisorToken, "i5-check-main", traceId, """
                 {"runScope":"ALL"}
                 """)
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.traceId").value(traceId))
                 .andExpect(jsonPath("$.data.runStatus").value("COMPLETED"))
                 .andExpect(jsonPath("$.data.executedRuleCodes.length()").value(7))
                 .andExpect(jsonPath("$.data.issueCount", greaterThanOrEqualTo(6)))
@@ -119,6 +130,18 @@ class I5DataQualityDiscoveryIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[*].ruleCode", hasItem("DQ-003")))
                 .andExpect(jsonPath("$.data[*].issueStatus", everyItem(equalTo("OPEN"))));
+        assertRuleIssueCount("DQ-002", 1);
+        assertRuleIssueCount("DQ-003", 1);
+        assertRuleIssueCount("DQ-004", 1);
+        assertRuleIssueCount("DQ-005", 1);
+        assertRuleIssueCount("DQ-006", 1);
+        assertRuleIssueCount("DQ-007", 1);
+        Assertions.assertThat(issueCountForObject("DQ-004", "IB-I5-VALID-MAIN")).isZero();
+        Map<String, Object> createdAudit = latestDqAudit("DQ_ISSUE_CREATED", "SUCCESS");
+        Assertions.assertThat(createdAudit.get("before_state")).isNull();
+        Assertions.assertThat(createdAudit.get("after_state")).isEqualTo("OPEN");
+        Assertions.assertThat(createdAudit.get("trace_id")).isEqualTo(traceId);
+        Assertions.assertThat(createdAudit.get("idempotency_key_hash")).asString().hasSize(64);
 
         JsonNode sameKeyRun = postCheckRun(supervisorToken, "i5-check-main", """
                 {"runScope":"ALL"}
@@ -140,6 +163,9 @@ class I5DataQualityDiscoveryIntegrationTest {
                 .andReturnJson().get("data");
         Assertions.assertThat(secondRun.at("/resultSummary/dedupHitCount").asInt()).isGreaterThanOrEqualTo(6);
         Assertions.assertThat(dqAuditCount("DQ_ISSUE_REDISCOVERED", "SUCCESS")).isGreaterThanOrEqualTo(6);
+        Map<String, Object> rediscoveredAudit = latestDqAudit("DQ_ISSUE_REDISCOVERED", "SUCCESS");
+        Assertions.assertThat(rediscoveredAudit.get("before_state")).isEqualTo("OPEN");
+        Assertions.assertThat(rediscoveredAudit.get("after_state")).isEqualTo("OPEN");
     }
 
     @Test
@@ -173,6 +199,11 @@ class I5DataQualityDiscoveryIntegrationTest {
         Assertions.assertThat(dqAuditCount("DQ_ACCESS_DENIED", "FORBIDDEN")).isGreaterThan(accessDeniedBefore);
         mockMvc.perform(get("/api/v1/data-quality/check-runs/1").header("Authorization", bearer(adminToken)))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/data-quality/check-runs/999999999999").header("Authorization", bearer(supervisorToken)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/data-quality/issues").param("status", "NOT_A_STATUS").header("Authorization", bearer(supervisorToken)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 
         mockMvc.perform(get("/api/v1/data-quality/issues").header("Authorization", bearer(recycleToken)))
                 .andExpect(status().isOk())
@@ -187,6 +218,7 @@ class I5DataQualityDiscoveryIntegrationTest {
                     .andExpect(jsonPath("$.data.runStatus").value("FAILED"))
                     .andReturnJson().get("data");
             Assertions.assertThat(resultCount(failedRun.get("id").asLong())).isZero();
+            Assertions.assertThat(issueCountForRun(failedRun.get("id").asLong())).isZero();
         } finally {
             jdbcTemplate.update("""
                     INSERT INTO dq_enterprise_rule_config (
@@ -222,8 +254,57 @@ class I5DataQualityDiscoveryIntegrationTest {
         Assertions.assertThat(dqAuditCount("DQ_ISSUE_CROSS_ENTERPRISE_DENIED", "FORBIDDEN")).isGreaterThan(issueDeniedBefore);
     }
 
+    @Test
+    void partialWriteFailureRollsBackResultsIssuesAndSuccessAudit() throws Exception {
+        String supervisorToken = tokenFor("supervisor", "password");
+        insertRuleViolationFixtures("ROLLBACK");
+        String originalName = jdbcTemplate.queryForObject("SELECT rule_name FROM dq_rule_definition WHERE rule_code = 'DQ-003'", String.class);
+        String traceId = "trace-i5-rollback";
+        try {
+            jdbcTemplate.update("UPDATE dq_rule_definition SET rule_name = ? WHERE rule_code = 'DQ-003'", "X".repeat(128));
+            JsonNode failedRun = postCheckRun(supervisorToken, "i5-partial-rollback", traceId, """
+                    {"runScope":"BATTERY","requestedRuleCodes":["DQ-002","DQ-003"]}
+                    """)
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.data.runStatus").value("FAILED"))
+                    .andReturnJson().get("data");
+            long runId = failedRun.get("id").asLong();
+            Assertions.assertThat(resultCount(runId)).isZero();
+            Assertions.assertThat(issueCountForRun(runId)).isZero();
+            Assertions.assertThat(dqAuditCountByTrace("DQ_ISSUE_CREATED", traceId)).isZero();
+            Assertions.assertThat(dqAuditCountByTrace("DQ_CHECK_COMPLETED", traceId)).isZero();
+            Assertions.assertThat(dqAuditCountForRun("DQ_CHECK_FAILED", runId)).isGreaterThanOrEqualTo(1);
+        } finally {
+            jdbcTemplate.update("UPDATE dq_rule_definition SET rule_name = ? WHERE rule_code = 'DQ-003'", originalName);
+        }
+    }
+
+    @Test
+    void concurrentChecksDeduplicateOpenIssues() throws Exception {
+        String supervisorToken = tokenFor("supervisor", "password");
+        long batteryId = battery(1L, 3L, "BAT-I5-CONCURRENT", "ORI-I5-CONCURRENT", "REGISTERED", 1L);
+        jdbcTemplate.update("UPDATE battery SET battery_chemistry = '' WHERE id = ?", batteryId);
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            Future<String> first = executor.submit(() -> runConcurrentCheck(supervisorToken, "i5-concurrent-a", ready, start));
+            Future<String> second = executor.submit(() -> runConcurrentCheck(supervisorToken, "i5-concurrent-b", ready, start));
+            Assertions.assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            Assertions.assertThat(List.of(first.get(30, TimeUnit.SECONDS), second.get(30, TimeUnit.SECONDS)))
+                    .containsOnly("COMPLETED", "COMPLETED");
+            Assertions.assertThat(openIssueCount("DQ-002", String.valueOf(batteryId))).isEqualTo(1);
+            Assertions.assertThat(dqAuditCount("DQ_ISSUE_REDISCOVERED", "SUCCESS")).isGreaterThanOrEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
     private void insertRuleViolationFixtures(String suffix) {
-        long blankBattery = battery(1L, 3L, "   ", "ORI-I5-BLANK-" + suffix, "REGISTERED", 1L);
+        long coreMissingBattery = battery(1L, 3L, "BAT-I5-CORE-MISSING-" + suffix, "ORI-I5-CORE-MISSING-" + suffix, "REGISTERED", 1L);
+        jdbcTemplate.update("UPDATE battery SET battery_chemistry = '' WHERE id = ?", coreMissingBattery);
         long candidateId = idGenerator.nextId();
         jdbcTemplate.update("""
                 INSERT INTO battery_registration_candidate (
@@ -236,6 +317,12 @@ class I5DataQualityDiscoveryIntegrationTest {
         long noPassBattery = battery(1L, 4L, "BAT-I5-NOPASS-" + suffix, "ORI-I5-NOPASS-" + suffix, "IN_STOCK", 1L);
         inbound(noPassBattery, WAREHOUSE_A, LOCATION_A, "IB-I5-NOPASS-" + suffix);
 
+        long validInboundBattery = battery(1L, 4L, "BAT-I5-VALID-" + suffix, "ORI-I5-VALID-" + suffix, "IN_STOCK", 1L);
+        acceptancePass(validInboundBattery);
+        lifecycle(validInboundBattery, "ACCEPTANCE_PASSED", "PENDING_ACCEPTANCE", "ACCEPTED_PENDING_INBOUND", LocalDateTime.now().minusMinutes(5));
+        inbound(validInboundBattery, WAREHOUSE_A, LOCATION_A, "IB-I5-VALID-" + suffix);
+        lifecycle(validInboundBattery, "INBOUND_COMPLETED", "ACCEPTED_PENDING_INBOUND", "IN_STOCK", LocalDateTime.now().plusSeconds(1));
+
         long mismatchBattery = battery(1L, 4L, "BAT-I5-MISMATCH-" + suffix, "ORI-I5-MISMATCH-" + suffix, "IN_STOCK", 1L);
         inbound(mismatchBattery, WAREHOUSE_A, LOCATION_A_MISMATCH, "IB-I5-MISMATCH-" + suffix);
 
@@ -246,7 +333,7 @@ class I5DataQualityDiscoveryIntegrationTest {
         long inventoryBattery = battery(1L, 4L, "BAT-I5-INVENTORY-" + suffix, "ORI-I5-INVENTORY-" + suffix, "IN_STOCK", 2L);
         long inboundId = inbound(inventoryBattery, WAREHOUSE_A, LOCATION_A, "IB-I5-INVENTORY-" + suffix);
         inventory(inventoryBattery, inboundId);
-        Assertions.assertThat(blankBattery).isPositive();
+        Assertions.assertThat(coreMissingBattery).isPositive();
     }
 
     private long battery(long enterpriseId, long userId, String traceCode, String originalCode, String lifecycleStatus, long responsibleEnterpriseId) {
@@ -274,6 +361,28 @@ class I5DataQualityDiscoveryIntegrationTest {
         return inboundId;
     }
 
+    private void acceptancePass(long batteryId) {
+        long batchId = idGenerator.nextId();
+        jdbcTemplate.update("""
+                INSERT INTO recycle_batch (
+                  id, enterprise_id, batch_no, source_type, source_enterprise_name,
+                  contact_person, contact_phone, batch_status, created_by, created_at,
+                  updated_by, updated_at, version
+                )
+                VALUES (?, 1, ?, 'SOCIAL_RECYCLE', '测试来源', '测试员', '13800000000',
+                        'COMPLETED', 3, CURRENT_TIMESTAMP(3), 3, CURRENT_TIMESTAMP(3), 0)
+                """, batchId, "RB-I5-" + batchId);
+        jdbcTemplate.update("""
+                INSERT INTO acceptance_record (
+                  id, enterprise_id, battery_id, batch_id, acceptance_result,
+                  identity_check_result, appearance_check_result, document_check_result,
+                  acceptance_note, accepted_by, accepted_at, created_at, version
+                )
+                VALUES (?, 1, ?, ?, 'PASS', 'PASS', 'PASS', 'PASS', NULL, 3,
+                        CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), 0)
+                """, idGenerator.nextId(), batteryId, batchId);
+    }
+
     private void inventory(long batteryId, long inboundId) {
         long inventoryId = idGenerator.nextId();
         jdbcTemplate.update("""
@@ -286,13 +395,17 @@ class I5DataQualityDiscoveryIntegrationTest {
     }
 
     private void lifecycle(long batteryId, String eventType, LocalDateTime occurredAt) {
+        lifecycle(batteryId, eventType, null, null, occurredAt);
+    }
+
+    private void lifecycle(long batteryId, String eventType, String fromStatus, String toStatus, LocalDateTime occurredAt) {
         jdbcTemplate.update("""
                 INSERT INTO lifecycle_event (
                   id, enterprise_id, battery_id, event_type, event_name, from_status, to_status,
                   event_result, operator_user_id, occurred_at
                 )
-                VALUES (?, 1, ?, ?, ?, NULL, NULL, 'SUCCESS', 3, ?)
-                """, idGenerator.nextId(), batteryId, eventType, eventType, occurredAt);
+                VALUES (?, 1, ?, ?, ?, ?, ?, 'SUCCESS', 3, ?)
+                """, idGenerator.nextId(), batteryId, eventType, eventType, fromStatus, toStatus, occurredAt);
     }
 
     private long insertEnterpriseBIssue(long runId) {
@@ -320,6 +433,15 @@ class I5DataQualityDiscoveryIntegrationTest {
         return new JsonResult(mockMvc.perform(post("/api/v1/data-quality/check-runs")
                 .header("Authorization", bearer(token))
                 .header("Idempotency-Key", key)
+                .contentType("application/json")
+                .content(body)));
+    }
+
+    private JsonResult postCheckRun(String token, String key, String traceId, String body) throws Exception {
+        return new JsonResult(mockMvc.perform(post("/api/v1/data-quality/check-runs")
+                .header("Authorization", bearer(token))
+                .header("Idempotency-Key", key)
+                .header("X-Trace-Id", traceId)
                 .contentType("application/json")
                 .content(body)));
     }
@@ -356,6 +478,52 @@ class I5DataQualityDiscoveryIntegrationTest {
 
     private int resultCount(long runId) {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM dq_check_result WHERE run_id = ?", Integer.class, runId);
+    }
+
+    private int issueCountForRun(long runId) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM dq_issue WHERE discovered_run_id = ?", Integer.class, runId);
+    }
+
+    private int dqAuditCountForRun(String actionCode, long runId) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM dq_operation_audit WHERE action_code = ? AND object_id = ?", Integer.class, actionCode, runId);
+    }
+
+    private int dqAuditCountByTrace(String actionCode, String traceId) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM dq_operation_audit WHERE action_code = ? AND trace_id = ?", Integer.class, actionCode, traceId);
+    }
+
+    private void assertRuleIssueCount(String ruleCode, int expectedMinimum) {
+        Assertions.assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM dq_issue WHERE enterprise_id = 1 AND rule_code = ?", Integer.class, ruleCode))
+                .isGreaterThanOrEqualTo(expectedMinimum);
+    }
+
+    private int issueCountForObject(String ruleCode, String objectKey) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM dq_issue WHERE enterprise_id = 1 AND rule_code = ? AND object_key = ?", Integer.class, ruleCode, objectKey);
+    }
+
+    private int openIssueCount(String ruleCode, String objectIdentity) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM dq_issue WHERE enterprise_id = 1 AND rule_code = ? AND object_identity = ? AND issue_status = 'OPEN'", Integer.class, ruleCode, objectIdentity);
+    }
+
+    private Map<String, Object> latestDqAudit(String actionCode, String result) {
+        return jdbcTemplate.queryForMap("""
+                SELECT before_state, after_state, trace_id, idempotency_key_hash
+                FROM dq_operation_audit
+                WHERE action_code = ? AND result = ?
+                ORDER BY operated_at DESC, id DESC
+                LIMIT 1
+                """, actionCode, result);
+    }
+
+    private String runConcurrentCheck(String token, String key, CountDownLatch ready, CountDownLatch start) throws Exception {
+        ready.countDown();
+        Assertions.assertThat(start.await(10, TimeUnit.SECONDS)).isTrue();
+        JsonNode response = postCheckRun(token, key, """
+                {"runScope":"BATTERY","requestedRuleCodes":["DQ-002"]}
+                """)
+                .andExpect(status().isCreated())
+                .andReturnJson();
+        return response.at("/data/runStatus").asText();
     }
 
     private final class JsonResult {

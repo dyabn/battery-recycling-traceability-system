@@ -13,7 +13,23 @@
       <el-table-column prop="severity" label="级别" width="90" />
       <el-table-column prop="defaultOwnerRoleCode" label="责任角色" min-width="150" />
       <el-table-column prop="enabledStatus" label="状态" width="100" />
+      <el-table-column label="数据标准" min-width="220">
+        <template #default="{ row }">
+          {{ formatMetadata(row.dataStandardMetadata) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="涉及字段" min-width="240">
+        <template #default="{ row }">
+          {{ row.involvedFields.join('、') }}
+        </template>
+      </el-table-column>
       <el-table-column prop="checkCondition" label="检查条件" min-width="260" />
+      <el-table-column prop="remediationGuidance" label="整改指导" min-width="260" />
+      <el-table-column label="允许豁免" width="100">
+        <template #default="{ row }">
+          {{ row.allowExemption ? '是' : '否' }}
+        </template>
+      </el-table-column>
     </el-table>
   </section>
 </template>
@@ -26,6 +42,12 @@ import { listDataQualityRules, type DataQualityRule } from '../../api/i2';
 const rules = ref<DataQualityRule[]>([]);
 const loading = ref(false);
 
+function formatMetadata(metadata: Record<string, unknown>) {
+  return Object.entries(metadata || {})
+    .map(([key, value]) => `${key}: ${String(value)}`)
+    .join('；');
+}
+
 async function load() {
   loading.value = true;
   try {
@@ -37,5 +59,5 @@ async function load() {
 
 onMounted(load);
 
-defineExpose({ rules, load });
+defineExpose({ rules, load, formatMetadata });
 </script>

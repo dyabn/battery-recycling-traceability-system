@@ -27,6 +27,7 @@ jobs:
           files = [
               'project-state.yaml',
               'contracts/api/openapi-data-governance-v1.1.yaml',
+              'contracts/api/openapi-data-governance-i5-runtime.yaml',
           ]
           for path in files:
               with pathlib.Path(path).open('r', encoding='utf-8') as fh:
@@ -34,4 +35,4 @@ jobs:
               print(f'YAML_OK {path}')
           PY
       - name: Lint OpenAPI with Redocly
-        run: npx @redocly/cli lint contracts/api/openapi-data-governance-v1.1.yaml
+        run: npx @redocly/cli lint contracts/api/openapi-data-governance-v1.1.yaml contracts/api/openapi-data-governance-i5-runtime.yaml

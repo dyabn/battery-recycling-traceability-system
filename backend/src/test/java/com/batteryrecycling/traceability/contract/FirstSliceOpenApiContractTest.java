@@ -106,10 +106,50 @@ class FirstSliceOpenApiContractTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void i5DataQualityRuntimeContractIsDeclaredInOpenApi() {
+    void dataGovernanceV11DesignBaselineRemainsComplete() {
         java.nio.file.Path contract = java.nio.file.Path.of("contracts/api/openapi-data-governance-v1.1.yaml");
         if (!java.nio.file.Files.exists(contract)) {
             contract = java.nio.file.Path.of("../contracts/api/openapi-data-governance-v1.1.yaml");
+        }
+        try (InputStream input = java.nio.file.Files.newInputStream(contract)) {
+            Map<String, Object> openApi = new Yaml().load(input);
+            Map<String, Object> paths = (Map<String, Object>) openApi.get("paths");
+            Assertions.assertThat(paths).containsKeys(
+                    "/data-quality/rules",
+                    "/data-quality/rules/{ruleCode}/status",
+                    "/data-quality/check-runs",
+                    "/data-quality/check-runs/{runId}",
+                    "/data-quality/check-runs/{runId}/results",
+                    "/data-quality/issues",
+                    "/data-quality/issues/{issueId}",
+                    "/data-quality/issues/{issueId}/assign",
+                    "/data-quality/issues/{issueId}/start-processing",
+                    "/data-quality/issues/{issueId}/remediations",
+                    "/data-quality/issues/{issueId}/rechecks",
+                    "/data-quality/dashboard/summary",
+                    "/data-quality/audit-logs"
+            );
+            Assertions.assertThat(paths).hasSize(13);
+
+            Map<String, Object> checkPost = (Map<String, Object>) ((Map<String, Object>) paths.get("/data-quality/check-runs")).get("post");
+            Map<String, Object> checkResponses = (Map<String, Object>) checkPost.get("responses");
+            Assertions.assertThat(checkResponses).containsKeys("201", "400", "401", "403", "409");
+
+            Map<String, Object> components = (Map<String, Object>) openApi.get("components");
+            Map<String, Object> schemas = (Map<String, Object>) components.get("schemas");
+            Assertions.assertThat(schemas).containsKeys("AssignIssueRequest", "CreateRemediationRequest", "RecheckResponse", "DashboardSummaryResponse", "GovernanceAuditLogListResponse");
+            Assertions.assertThat(schemas).hasSizeGreaterThanOrEqualTo(21);
+        } catch (Exception exception) {
+            throw new AssertionError("Data governance V1.1 design OpenAPI contract could not be parsed", exception);
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void i5DataQualityRuntimeContractIsDeclaredInOpenApi() {
+        java.nio.file.Path contract = java.nio.file.Path.of("contracts/api/openapi-data-governance-i5-runtime.yaml");
+        if (!java.nio.file.Files.exists(contract)) {
+            contract = java.nio.file.Path.of("../contracts/api/openapi-data-governance-i5-runtime.yaml");
         }
         try (InputStream input = java.nio.file.Files.newInputStream(contract)) {
             Map<String, Object> openApi = new Yaml().load(input);

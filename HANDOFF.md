@@ -229,11 +229,12 @@ I5 已按用户确认范围完成本地实现，状态保持 `paused-for-review 
 - 新增 `V7__backfill_data_governance_rule_configs.sql`，为既有企业补齐 DQ-001..DQ-007 配置，不覆盖已有配置；
 - dev profile 的 `R__dev_demo_accounts.sql` 同步做演示企业规则配置幂等初始化；
 - 新增 `DataQualityService`、`DataQualityController`、`DataQualityAuditService`，治理审计写入 `dq_operation_audit`；
-- DQ-001..DQ-007 处理器覆盖重复追溯编码、核心字段空白、未完成重复候选、入库前缺验收通过事实、仓库库位错配、生命周期时间逆序、库存企业与电池责任企业不一致；
+- DQ-001..DQ-007 处理器覆盖重复追溯编码、核心字段空白、未完成重复候选/缺失核实结果、入库前缺验收通过和生命周期事实、仓库库位错配、生命周期时间逆序、库存企业与电池责任企业不一致；
 - 未关闭问题按企业、规则、对象去重，重复检查只更新 `last_detected_at` 并写“再次发现”治理审计；
-- 前端新增质量规则、质量检查、检查结果、质量问题列表和问题详情页面；
-- 数据治理 OpenAPI 收缩为 I5 实际实现的 7 个接口，不再声明 I6/I7 的分配、整改、复核、看板和审计查询接口；
-- CI 工作流新增 `I5DataQualityDiscoveryIntegrationTest` Surefire XML 检查。
+- 检查结果、问题、任务完成和成功审计同事务提交，失败仅独立保留 FAILED 任务和失败审计；
+- 前端新增质量规则、质量检查、检查结果、质量问题列表和问题详情页面，规则页展示完整规则元数据；
+- `contracts/api/openapi-data-governance-v1.1.yaml` 保持完整 V1.1 设计基线，`contracts/api/openapi-data-governance-i5-runtime.yaml` 单独声明 I5 已实现的 7 个运行时接口；
+- CI 工作流新增 `I5DataQualityDiscoveryIntegrationTest` Surefire XML 检查，当前阈值为 tests>=6 且 skipped/failures/errors 均为 0。
 
 新增测试：
 
@@ -245,17 +246,17 @@ I5 已按用户确认范围完成本地实现，状态保持 `paused-for-review 
 - 后端 `mvn -q test` 通过；本地未设置 `RUN_MYSQL_TESTS=true`，MySQL 条件集成测试按环境变量跳过；
 - 前端 Vitest 28 个测试通过；
 - 前端生产构建通过；
-- Redocly 两份 OpenAPI 均通过，保留保护性删除/规则启停接口无 2xx 的语义警告。
+- Redocly 三份 OpenAPI 均通过，当前 4 个 warning 为两个删除保护接口无 2xx、I5 规则启停保护接口无 2xx、完整 V1.1 设计基线保留未使用的 `RecheckId` 组件。
 
 GitHub Actions 验证：
 
 - MySQL 8.4；
 - Flyway V1..V7；
 - `RUN_MYSQL_TESTS=true`；
-- `I5DataQualityDiscoveryIntegrationTest tests>=4 failures=0 errors=0 skipped=0`；
+- `I5DataQualityDiscoveryIntegrationTest tests>=6 failures=0 errors=0 skipped=0`；
 - I1/I2/I3/I4 回归、I5 集成测试、Redocly、前端测试和构建全部通过。
 
-当前已取得验证证据：Implementation CI run `38136505578` 对提交 `ffe84993f04644bf0cb5618fde90b71408dfd401` 通过，`I5DataQualityDiscoveryIntegrationTest` 实际执行 4 个测试，Failures 0、Errors 0、Skipped 0。
+当前旧验证证据 Implementation CI run `38136505578` 只适用于上一轮提交。本轮整改后必须重新取得当前 HEAD 的 GitHub Actions MySQL 8.4 证据。
 
 ## 8. I2 前端修复补充
 
@@ -495,7 +496,7 @@ docs/implementation/i5-data-quality-discovery-verification.md
 I5 状态应为 paused-for-review / 修改后复核。
 ```
 
-6. 复核 I5 对应 GitHub Actions run `38136505578`；确认 MySQL 8.4 下 `I5DataQualityDiscoveryIntegrationTest` 未跳过且全部通过后，再进入人工复核。当前不要启动 I6、出库、企业间流转或综合利用。
+6. 等待并复核本轮整改 HEAD 对应的 GitHub Actions；确认 MySQL 8.4 下 `I5DataQualityDiscoveryIntegrationTest` 至少 6 个测试未跳过且全部通过后，再进入人工复核。当前不要关闭 I5，不要启动 I6、出库、企业间流转或综合利用。
 
 ## 14. 避免重复和接口对不上的提醒
 

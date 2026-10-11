@@ -99,7 +99,11 @@ async function submit() {
       requestedRuleCodes: form.requestedRuleCodes.length ? form.requestedRuleCodes : undefined,
     });
     recentRuns.value = [run, ...recentRuns.value.filter((item) => item.id !== run.id)];
-    ElMessage.success('检查已完成');
+    if (run.runStatus === 'FAILED') {
+      ElMessage.warning('检查执行失败');
+    } else {
+      ElMessage.success('检查已完成');
+    }
     await router.push(`/data-quality/check-runs/${run.id}`);
   } finally {
     submitting.value = false;
