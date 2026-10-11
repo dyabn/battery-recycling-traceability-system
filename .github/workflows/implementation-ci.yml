@@ -91,7 +91,26 @@ jobs:
           if tests < 4 or failures != 0 or errors != 0 or skipped != 0:
               raise SystemExit("I4InboundInventoryIntegrationTest did not fully execute successfully")
           PY
-      - name: Run Flyway V1.0, V1.1, I1 and I2 migrations on MySQL 8.4
+      - name: Verify I5 MySQL integration test executed
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import pathlib
+          import xml.etree.ElementTree as ET
+
+          report = pathlib.Path("target/surefire-reports/TEST-com.batteryrecycling.traceability.i5.I5DataQualityDiscoveryIntegrationTest.xml")
+          if not report.exists():
+              raise SystemExit("Missing I5DataQualityDiscoveryIntegrationTest Surefire XML report")
+          root = ET.parse(report).getroot()
+          tests = int(root.attrib.get("tests", "0"))
+          failures = int(root.attrib.get("failures", "0"))
+          errors = int(root.attrib.get("errors", "0"))
+          skipped = int(root.attrib.get("skipped", "0"))
+          print(f"I5DataQualityDiscoveryIntegrationTest tests={tests} failures={failures} errors={errors} skipped={skipped}")
+          if tests < 4 or failures != 0 or errors != 0 or skipped != 0:
+              raise SystemExit("I5DataQualityDiscoveryIntegrationTest did not fully execute successfully")
+          PY
+      - name: Run Flyway V1-V7 migrations on MySQL 8.4
         working-directory: backend
         run: >
           mvn -B
@@ -171,8 +190,8 @@ jobs:
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
-      - name: Validate first-slice OpenAPI
-        run: npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml
+      - name: Validate OpenAPI contracts
+        run: npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contracts/api/openapi-data-governance-v1.1.yaml
       - name: Run frontend tests
         working-directory: frontend
         run: npm run test

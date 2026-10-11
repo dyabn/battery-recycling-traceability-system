@@ -29,3 +29,20 @@ VALUES
 (10206, 6, (SELECT id FROM sys_role WHERE role_code = 'BUSINESS_SUPERVISOR'), CURRENT_TIMESTAMP(3))
 ON DUPLICATE KEY UPDATE
   id = id;
+
+INSERT INTO dq_enterprise_rule_config (
+  enterprise_id, rule_code, enabled_status, toggled_reason, toggled_by, toggled_at,
+  created_at, updated_at, version
+)
+SELECT e.id, r.rule_code, 'ENABLED', NULL, NULL, NULL,
+       CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), 0
+FROM enterprise e
+CROSS JOIN dq_rule_definition r
+WHERE e.id IN (1, 2)
+  AND r.rule_code IN ('DQ-001','DQ-002','DQ-003','DQ-004','DQ-005','DQ-006','DQ-007')
+  AND NOT EXISTS (
+    SELECT 1
+    FROM dq_enterprise_rule_config c
+    WHERE c.enterprise_id = e.id
+      AND c.rule_code = r.rule_code
+  );

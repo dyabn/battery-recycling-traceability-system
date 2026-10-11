@@ -3,6 +3,7 @@ package com.batteryrecycling.traceability.common.exception;
 import com.batteryrecycling.traceability.audit.AuditService;
 import com.batteryrecycling.traceability.common.api.ApiErrorResponse;
 import com.batteryrecycling.traceability.common.security.CurrentUserService;
+import com.batteryrecycling.traceability.dataquality.DataQualityAuditService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.time.OffsetDateTime;
@@ -19,10 +20,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
     private final AuditService auditService;
     private final CurrentUserService currentUserService;
+    private final DataQualityAuditService dataQualityAuditService;
 
-    public GlobalExceptionHandler(AuditService auditService, CurrentUserService currentUserService) {
+    public GlobalExceptionHandler(AuditService auditService, CurrentUserService currentUserService, DataQualityAuditService dataQualityAuditService) {
         this.auditService = auditService;
         this.currentUserService = currentUserService;
+        this.dataQualityAuditService = dataQualityAuditService;
     }
 
     @ExceptionHandler(ApiException.class)
@@ -42,6 +45,17 @@ public class GlobalExceptionHandler {
                 request.getMethod() + " " + request.getRequestURI(),
                 request
         ));
+        if (isDataQualityPath(request)) {
+            currentUserService.currentUser().ifPresent(user -> dataQualityAuditService.record(
+                    user,
+                    "DQ_REQUEST_VALIDATION_FAILED",
+                    "HTTP_REQUEST",
+                    null,
+                    "FAILED",
+                    request.getMethod() + " " + request.getRequestURI(),
+                    request
+            ));
+        }
         return build(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "请求参数校验失败", request);
     }
 
@@ -57,6 +71,17 @@ public class GlobalExceptionHandler {
                 "没有执行该操作的权限",
                 request
         ));
+        if (isDataQualityPath(request)) {
+            currentUserService.currentUser().ifPresent(user -> dataQualityAuditService.record(
+                    user,
+                    "DQ_ACCESS_DENIED",
+                    "HTTP_REQUEST",
+                    null,
+                    "FORBIDDEN",
+                    request.getMethod() + " " + request.getRequestURI(),
+                    request
+            ));
+        }
         return build(HttpStatus.FORBIDDEN, "FORBIDDEN", "没有执行该操作的权限", request);
     }
 
@@ -72,5 +97,9 @@ public class GlobalExceptionHandler {
         }
         return ResponseEntity.status(status)
                 .body(new ApiErrorResponse(code, message, traceId, OffsetDateTime.now(), null));
+    }
+
+    private boolean isDataQualityPath(HttpServletRequest request) {
+        return request.getRequestURI() != null && request.getRequestURI().startsWith("/api/v1/data-quality");
     }
 }

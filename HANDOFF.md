@@ -26,8 +26,9 @@
 | I2 | 回收批次、电池登记、重复编码核实、加入批次、提交待验收 | 已完成，复核通过 |
 | I3 | 验收、资料补充、验收不通过、入库前置 | 已完成，复核通过 |
 | I4 | 待入库、仓库库位、单块入库、当前库存、入库追溯 | 已完成，复核通过 |
+| I5 | 数据质量规则查看、手工检查、结果与 OPEN 问题发现 | 已完成本地实现，修改后复核 |
 
-重要边界：I2、I3、I4 均已关闭；后续增量未启动。不要启动后续增量，直到用户重新确认范围。
+重要边界：I2、I3、I4 均已关闭；I5 当前停在 `paused-for-review / 修改后复核`，等待 GitHub Actions MySQL 8.4 验证和人工复核。不要关闭 I5，不要启动 I6。
 
 ## 2. 当前仓库与分支
 
@@ -41,6 +42,7 @@
 - I3 当前状态：`completed / 复核通过`。
 - I4 当前状态：`completed / 复核通过`；GitHub Actions run `38053555676` 已验证通过。
 - I4 实现提交：`df9b2de9afabea1032747506335e25b24f210969`。
+- I5 当前状态：`paused-for-review / 修改后复核`，本地实现已完成，CI 验证提交待生成。
 - 测试阶段缺陷修复：后端 Long/long 响应统一序列化为字符串，前端 ID 类型同步为字符串，避免 JavaScript `number` 精度丢失导致详情、编辑保存或加入电池找错对象。
 
 ## 3. 已完成的前置工作
@@ -79,6 +81,7 @@
 - `docs/implementation/i2-batch-battery-registration-verification.md`
 - `docs/implementation/i3-acceptance-verification.md`
 - `docs/implementation/i4-inbound-inventory-verification.md`
+- `docs/implementation/i5-data-quality-discovery-verification.md`
 
 契约与迁移：
 
@@ -211,7 +214,48 @@ CI 已验证：
 - 日志确认 `I4InboundInventoryIntegrationTest tests=4 failures=0 errors=0 skipped=0`；
 - Redocly、后端测试、前端测试、前端构建和 YAML 检查在 CI 中通过。
 
-## 7. I2 前端修复补充
+## 7. I5 当前实现情况
+
+I5 已按用户确认范围完成本地实现，状态保持 `paused-for-review / 修改后复核`，不关闭 I5、不启动 I6。
+
+新增/修改的主要能力：
+
+- `GET /api/v1/data-quality/rules` 查询 DQ-001..DQ-007 固定规则和当前企业启用状态；
+- `PATCH /api/v1/data-quality/rules/{ruleCode}/status` 保留保护性入口，内置角色均拒绝并写治理审计；
+- `POST /api/v1/data-quality/check-runs` 由业务主管手工同步发起检查，必须携带 `Idempotency-Key`；
+- `GET /api/v1/data-quality/check-runs/{runId}` 查询检查任务；
+- `GET /api/v1/data-quality/check-runs/{runId}/results` 查询逐规则结果；
+- `GET /api/v1/data-quality/issues` 和 `GET /api/v1/data-quality/issues/{issueId}` 查询可见质量问题；
+- 新增 `V7__backfill_data_governance_rule_configs.sql`，为既有企业补齐 DQ-001..DQ-007 配置，不覆盖已有配置；
+- dev profile 的 `R__dev_demo_accounts.sql` 同步做演示企业规则配置幂等初始化；
+- 新增 `DataQualityService`、`DataQualityController`、`DataQualityAuditService`，治理审计写入 `dq_operation_audit`；
+- DQ-001..DQ-007 处理器覆盖重复追溯编码、核心字段空白、未完成重复候选、入库前缺验收通过事实、仓库库位错配、生命周期时间逆序、库存企业与电池责任企业不一致；
+- 未关闭问题按企业、规则、对象去重，重复检查只更新 `last_detected_at` 并写“再次发现”治理审计；
+- 前端新增质量规则、质量检查、检查结果、质量问题列表和问题详情页面；
+- 数据治理 OpenAPI 收缩为 I5 实际实现的 7 个接口，不再声明 I6/I7 的分配、整改、复核、看板和审计查询接口；
+- CI 工作流新增 `I5DataQualityDiscoveryIntegrationTest` Surefire XML 检查。
+
+新增测试：
+
+- `backend/src/test/java/com/batteryrecycling/traceability/i5/I5DataQualityDiscoveryIntegrationTest.java`
+- `frontend/src/views/i5-pages.test.ts`
+
+本地已验证：
+
+- 后端 `mvn -q test` 通过；本地未设置 `RUN_MYSQL_TESTS=true`，MySQL 条件集成测试按环境变量跳过；
+- 前端 Vitest 28 个测试通过；
+- 前端生产构建通过；
+- Redocly 两份 OpenAPI 均通过，保留保护性删除/规则启停接口无 2xx 的语义警告。
+
+必须等待 GitHub Actions 验证：
+
+- MySQL 8.4；
+- Flyway V1..V7；
+- `RUN_MYSQL_TESTS=true`；
+- `I5DataQualityDiscoveryIntegrationTest tests>=4 failures=0 errors=0 skipped=0`；
+- I1/I2/I3/I4 回归、I5 集成测试、Redocly、前端测试和构建全部通过。
+
+## 8. I2 前端修复补充
 
 修改文件：
 
@@ -237,7 +281,7 @@ CI 已验证：
 - 增加 Vitest + happy-dom 组件测试，覆盖草稿编辑入口与字段回填。
 - 增加前端 API 测试，覆盖超时后重试复用同一幂等键，以及内容变化生成新键。
 
-## 8. I2 契约与文档修复补充
+## 9. I2 契约与文档修复补充
 
 修改文件：
 
@@ -266,7 +310,7 @@ CI 已验证：
 - `project-state.yaml` 中 I2、I3 和 I4 均已更新为 `completed / 复核通过`；后续增量未启动。
 - `contracts/change-log.md` 增加 `CHG-038`、`CHG-039` 和 I2 最终复核通过记录。
 
-## 9. 验证结果
+## 10. 验证结果
 
 本地已执行并通过：
 
@@ -328,7 +372,7 @@ I3 最新通过的 GitHub Actions：
 - 验证提交：`6fee83009925d4fdec505c7f2dfbaeb5b7755425`
 - 已验证 MySQL 8.4、Flyway V1..V6、RUN_MYSQL_TESTS=true、I1/I2/I3 集成测试、Redocly、前端测试和构建。
 
-## 10. 评审包
+## 11. 评审包
 
 本轮 I4 评审包重新生成在仓库根目录，文件名为：
 
@@ -338,7 +382,7 @@ D:\ruanjiankaifajishu\battery-recycling-traceability-system\i4-inbound-inventory
 
 该包由当前 HEAD 生成，重新打包时应排除所有旧版 ZIP 和原型 ZIP，避免评审材料混淆。旧 I2/I3 评审包如仍存在，仅代表对应增量收口材料，不应用作 I4 复核材料。
 
-I2 旧包路径：
+I4 最终评审包路径：
 
 ```text
 D:\ruanjiankaifajishu\battery-recycling-traceability-system\i4-inbound-inventory-review.zip
@@ -369,9 +413,9 @@ git rev-parse HEAD
 6fee83009925d4fdec505c7f2dfbaeb5b7755425
 ```
 
-## 11. 当前停在什么位置
+## 12. 当前停在什么位置
 
-当前停在：I4 已完成最终复核并关闭，后续增量未启动。
+当前停在：I5 数据质量检查与问题发现已完成本地实现，等待 GitHub Actions MySQL 8.4 验证和人工复核。
 
 当前状态应保持：
 
@@ -393,11 +437,15 @@ implementation_progress:
       status: completed
       review_result: 复核通过
       I4_started: true
+    I5:
+      status: paused-for-review
+      review_result: 修改后复核
+      I5_started: true
 ```
 
-I4 已关闭。不要启动后续增量，不要合并到 `main`，不要修改 Flyway V1-V6。
+I5 未关闭。不要启动 I6，不要合并到 `main`，不要修改 Flyway V1-V6。
 
-## 12. 下一步应该做什么
+## 13. 下一步应该做什么
 
 新会话开始后建议按顺序执行：
 
@@ -423,9 +471,16 @@ docs/implementation/i4-inbound-inventory-verification.md
 I4 状态应为 completed / 复核通过。
 ```
 
-5. 后续增量启动前必须重新确认范围；当前不要启动数据治理闭环、出库、企业间流转或综合利用。
+5. 核对 I5 验证记录：
 
-## 13. 避免重复和接口对不上的提醒
+```text
+docs/implementation/i5-data-quality-discovery-verification.md
+I5 状态应为 paused-for-review / 修改后复核。
+```
+
+6. 等待或查询 I5 对应 GitHub Actions；确认 MySQL 8.4 下 `I5DataQualityDiscoveryIntegrationTest` 未跳过且全部通过后，再进入人工复核。当前不要启动 I6、出库、企业间流转或综合利用。
+
+## 14. 避免重复和接口对不上的提醒
 
 - 不要重新设计 C1-C4、技术设计 V1.0 或数据治理 V1.1；这些都已经确认。
 - 不要修改 V1 到 V6 历史迁移。
@@ -433,7 +488,7 @@ I4 状态应为 completed / 复核通过。
 - 后端权限是最终裁决点，前端权限隐藏只是体验优化。
 - 所有写接口必须保留 `Idempotency-Key`。
 - 企业 ID 必须来自 JWT/当前用户上下文，不能由请求体或查询参数决定。
-- 当前 I4 只实现真实入库与当前库存，不实现数据治理闭环、出库、企业间流转或综合利用。
+- 当前 I5 只实现数据质量问题发现，不实现问题分配、整改、复核、关闭、看板、治理审计查询、出库、企业间流转或综合利用。
 - 前后端交互中的后端 Long ID 必须按字符串处理，不要在前端使用 `Number(route.params.id)` 或 `number` 类型接收业务 ID。
 - 如果要继续开发，优先读取：
   - `project-state.yaml`

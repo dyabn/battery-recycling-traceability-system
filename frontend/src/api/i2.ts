@@ -194,6 +194,82 @@ export interface InventoryItem {
   inboundAt: string;
 }
 
+export interface DataQualityRule {
+  id: ApiId;
+  ruleCode: string;
+  ruleName: string;
+  dimension: string;
+  objectType: string;
+  handlerCode: string;
+  severity: string;
+  defaultOwnerRoleCode: string;
+  dataStandardMetadata: Record<string, unknown>;
+  involvedFields: string[];
+  checkCondition: string;
+  remediationGuidance: string;
+  allowExemption: boolean;
+  ruleStatus: string;
+  enabledStatus: 'ENABLED' | 'DISABLED';
+}
+
+export interface DataQualityCheckRun {
+  id: ApiId;
+  enterpriseId: ApiId;
+  runNo: string;
+  runScope: string;
+  runStatus: 'RUNNING' | 'COMPLETED' | 'FAILED';
+  requestedRuleCodes: string[];
+  executedRuleCodes: string[];
+  checkedObjectCount: number;
+  checkedRuleCount: number;
+  issueCount: number;
+  resultSummary: {
+    passRuleCount?: number;
+    violationRuleCount?: number;
+    newIssueCount?: number;
+    dedupHitCount?: number;
+  };
+  failureReason?: string | null;
+  startedBy: ApiId;
+  startedAt: string;
+  completedAt?: string | null;
+}
+
+export interface DataQualityCheckResult {
+  id: ApiId;
+  enterpriseId: ApiId;
+  runId: ApiId;
+  ruleCode: string;
+  checkStatus: 'PASS' | 'VIOLATION' | 'SKIPPED' | 'ERROR';
+  checkedObjectCount: number;
+  violationCount: number;
+  ruleSnapshot: Record<string, unknown>;
+  startedAt: string;
+  completedAt?: string | null;
+  errorMessage?: string | null;
+}
+
+export interface DataQualityIssue {
+  id: ApiId;
+  enterpriseId: ApiId;
+  issueNo: string;
+  ruleCode: string;
+  objectType: string;
+  objectId?: ApiId | null;
+  objectIdentity: string;
+  objectKey: string;
+  title: string;
+  description: string;
+  severity: string;
+  ownerRoleCode: string;
+  issueStatus: string;
+  assignedToUserId?: ApiId | null;
+  discoveredRunId: ApiId;
+  discoveredResultId: ApiId;
+  firstDetectedAt: string;
+  lastDetectedAt: string;
+}
+
 function normalizeForFingerprint(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(normalizeForFingerprint);
@@ -369,5 +445,37 @@ export async function createInbound(batteryId: ApiId, payload: InboundPayload, k
 
 export async function listInventory(systemTraceCode?: string) {
   const response = await http.get<ApiEnvelope<InventoryItem[]>>('/inventory', { params: { systemTraceCode: systemTraceCode || undefined } });
+  return response.data.data;
+}
+
+export async function listDataQualityRules() {
+  const response = await http.get<ApiEnvelope<DataQualityRule[]>>('/data-quality/rules');
+  return response.data.data;
+}
+
+export async function createDataQualityCheckRun(payload: { runScope: string; requestedRuleCodes?: string[] }, key?: string) {
+  return withIdempotency('CREATE_DQ_CHECK_RUN', fingerprint(payload), async (idempotencyKeyValue) => {
+    const response = await http.post<ApiEnvelope<DataQualityCheckRun>>('/data-quality/check-runs', payload, { headers: { 'Idempotency-Key': idempotencyKeyValue } });
+    return response.data.data;
+  }, key);
+}
+
+export async function getDataQualityCheckRun(runId: ApiId) {
+  const response = await http.get<ApiEnvelope<DataQualityCheckRun>>(`/data-quality/check-runs/${runId}`);
+  return response.data.data;
+}
+
+export async function listDataQualityCheckResults(runId: ApiId) {
+  const response = await http.get<ApiEnvelope<DataQualityCheckResult[]>>(`/data-quality/check-runs/${runId}/results`);
+  return response.data.data;
+}
+
+export async function listDataQualityIssues(status?: string) {
+  const response = await http.get<ApiEnvelope<DataQualityIssue[]>>('/data-quality/issues', { params: { status: status || undefined } });
+  return response.data.data;
+}
+
+export async function getDataQualityIssue(issueId: ApiId) {
+  const response = await http.get<ApiEnvelope<DataQualityIssue>>(`/data-quality/issues/${issueId}`);
   return response.data.data;
 }

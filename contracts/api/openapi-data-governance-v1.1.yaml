@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: Battery Recycling Traceability Data Governance API
-  version: 1.1.0
-  description: Data governance V1.1 technical design contract. Design artifact only.
+  title: Battery Recycling Traceability Data Quality Discovery API
+  version: 1.1.0-i5
+  description: I5 data quality discovery runtime contract. Remediation, dashboard, audit-query and workflow APIs are intentionally out of scope.
   license:
     name: Course Project Internal Use
 servers:
@@ -11,49 +11,34 @@ security:
   - BearerAuth: []
 tags:
   - name: DataQualityRules
-    description: Fixed rule definition and enterprise-level rule toggle APIs.
+    description: Fixed rule definitions and current enterprise enablement.
   - name: DataQualityChecks
-    description: Manual quality check run and check result APIs.
+    description: Synchronous manual check runs and per-rule results.
   - name: DataQualityIssues
-    description: Quality issue workflow, remediation, and recheck APIs.
-  - name: DataQualityDashboard
-    description: Current-enterprise data quality dashboard APIs.
-  - name: DataQualityAudit
-    description: Current-enterprise data governance audit query APIs.
+    description: Open quality issue discovery and read-only details.
 paths:
   /data-quality/rules:
     get:
       tags: [DataQualityRules]
       operationId: listDataQualityRules
-      summary: List fixed data quality rules and current enterprise configuration.
-      parameters:
-        - $ref: '#/components/parameters/Authorization'
+      summary: List fixed data quality rules.
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RuleListResponse'
+                $ref: '#/components/schemas/RuleListEnvelope'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-      x-traceability:
-        permission: dq:rule:read
-        fr: [FR-DG-001]
-        ac: [AC-DG-001]
-        tc: [TC-DG-001]
-        ui: [UI-DG-001]
-        db: [dq_rule_definition, dq_enterprise_rule_config]
-        module: MOD-DQ-RULE
   /data-quality/rules/{ruleCode}/status:
     patch:
       tags: [DataQualityRules]
       operationId: toggleDataQualityRuleStatus
-      summary: Enable or disable a fixed rule for the current enterprise.
+      summary: Reject rule enablement changes in I5.
       parameters:
-        - $ref: '#/components/parameters/Authorization'
-        - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/RuleCode'
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -61,31 +46,16 @@ paths:
             schema:
               $ref: '#/components/schemas/ToggleRuleStatusRequest'
       responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RuleResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
-      x-traceability:
-        permission: dq:rule:toggle
-        fr: [FR-DG-002, FR-DG-003, FR-DG-018]
-        ac: [AC-DG-002, AC-DG-003]
-        tc: [TC-DG-002, TC-DG-003, TC-DG-027, TC-DG-029]
-        ui: [UI-DG-001]
-        db: [dq_enterprise_rule_config, dq_operation_audit, idempotency_record]
-        module: MOD-DQ-RULE
   /data-quality/check-runs:
     post:
       tags: [DataQualityChecks]
       operationId: createDataQualityCheckRun
-      summary: Start a manual data quality check run.
+      summary: Create and execute a data quality check run.
       parameters:
-        - $ref: '#/components/parameters/Authorization'
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
@@ -99,26 +69,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CheckRunResponse'
+                $ref: '#/components/schemas/CheckRunEnvelope'
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
-      x-traceability:
-        permission: dq:check:execute
-        fr: [FR-DG-004, FR-DG-005, FR-DG-006, FR-DG-007, FR-DG-008, FR-DG-018]
-        ac: [AC-DG-004, AC-DG-005, AC-DG-006, AC-DG-007, AC-DG-008]
-        tc: [TC-DG-004, TC-DG-005, TC-DG-006, TC-DG-007, TC-DG-008, TC-DG-022, TC-DG-027]
-        ui: [UI-DG-002, UI-DG-003]
-        db: [dq_check_run, dq_check_result, dq_issue, dq_operation_audit, idempotency_record]
-        module: MOD-DQ-CHECK
   /data-quality/check-runs/{runId}:
     get:
       tags: [DataQualityChecks]
       operationId: getDataQualityCheckRun
-      summary: Get a check run.
+      summary: Get a data quality check run.
       parameters:
-        - $ref: '#/components/parameters/Authorization'
         - $ref: '#/components/parameters/RunId'
       responses:
         '200':
@@ -126,25 +87,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CheckRunResponse'
+                $ref: '#/components/schemas/CheckRunEnvelope'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
-      x-traceability:
-        permission: dq:check:read
-        fr: [FR-DG-005]
-        ac: [AC-DG-004]
-        tc: [TC-DG-004, TC-DG-028]
-        ui: [UI-DG-003]
-        db: [dq_check_run]
-        module: MOD-DQ-CHECK
   /data-quality/check-runs/{runId}/results:
     get:
       tags: [DataQualityChecks]
       operationId: listDataQualityCheckResults
-      summary: List check results for a run.
+      summary: List results for a data quality check run.
       parameters:
-        - $ref: '#/components/parameters/Authorization'
         - $ref: '#/components/parameters/RunId'
       responses:
         '200':
@@ -152,25 +104,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CheckResultListResponse'
+                $ref: '#/components/schemas/CheckResultListEnvelope'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
-      x-traceability:
-        permission: dq:check:read
-        fr: [FR-DG-007, FR-DG-008]
-        ac: [AC-DG-007, AC-DG-008]
-        tc: [TC-DG-007, TC-DG-008, TC-DG-028]
-        ui: [UI-DG-003]
-        db: [dq_check_result, dq_issue]
-        module: MOD-DQ-CHECK
   /data-quality/issues:
     get:
       tags: [DataQualityIssues]
       operationId: listDataQualityIssues
-      summary: List data quality issues for current enterprise.
+      summary: List visible data quality issues.
       parameters:
-        - $ref: '#/components/parameters/Authorization'
         - name: status
           in: query
           required: false
@@ -182,24 +125,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IssueListResponse'
+                $ref: '#/components/schemas/IssueListEnvelope'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-      x-traceability:
-        permission: dq:issue:read
-        fr: [FR-DG-007, FR-DG-008]
-        ac: [AC-DG-007, AC-DG-008, AC-DG-016]
-        tc: [TC-DG-007, TC-DG-008, TC-DG-025, TC-DG-028]
-        ui: [UI-DG-004]
-        db: [dq_issue]
-        module: MOD-DQ-ISSUE
   /data-quality/issues/{issueId}:
     get:
       tags: [DataQualityIssues]
       operationId: getDataQualityIssue
-      summary: Get issue details.
+      summary: Get visible data quality issue details.
       parameters:
-        - $ref: '#/components/parameters/Authorization'
         - $ref: '#/components/parameters/IssueId'
       responses:
         '200':
@@ -207,239 +141,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IssueResponse'
+                $ref: '#/components/schemas/IssueEnvelope'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
-      x-traceability:
-        permission: dq:issue:read
-        fr: [FR-DG-007, FR-DG-018]
-        ac: [AC-DG-007, AC-DG-016]
-        tc: [TC-DG-025, TC-DG-028]
-        ui: [UI-DG-005]
-        db: [dq_issue, dq_remediation, dq_recheck]
-        module: MOD-DQ-ISSUE
-  /data-quality/issues/{issueId}/assign:
-    post:
-      tags: [DataQualityIssues]
-      operationId: assignDataQualityIssue
-      summary: Assign an open issue.
-      parameters:
-        - $ref: '#/components/parameters/Authorization'
-        - $ref: '#/components/parameters/IdempotencyKey'
-        - $ref: '#/components/parameters/IssueId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AssignIssueRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IssueResponse'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-      x-traceability:
-        permission: dq:issue:assign
-        fr: [FR-DG-009, FR-DG-010, FR-DG-018]
-        ac: [AC-DG-009]
-        tc: [TC-DG-009, TC-DG-031]
-        ui: [UI-DG-005]
-        db: [dq_issue, dq_operation_audit, idempotency_record]
-        module: MOD-DQ-ISSUE
-  /data-quality/issues/{issueId}/start-processing:
-    post:
-      tags: [DataQualityIssues]
-      operationId: startProcessingDataQualityIssue
-      summary: Start processing an assigned issue.
-      parameters:
-        - $ref: '#/components/parameters/Authorization'
-        - $ref: '#/components/parameters/IdempotencyKey'
-        - $ref: '#/components/parameters/IssueId'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IssueResponse'
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-      x-traceability:
-        permission: dq:issue:process
-        fr: [FR-DG-010, FR-DG-011, FR-DG-013, FR-DG-018]
-        ac: [AC-DG-010, AC-DG-011, AC-DG-016]
-        tc: [TC-DG-010, TC-DG-012, TC-DG-013, TC-DG-031]
-        ui: [UI-DG-005]
-        db: [dq_issue, dq_operation_audit, idempotency_record]
-        module: MOD-DQ-ISSUE
-  /data-quality/issues/{issueId}/remediations:
-    post:
-      tags: [DataQualityIssues]
-      operationId: createDataQualityRemediation
-      summary: Submit remediation evidence for an issue.
-      parameters:
-        - $ref: '#/components/parameters/Authorization'
-        - $ref: '#/components/parameters/IdempotencyKey'
-        - $ref: '#/components/parameters/IssueId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateRemediationRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IssueResponse'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-      x-traceability:
-        permission: dq:issue:process
-        fr: [FR-DG-010, FR-DG-012, FR-DG-013, FR-DG-018]
-        ac: [AC-DG-010, AC-DG-011]
-        tc: [TC-DG-011, TC-DG-014, TC-DG-026]
-        ui: [UI-DG-007]
-        db: [dq_issue, dq_remediation, business_attachment, dq_operation_audit, idempotency_record]
-        module: MOD-DQ-REMEDIATION
-  /data-quality/issues/{issueId}/rechecks:
-    post:
-      tags: [DataQualityIssues]
-      operationId: createDataQualityRecheck
-      summary: Execute machine recheck with the original rule and original object.
-      parameters:
-        - $ref: '#/components/parameters/Authorization'
-        - $ref: '#/components/parameters/IdempotencyKey'
-        - $ref: '#/components/parameters/IssueId'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RecheckResponse'
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-      x-traceability:
-        permission: dq:issue:recheck
-        fr: [FR-DG-010, FR-DG-014, FR-DG-018]
-        ac: [AC-DG-012, AC-DG-014, AC-DG-016]
-        tc: [TC-DG-015, TC-DG-018, TC-DG-030, TC-DG-031]
-        ui: [UI-DG-005]
-        db: [dq_issue, dq_recheck, dq_check_run, dq_check_result, dq_operation_audit, idempotency_record]
-        module: MOD-DQ-RECHECK
-  /data-quality/dashboard/summary:
-    get:
-      tags: [DataQualityDashboard]
-      operationId: getDataQualityDashboardSummary
-      summary: Get current enterprise quality dashboard summary.
-      parameters:
-        - $ref: '#/components/parameters/Authorization'
-        - name: days
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 90
-            default: 30
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DashboardSummaryResponse'
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-      x-traceability:
-        permission: dq:dashboard:read
-        fr: [FR-DG-017]
-        ac: [AC-DG-015]
-        tc: [TC-DG-021, TC-DG-028]
-        ui: [UI-DG-008]
-        db: [dq_enterprise_rule_config, dq_check_run, dq_issue]
-        module: MOD-DQ-DASHBOARD
-  /data-quality/audit-logs:
-    get:
-      tags: [DataQualityAudit]
-      operationId: listDataQualityAuditLogs
-      summary: List current-enterprise data governance audit logs.
-      parameters:
-        - $ref: '#/components/parameters/Authorization'
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-        - name: size
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: actionCode
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: objectType
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: result
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [SUCCESS, FAILED, FORBIDDEN, CONFLICT]
-        - name: operatedFrom
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date-time
-        - name: operatedTo
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date-time
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GovernanceAuditLogListResponse'
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-      x-traceability:
-        permission: dq:audit:read
-        fr: [FR-DG-018]
-        ac: [AC-DG-016]
-        tc: [TC-DG-023, TC-DG-024, TC-DG-025, TC-DG-037, TC-DG-038]
-        ui: [UI-DG-008]
-        db: [dq_operation_audit]
-        module: MOD-DQ-AUDIT
 components:
   securitySchemes:
     BearerAuth:
@@ -447,12 +152,6 @@ components:
       scheme: bearer
       bearerFormat: JWT
   parameters:
-    Authorization:
-      name: Authorization
-      in: header
-      required: true
-      schema:
-        type: string
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -473,22 +172,13 @@ components:
       in: path
       required: true
       schema:
-        type: integer
-        format: int64
+        $ref: '#/components/schemas/LongId'
     IssueId:
       name: issueId
       in: path
       required: true
       schema:
-        type: integer
-        format: int64
-    RecheckId:
-      name: recheckId
-      in: path
-      required: true
-      schema:
-        type: integer
-        format: int64
+        $ref: '#/components/schemas/LongId'
   responses:
     BadRequest:
       description: Validation failed.
@@ -521,12 +211,28 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
   schemas:
+    LongId:
+      type: string
+      pattern: '^[0-9]+$'
+    ApiEnvelopeBase:
+      type: object
+      required: [code, message, traceId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        traceId: { type: string }
     ErrorResponse:
       type: object
-      required: [code, message]
+      required: [code, message, traceId, timestamp]
       properties:
         code: { type: string }
         message: { type: string }
+        traceId: { type: string }
+        timestamp: { type: string, format: date-time }
+        details:
+          type: object
+          additionalProperties: true
+          nullable: true
     EnabledStatus:
       type: string
       enum: [ENABLED, DISABLED]
@@ -535,9 +241,10 @@ components:
       enum: [OPEN, ASSIGNED, PROCESSING, SUBMITTED, RECHECKING, REJECTED, CLOSED]
     Rule:
       type: object
-      required: [ruleCode, ruleName, dimension, objectType, handlerCode, severity, defaultOwnerRoleCode, dataStandardMetadata, involvedFields, checkCondition, remediationGuidance, allowExemption, enabledStatus]
+      required: [id, ruleCode, ruleName, dimension, objectType, handlerCode, severity, defaultOwnerRoleCode, dataStandardMetadata, involvedFields, checkCondition, remediationGuidance, allowExemption, ruleStatus, enabledStatus]
       properties:
-        ruleCode: { type: string }
+        id: { $ref: '#/components/schemas/LongId' }
+        ruleCode: { type: string, enum: [DQ-001, DQ-002, DQ-003, DQ-004, DQ-005, DQ-006, DQ-007] }
         ruleName: { type: string }
         dimension: { type: string }
         objectType: { type: string }
@@ -553,22 +260,9 @@ components:
         checkCondition: { type: string }
         remediationGuidance: { type: string }
         allowExemption: { type: boolean, enum: [false] }
+        ruleStatus: { type: string, enum: [ACTIVE, RETIRED] }
         enabledStatus:
           $ref: '#/components/schemas/EnabledStatus'
-    RuleListResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Rule'
-    RuleResponse:
-      type: object
-      required: [item]
-      properties:
-        item:
-          $ref: '#/components/schemas/Rule'
     ToggleRuleStatusRequest:
       type: object
       required: [enabledStatus, reason]
@@ -588,57 +282,74 @@ components:
           enum: [ALL, BATTERY, INBOUND, INVENTORY, TRACE]
         requestedRuleCodes:
           type: array
-          items: { type: string }
+          items:
+            type: string
+            enum: [DQ-001, DQ-002, DQ-003, DQ-004, DQ-005, DQ-006, DQ-007]
     CheckRun:
       type: object
-      required: [id, runNo, runScope, runStatus, executedRuleCodes, checkedObjectCount, checkedRuleCount, issueCount, startedAt]
+      required: [id, enterpriseId, runNo, runScope, runStatus, requestedRuleCodes, executedRuleCodes, checkedObjectCount, checkedRuleCount, issueCount, resultSummary, startedBy, startedAt]
       properties:
-        id: { type: integer, format: int64 }
+        id: { $ref: '#/components/schemas/LongId' }
+        enterpriseId: { $ref: '#/components/schemas/LongId' }
         runNo: { type: string }
-        runScope: { type: string }
+        runScope: { type: string, enum: [ALL, BATTERY, INBOUND, INVENTORY, TRACE] }
         runStatus: { type: string, enum: [RUNNING, COMPLETED, FAILED] }
+        requestedRuleCodes:
+          type: array
+          items: { type: string }
         executedRuleCodes:
           type: array
           items: { type: string }
         checkedObjectCount: { type: integer }
         checkedRuleCount: { type: integer }
         issueCount: { type: integer }
-        failureReason: { type: string }
+        resultSummary:
+          type: object
+          additionalProperties: true
+        failureReason:
+          type: string
+          nullable: true
+        startedBy: { $ref: '#/components/schemas/LongId' }
         startedAt: { type: string, format: date-time }
-        completedAt: { type: string, format: date-time }
-    CheckRunResponse:
-      type: object
-      required: [item]
-      properties:
-        item:
-          $ref: '#/components/schemas/CheckRun'
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
     CheckResult:
       type: object
-      required: [id, ruleCode, checkStatus, checkedObjectCount, violationCount]
+      required: [id, enterpriseId, runId, ruleCode, checkStatus, checkedObjectCount, violationCount, ruleSnapshot, startedAt]
       properties:
-        id: { type: integer, format: int64 }
+        id: { $ref: '#/components/schemas/LongId' }
+        enterpriseId: { $ref: '#/components/schemas/LongId' }
+        runId: { $ref: '#/components/schemas/LongId' }
         ruleCode: { type: string }
         checkStatus: { type: string, enum: [PASS, VIOLATION, SKIPPED, ERROR] }
         checkedObjectCount: { type: integer }
         violationCount: { type: integer }
-        errorMessage: { type: string }
-    CheckResultListResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/CheckResult'
+        ruleSnapshot:
+          type: object
+          additionalProperties: true
+        startedAt: { type: string, format: date-time }
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
     Issue:
       type: object
-      required: [id, issueNo, ruleCode, objectType, objectIdentity, objectKey, title, severity, ownerRoleCode, issueStatus]
+      required: [id, enterpriseId, issueNo, ruleCode, objectType, objectIdentity, objectKey, title, description, severity, ownerRoleCode, issueStatus, discoveredRunId, discoveredResultId, firstDetectedAt, lastDetectedAt]
       properties:
-        id: { type: integer, format: int64 }
+        id: { $ref: '#/components/schemas/LongId' }
+        enterpriseId: { $ref: '#/components/schemas/LongId' }
         issueNo: { type: string }
         ruleCode: { type: string }
         objectType: { type: string }
-        objectId: { type: integer, format: int64 }
+        objectId:
+          type: string
+          pattern: '^[0-9]+$'
+          nullable: true
         objectIdentity: { type: string }
         objectKey: { type: string }
         title: { type: string }
@@ -649,85 +360,57 @@ components:
           enum: [BUSINESS_SUPERVISOR, RECYCLE_OPERATOR, WAREHOUSE_ADMIN, SYSTEM_ADMIN]
         issueStatus:
           $ref: '#/components/schemas/IssueStatus'
-        assignedToUserId: { type: integer, format: int64 }
+        assignedToUserId:
+          type: string
+          pattern: '^[0-9]+$'
+          nullable: true
+        discoveredRunId: { $ref: '#/components/schemas/LongId' }
+        discoveredResultId: { $ref: '#/components/schemas/LongId' }
         firstDetectedAt: { type: string, format: date-time }
         lastDetectedAt: { type: string, format: date-time }
-    IssueListResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Issue'
-    IssueResponse:
-      type: object
-      required: [item]
-      properties:
-        item:
-          $ref: '#/components/schemas/Issue'
-    AssignIssueRequest:
-      type: object
-      required: [assignedToUserId, reason]
-      properties:
-        assignedToUserId: { type: integer, format: int64 }
-        reason: { type: string, minLength: 1, maxLength: 512 }
-    CreateRemediationRequest:
-      type: object
-      required: [remediationNote]
-      anyOf:
-        - required: [evidenceAttachmentId]
-        - required: [correctionObjectType, correctionObjectId]
-      properties:
-        remediationNote: { type: string, minLength: 1, maxLength: 1000 }
-        evidenceAttachmentId: { type: integer, format: int64 }
-        correctionObjectType: { type: string }
-        correctionObjectId: { type: integer, format: int64 }
-    RecheckResponse:
-      type: object
-      required: [id, issueId, recheckStatus, linkedCheckRunId, linkedCheckResultId, result]
-      properties:
-        id: { type: integer, format: int64 }
-        issueId: { type: integer, format: int64 }
-        recheckStatus: { type: string, enum: [PASSED, FAILED] }
-        linkedCheckRunId: { type: integer, format: int64 }
-        linkedCheckResultId: { type: integer, format: int64 }
-        result: { type: string, enum: [PASSED, FAILED] }
-        resultReason: { type: string }
-    GovernanceAuditLog:
-      type: object
-      required: [id, actionCode, objectType, result, operatedAt]
-      properties:
-        id: { type: integer, format: int64 }
-        actionCode: { type: string }
-        objectType: { type: string }
-        objectId: { type: integer, format: int64 }
-        beforeState: { type: string }
-        afterState: { type: string }
-        result: { type: string, enum: [SUCCESS, FAILED, FORBIDDEN, CONFLICT] }
-        reason: { type: string }
-        operatedBy: { type: integer, format: int64 }
-        operatedAt: { type: string, format: date-time }
-        traceId: { type: string }
-        idempotencyKeyHash: { type: string }
-    GovernanceAuditLogListResponse:
-      type: object
-      required: [items, page, size, total]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/GovernanceAuditLog'
-        page: { type: integer }
-        size: { type: integer }
-        total: { type: integer }
-    DashboardSummaryResponse:
-      type: object
-      required: [enabledRuleCount, completedCheckRunCount, issueCount, openIssueCount, closeRate, days]
-      properties:
-        days: { type: integer }
-        enabledRuleCount: { type: integer }
-        completedCheckRunCount: { type: integer }
-        issueCount: { type: integer }
-        openIssueCount: { type: integer }
-        closeRate: { type: number, format: double }
+    RuleListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelopeBase'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Rule'
+    CheckRunEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelopeBase'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: '#/components/schemas/CheckRun'
+    CheckResultListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelopeBase'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/CheckResult'
+    IssueListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelopeBase'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Issue'
+    IssueEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelopeBase'
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: '#/components/schemas/Issue'

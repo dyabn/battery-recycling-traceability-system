@@ -103,4 +103,54 @@ class FirstSliceOpenApiContractTest {
             throw new AssertionError("OpenAPI contract could not be parsed", exception);
         }
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void i5DataQualityRuntimeContractIsDeclaredInOpenApi() {
+        java.nio.file.Path contract = java.nio.file.Path.of("contracts/api/openapi-data-governance-v1.1.yaml");
+        if (!java.nio.file.Files.exists(contract)) {
+            contract = java.nio.file.Path.of("../contracts/api/openapi-data-governance-v1.1.yaml");
+        }
+        try (InputStream input = java.nio.file.Files.newInputStream(contract)) {
+            Map<String, Object> openApi = new Yaml().load(input);
+            Map<String, Object> paths = (Map<String, Object>) openApi.get("paths");
+            Assertions.assertThat(paths).containsOnlyKeys(
+                    "/data-quality/rules",
+                    "/data-quality/rules/{ruleCode}/status",
+                    "/data-quality/check-runs",
+                    "/data-quality/check-runs/{runId}",
+                    "/data-quality/check-runs/{runId}/results",
+                    "/data-quality/issues",
+                    "/data-quality/issues/{issueId}"
+            );
+
+            Map<String, Object> checkPost = (Map<String, Object>) ((Map<String, Object>) paths.get("/data-quality/check-runs")).get("post");
+            Map<String, Object> checkResponses = (Map<String, Object>) checkPost.get("responses");
+            Assertions.assertThat(checkResponses).containsKeys("201", "400", "401", "403", "409");
+
+            Map<String, Object> components = (Map<String, Object>) openApi.get("components");
+            Map<String, Object> schemas = (Map<String, Object>) components.get("schemas");
+            Map<String, Object> longId = (Map<String, Object>) schemas.get("LongId");
+            Assertions.assertThat(longId).containsEntry("type", "string").containsEntry("pattern", "^[0-9]+$");
+
+            Map<String, Object> run = (Map<String, Object>) schemas.get("CheckRun");
+            Map<String, Object> runProperties = (Map<String, Object>) run.get("properties");
+            Assertions.assertThat((Map<String, Object>) runProperties.get("id")).containsEntry("$ref", "#/components/schemas/LongId");
+            Assertions.assertThat((Map<String, Object>) runProperties.get("enterpriseId")).containsEntry("$ref", "#/components/schemas/LongId");
+            Assertions.assertThat((Map<String, Object>) runProperties.get("startedBy")).containsEntry("$ref", "#/components/schemas/LongId");
+            Assertions.assertThat(runProperties).containsKeys("requestedRuleCodes", "executedRuleCodes", "resultSummary");
+
+            Map<String, Object> issue = (Map<String, Object>) schemas.get("Issue");
+            Map<String, Object> issueProperties = (Map<String, Object>) issue.get("properties");
+            Assertions.assertThat((Map<String, Object>) issueProperties.get("id")).containsEntry("$ref", "#/components/schemas/LongId");
+            Assertions.assertThat((Map<String, Object>) issueProperties.get("enterpriseId")).containsEntry("$ref", "#/components/schemas/LongId");
+            Assertions.assertThat((Map<String, Object>) issueProperties.get("discoveredRunId")).containsEntry("$ref", "#/components/schemas/LongId");
+
+            Map<String, Object> ruleListEnvelope = (Map<String, Object>) schemas.get("RuleListEnvelope");
+            Assertions.assertThat(ruleListEnvelope).containsKey("allOf");
+            Assertions.assertThat(schemas).doesNotContainKeys("AssignIssueRequest", "CreateRemediationRequest", "RecheckResponse", "DashboardSummaryResponse");
+        } catch (Exception exception) {
+            throw new AssertionError("Data governance OpenAPI contract could not be parsed", exception);
+        }
+    }
 }

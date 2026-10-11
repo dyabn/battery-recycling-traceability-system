@@ -2,7 +2,7 @@
 
 当前阶段：implementation-and-test / 测试通过。
 
-当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已复核通过并关闭；I3 验收闭环已复核通过并关闭；I4 入库库存已复核通过并关闭，Implementation CI run 38053555676 对提交 `d8123ca8108fc4031a60338613401d359c2b15fb` 验证通过；后续增量未启动。
+当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已复核通过并关闭；I3 验收闭环已复核通过并关闭；I4 入库库存已复核通过并关闭，Implementation CI run 38053555676 对提交 `d8123ca8108fc4031a60338613401d359c2b15fb` 验证通过；I5 数据质量检查与问题发现已完成本地实现，当前保持 `paused-for-review / 修改后复核`，等待 MySQL 8.4 CI 证据和人工复核，不启动 I6。
 
 ## I3 实现追踪项
 
@@ -391,6 +391,30 @@
 | DG-Q-004 | 第一版规则范围 | 已解决：DQ-001..DQ-007 纳入，DQ-008 延期。 |
 | DG-Q-005 | 错误数据处理方式 | 已解决：不得直接覆盖已生效数据，需关联更正记录或处理证据。 |
 | DG-Q-006 | 问题关闭条件 | 已解决：处理证据、同规则复查通过、主管复核和完整审计齐备后关闭。 |
+
+## I5 数据质量发现实现追踪
+
+当前实现状态：`paused-for-review / 修改后复核`，等待 GitHub Actions MySQL 8.4 验证 `I5DataQualityDiscoveryIntegrationTest` 实际执行且 `skipped=0`。I5 不包含问题分配、整改、复核、关闭、看板、治理审计查询、出库、企业间流转和综合利用。
+
+| I5 范围 | 需求/规则 | API | 后端实现 | 前端实现 | 测试证据 |
+| --- | --- | --- | --- | --- | --- |
+| 固定规则查看 | FR-DG-001、DQ-001..DQ-007 | `GET /api/v1/data-quality/rules` | `DataQualityController`、`DataQualityService.listRules` | `DataQualityRulesView.vue` | `I5DataQualityDiscoveryIntegrationTest.rulesAndV7BackfillAreVisibleAndDoNotOverrideDisabledConfig`、`i5-pages.test.ts` |
+| 保护性规则启停拒绝 | FR-DG-002、FR-DG-003 | `PATCH /api/v1/data-quality/rules/{ruleCode}/status` | `DataQualityService.rejectRuleToggle`、`DataQualityAuditService` | 无启停按钮 | `I5DataQualityDiscoveryIntegrationTest.rulesAndV7BackfillAreVisibleAndDoNotOverrideDisabledConfig` |
+| 手工同步检查 | FR-DG-004..006 | `POST /api/v1/data-quality/check-runs` | `DataQualityService.createCheckRun`、`IdempotencyService` | `DataQualityChecksView.vue` | `I5DataQualityDiscoveryIntegrationTest.manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency`、`validationMissingConfigAndPermissionsAreAudited` |
+| 检查任务和逐规则结果 | FR-DG-005、FR-DG-007 | `GET /api/v1/data-quality/check-runs/{runId}`、`GET /api/v1/data-quality/check-runs/{runId}/results` | `DataQualityService.getCheckRun`、`listCheckResults` | `DataQualityCheckRunView.vue` | `I5DataQualityDiscoveryIntegrationTest.manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` |
+| DQ-001..DQ-007 处理器 | DQ-001..DQ-007 | 检查任务内部执行 | `DataQualityService.dq001..dq007` | 检查结果页展示 | `I5DataQualityDiscoveryIntegrationTest.manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` |
+| OPEN 问题生成与去重 | FR-DG-007、FR-DG-008 | `GET /api/v1/data-quality/issues`、`GET /api/v1/data-quality/issues/{issueId}` | `dq_issue`、`uk_dq_issue_open`、`DataQualityService.createOrRediscoverIssue` | `DataQualityIssuesView.vue`、`DataQualityIssueDetailView.vue` | `I5DataQualityDiscoveryIntegrationTest.manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency`、`i5-pages.test.ts` |
+| 治理审计、权限和企业隔离 | FR-DG-018、NFR-DG-002、NFR-DG-003 | I5 全部接口 | `DataQualityAuditService`、`GlobalExceptionHandler`、RBAC | 路由权限和菜单 | `I5DataQualityDiscoveryIntegrationTest.validationMissingConfigAndPermissionsAreAudited`、`crossEnterpriseRunsAndIssuesAreRejectedAndAudited` |
+| 企业规则配置回填 | V1.1 数据治理配置 | Flyway V7 | `V7__backfill_data_governance_rule_configs.sql`、`R__dev_demo_accounts.sql` | 无 | `I5DataQualityDiscoveryIntegrationTest.rulesAndV7BackfillAreVisibleAndDoNotOverrideDisabledConfig` |
+
+## I5 测试追踪摘要
+
+| 测试范围 | 覆盖 |
+| --- | --- |
+| I5-TC-001..005 | 七条规则元数据、企业默认配置、V7 不覆盖禁用配置、规则启停拒绝、OpenAPI 不暴露 I6/I7 接口 |
+| I5-TC-006..014 | 范围映射、规则子集、DQ-001..DQ-007 处理器、无违规、违规生成问题、去重、FAILED 任务和结果回滚 |
+| I5-TC-015..021 | 幂等、幂等冲突、缺幂等键、权限矩阵、系统管理员边界、普通角色问题可见性、跨企业拒绝和审计 |
+| I5-TC-022..025 | 404、Long ID 字符串、前端规则/检查/结果/问题页面、I1..I4 回归 |
 
 ## I4 入库库存实现追踪
 
