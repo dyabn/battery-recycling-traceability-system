@@ -119,12 +119,12 @@ public class DataQualityService {
             ExecutionSummary summary = requiresNew.execute(status -> executeRules(currentUser, running.id(), selectedRules, ruleByCode, servletRequest));
             updateRunCompleted(running.id(), summary);
             auditService.record(currentUser, "DQ_CHECK_COMPLETED", "DQ_CHECK_RUN", running.id(), "SUCCESS", "数据质量检查完成", servletRequest, keyHash);
-            return getCheckRun(currentUser, running.id(), servletRequest);
+            return getCheckRunCommitted(currentUser, running.id(), servletRequest);
         } catch (RuntimeException exception) {
             String reason = "数据质量检查执行失败";
             updateRunFailed(running.id(), reason);
             auditService.record(currentUser, "DQ_CHECK_FAILED", "DQ_CHECK_RUN", running.id(), "FAILED", reason, servletRequest, keyHash);
-            return getCheckRun(currentUser, running.id(), servletRequest);
+            return getCheckRunCommitted(currentUser, running.id(), servletRequest);
         }
     }
 
@@ -503,7 +503,11 @@ public class DataQualityService {
                 failureReason,
                 currentUser.id(),
                 status));
-        return getCheckRun(currentUser, runId, null);
+        return getCheckRunCommitted(currentUser, runId, null);
+    }
+
+    private CheckRunDto getCheckRunCommitted(CurrentUser currentUser, Long runId, HttpServletRequest servletRequest) {
+        return requiresNew.execute(status -> getCheckRun(currentUser, runId, servletRequest));
     }
 
     private void updateRunCompleted(Long runId, ExecutionSummary summary) {
