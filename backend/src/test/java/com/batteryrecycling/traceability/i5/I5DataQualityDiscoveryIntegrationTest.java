@@ -296,14 +296,13 @@ class I5DataQualityDiscoveryIntegrationTest {
     }
 
     private long insertEnterpriseBIssue(long runId) {
-        long resultId = idGenerator.nextId();
-        jdbcTemplate.update("""
-                INSERT INTO dq_check_result (
-                  id, enterprise_id, run_id, rule_code, check_status, checked_object_count,
-                  violation_count, rule_snapshot, started_at, completed_at
-                )
-                VALUES (?, 2, ?, 'DQ-002', 'VIOLATION', 1, 1, '{}', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
-                """, resultId, runId);
+        Long resultId = jdbcTemplate.queryForObject("""
+                SELECT id
+                FROM dq_check_result
+                WHERE enterprise_id = 2
+                  AND run_id = ?
+                  AND rule_code = 'DQ-002'
+                """, Long.class, runId);
         long issueId = idGenerator.nextId();
         jdbcTemplate.update("""
                 INSERT INTO dq_issue (
