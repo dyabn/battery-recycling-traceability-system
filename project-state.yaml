@@ -392,6 +392,7 @@ implementation_progress:
       review_result: 修改后复核
       I5_started: true
       scope: I5-data-quality-discovery
+      implementation_commit: 1457bb70bf567cddc167ef0f77146e3d7de43a67
       validation_run: pending
       validated_commit: pending
   outputs:
@@ -534,6 +535,7 @@ implementation_progress:
   i4_review_result: I4复核通过
   i5_validation:
     workflow: Implementation CI
+    implementation_commit: 1457bb70bf567cddc167ef0f77146e3d7de43a67
     run: pending
     commit: pending
     result: pending

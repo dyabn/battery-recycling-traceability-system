@@ -3,8 +3,10 @@
 文档状态：待复核  
 增量：I5-data-quality-discovery  
 当前结论：修改后复核  
+实现提交：`1457bb70bf567cddc167ef0f77146e3d7de43a67`
 验证提交：待 GitHub Actions 验证  
 GitHub Actions：待生成  
+评审包：`i5-data-quality-discovery-review.zip`，SHA-256 以交付消息或本地 `Get-FileHash` 输出为准
 
 ## 范围
 

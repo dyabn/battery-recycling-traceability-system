@@ -42,7 +42,7 @@
 - I3 当前状态：`completed / 复核通过`。
 - I4 当前状态：`completed / 复核通过`；GitHub Actions run `38053555676` 已验证通过。
 - I4 实现提交：`df9b2de9afabea1032747506335e25b24f210969`。
-- I5 当前状态：`paused-for-review / 修改后复核`，本地实现已完成，CI 验证提交待生成。
+- I5 当前状态：`paused-for-review / 修改后复核`，实现提交 `1457bb70bf567cddc167ef0f77146e3d7de43a67` 已推送，CI 验证结果待获取。
 - 测试阶段缺陷修复：后端 Long/long 响应统一序列化为字符串，前端 ID 类型同步为字符串，避免 JavaScript `number` 精度丢失导致详情、编辑保存或加入电池找错对象。
 
 ## 3. 已完成的前置工作
@@ -374,6 +374,21 @@ I3 最新通过的 GitHub Actions：
 
 ## 11. 评审包
 
+I5 当前评审包生成在仓库根目录，文件名为：
+
+```text
+D:\ruanjiankaifajishu\battery-recycling-traceability-system\i5-data-quality-discovery-review.zip
+```
+
+该包由当前 I5 文档收口 HEAD 生成，重新打包时应排除所有旧版 ZIP、原型 ZIP、`node_modules`、`target`、`dist` 和 `.git`，避免评审材料混淆。
+
+SHA-256 以交付时 `Get-FileHash` 输出为准；不要在本文件中硬编码评审包自身哈希，避免评审包内容与哈希形成循环依赖。
+
+```text
+见交付消息或重新执行：
+Get-FileHash .\i5-data-quality-discovery-review.zip -Algorithm SHA256
+```
+
 本轮 I4 评审包重新生成在仓库根目录，文件名为：
 
 ```text
@@ -421,7 +436,7 @@ git rev-parse HEAD
 
 ```yaml
 implementation_progress:
-  current_increment: I4-inbound-inventory
+  current_increment: I5-data-quality-discovery
   increments:
     I2:
       status: completed
