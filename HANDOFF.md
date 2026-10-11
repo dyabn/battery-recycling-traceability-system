@@ -25,9 +25,9 @@
 | I1 | 登录、JWT、RBAC、企业隔离、审计、幂等基础 | 已完成 |
 | I2 | 回收批次、电池登记、重复编码核实、加入批次、提交待验收 | 已完成，复核通过 |
 | I3 | 验收、资料补充、验收不通过、入库前置 | 已完成，复核通过 |
-| I4 | 待入库、仓库库位、单块入库、当前库存、入库追溯 | 已实现，暂停待复核 |
+| I4 | 待入库、仓库库位、单块入库、当前库存、入库追溯 | 已完成，复核通过 |
 
-重要边界：I2、I3 均已关闭；I4 已按用户确认范围启动并完成本地实现，当前停在 `paused-for-review / 修改后复核`。不要关闭 I4，不要启动后续增量，直到 GitHub Actions MySQL 8.4 验证和人工复核通过。
+重要边界：I2、I3、I4 均已关闭；后续增量未启动。不要启动后续增量，直到用户重新确认范围。
 
 ## 2. 当前仓库与分支
 
@@ -39,7 +39,7 @@
 - I3 代码验证提交：`6fee83009925d4fdec505c7f2dfbaeb5b7755425`
 - I3 最新通过的 GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/37734497499`
 - I3 当前状态：`completed / 复核通过`。
-- I4 当前状态：`paused-for-review / 修改后复核`；GitHub Actions MySQL 8.4 验证待取得。
+- I4 当前状态：`completed / 复核通过`；GitHub Actions run `38053555676` 已验证通过。
 - I4 实现提交：`df9b2de9afabea1032747506335e25b24f210969`。
 - 测试阶段缺陷修复：后端 Long/long 响应统一序列化为字符串，前端 ID 类型同步为字符串，避免 JavaScript `number` 精度丢失导致详情、编辑保存或加入电池找错对象。
 
@@ -95,7 +95,7 @@
 
 ## 4. I2 完成情况
 
-I2 最终复核已通过。最新实现提交 `0571da07eb8e22427a2376603d0605d606cf4a39` 已由 Implementation CI run `37629609561` 验证通过；I2 已关闭。I3 最终复核已通过，验证提交 `6fee83009925d4fdec505c7f2dfbaeb5b7755425` 已由 Implementation CI run `37734497499` 验证通过；I3 已关闭。I4 已按用户确认范围启动并完成本地实现，当前等待 CI 和人工复核。
+I2 最终复核已通过。最新实现提交 `0571da07eb8e22427a2376603d0605d606cf4a39` 已由 Implementation CI run `37629609561` 验证通过；I2 已关闭。I3 最终复核已通过，验证提交 `6fee83009925d4fdec505c7f2dfbaeb5b7755425` 已由 Implementation CI run `37734497499` 验证通过；I3 已关闭。I4 最终复核已通过，验证提交 `d8123ca8108fc4031a60338613401d359c2b15fb` 已由 Implementation CI run `38053555676` 验证通过；I4 已关闭，后续增量未启动。
 
 ### 4.1 后端修复
 
@@ -172,7 +172,7 @@ I3 已按用户确认方案实现，并已复核关闭。
 - 结果：通过
 - `RUN_MYSQL_TESTS=true` 下实际执行 I1/I2/I3 集成测试，`I3AcceptanceIntegrationTest` 6 个测试通过，覆盖真实附件下载、附件内容幂等、无效附件组合、追溯历史详情、重建服务实例后下载、回滚文件清理和拒绝审计。
 
-本轮第二轮整改提交 `6fee83009925d4fdec505c7f2dfbaeb5b7755425` 已通过最新 GitHub Actions 验证并通过人工复核；I3 已关闭。用户已明确确认启动 I4，当前 I4 已完成本地实现，等待 CI 和人工复核。
+本轮第二轮整改提交 `6fee83009925d4fdec505c7f2dfbaeb5b7755425` 已通过最新 GitHub Actions 验证并通过人工复核；I3 已关闭。用户已明确确认启动 I4，当前 I4 已完成最终复核并关闭，后续增量未启动。
 
 ## 6. I4 当前实现情况
 
@@ -205,11 +205,11 @@ I4 已按用户确认范围实现入库库存闭环，不包含数据治理闭�
 - 前端生产构建通过；
 - OpenAPI 契约测试通过，I4 入库响应码、删除保护路径、LongId 字符串字段、库存责任企业和状态字段已断言。
 
-待验证：
+CI 已验证：
 
-- Implementation CI 在 MySQL 8.4、`RUN_MYSQL_TESTS=true` 下实际执行 `I4InboundInventoryIntegrationTest`；
-- Redocly、后端测试、前端测试、前端构建和 YAML 检查在 CI 中通过；
-- CI 通过后更新验证提交、Actions run、评审包 SHA-256，再由用户复核决定是否关闭 I4。
+- Implementation CI run `38053555676` 在 MySQL 8.4、`RUN_MYSQL_TESTS=true` 下实际执行 `I4InboundInventoryIntegrationTest`；
+- 日志确认 `I4InboundInventoryIntegrationTest tests=4 failures=0 errors=0 skipped=0`；
+- Redocly、后端测试、前端测试、前端构建和 YAML 检查在 CI 中通过。
 
 ## 7. I2 前端修复补充
 
@@ -263,7 +263,7 @@ I4 已按用户确认范围实现入库库存闭环，不包含数据治理闭�
 - 数据字典补充 `recycle_batch_battery.active_battery_id`。
 - 追踪索引补充 `FR-C4-008 -> V6 -> I2-TC-035/042` 关系。
 - I2 验证记录扩展到 `I2-TC-001..046`。
-- `project-state.yaml` 中 I2 和 I3 均已更新为 `completed / 复核通过`；当前 I4 已更新为 `paused-for-review / 修改后复核`。
+- `project-state.yaml` 中 I2、I3 和 I4 均已更新为 `completed / 复核通过`；后续增量未启动。
 - `contracts/change-log.md` 增加 `CHG-038`、`CHG-039` 和 I2 最终复核通过记录。
 
 ## 9. 验证结果
@@ -341,14 +341,14 @@ D:\ruanjiankaifajishu\battery-recycling-traceability-system\i4-inbound-inventory
 I2 旧包路径：
 
 ```text
-D:\ruanjiankaifajishu\battery-recycling-traceability-system\i2-batch-battery-registration-review.zip
+D:\ruanjiankaifajishu\battery-recycling-traceability-system\i4-inbound-inventory-review.zip
 ```
 
 SHA-256 以交付时 `Get-FileHash` 输出为准；不要在本文件中硬编码评审包自身哈希，避免评审包内容与哈希形成循环依赖。
 
 ```text
 见交付消息或重新执行：
-Get-FileHash .\i2-batch-battery-registration-review.zip -Algorithm SHA256
+Get-FileHash .\i4-inbound-inventory-review.zip -Algorithm SHA256
 ```
 
 该 ZIP 来自当前文档收口 HEAD；以本地命令输出为准：
@@ -371,7 +371,7 @@ git rev-parse HEAD
 
 ## 11. 当前停在什么位置
 
-当前停在：I3 已完成最终复核并关闭，I4 已完成本地实现并暂停待复核。
+当前停在：I4 已完成最终复核并关闭，后续增量未启动。
 
 当前状态应保持：
 
@@ -390,12 +390,12 @@ implementation_progress:
       confirmed_date: 2026-10-08
       I3_started: true
     I4:
-      status: paused-for-review
-      review_result: 修改后复核
+      status: completed
+      review_result: 复核通过
       I4_started: true
 ```
 
-I4 尚未关闭。不要启动后续增量，不要合并到 `main`，不要修改 Flyway V1-V6。
+I4 已关闭。不要启动后续增量，不要合并到 `main`，不要修改 Flyway V1-V6。
 
 ## 12. 下一步应该做什么
 
@@ -416,14 +416,14 @@ git log --oneline -5
 Implementation CI run 37734497499 已确认提交 6fee83009925d4fdec505c7f2dfbaeb5b7755425 通过，覆盖 MySQL 8.4、Flyway V1..V6、RUN_MYSQL_TESTS=true、I3AcceptanceIntegrationTest 6 个测试、Redocly、前端测试和构建。
 ```
 
-4. 核对 I4 本地实现和验证记录：
+4. 核对 I4 收口状态和验证记录：
 
 ```text
 docs/implementation/i4-inbound-inventory-verification.md
-I4 状态应为 paused-for-review / 修改后复核。
+I4 状态应为 completed / 复核通过。
 ```
 
-5. 推送后等待 Implementation CI，在 MySQL 8.4、`RUN_MYSQL_TESTS=true` 下确认 `I4InboundInventoryIntegrationTest` 实际执行且 skipped 为 0。CI 通过并人工复核前不得关闭 I4。
+5. 后续增量启动前必须重新确认范围；当前不要启动数据治理闭环、出库、企业间流转或综合利用。
 
 ## 13. 避免重复和接口对不上的提醒
 

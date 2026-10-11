@@ -2,7 +2,7 @@
 
 当前阶段：implementation-and-test / 测试通过。
 
-当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已复核通过并关闭；I3 验收闭环已复核通过并关闭，Implementation CI run 37734497499 对提交 `6fee83009925d4fdec505c7f2dfbaeb5b7755425` 验证通过；I4 已启动并完成本轮修改后复核整改，当前保持 `paused-for-review / 修改后复核`，等待 MySQL 8.4 CI 和人工复核。
+当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已复核通过并关闭；I3 验收闭环已复核通过并关闭；I4 入库库存已复核通过并关闭，Implementation CI run 38053555676 对提交 `d8123ca8108fc4031a60338613401d359c2b15fb` 验证通过；后续增量未启动。
 
 ## I3 实现追踪项
 
@@ -394,7 +394,7 @@
 
 ## I4 入库库存实现追踪
 
-当前实现状态：`paused-for-review / 修改后复核`，等待 GitHub Actions MySQL 8.4 实执行证据。
+当前实现状态：`completed / 复核通过`，GitHub Actions MySQL 8.4 run `38053555676` 已验证 `I4InboundInventoryIntegrationTest tests=4 failures=0 errors=0 skipped=0`。
 
 | I4 范围 | 需求/规则 | API | 后端实现 | 前端实现 | 测试证据 |
 | --- | --- | --- | --- | --- | --- |

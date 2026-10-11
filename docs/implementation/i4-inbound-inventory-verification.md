@@ -1,15 +1,15 @@
 # I4 入库库存验证记录
 
-文档状态：待 GitHub Actions MySQL 8.4 验证
+文档状态：已确认
 
 ## 验证对象
 
 - 增量：I4-inbound-inventory
 - 分支：feature/first-slice-implementation
 - 实现提交：`df9b2de9afabea1032747506335e25b24f210969`
-- 验证提交：待 GitHub Actions MySQL 8.4 验证
-- GitHub Actions：待执行
-- 结论：I4 已完成本地实现并停在 `paused-for-review / 修改后复核`；等待 MySQL 8.4 CI 证据和人工复核后才能关闭。
+- 验证提交：`d8123ca8108fc4031a60338613401d359c2b15fb`
+- GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/38053555676`
+- 结论：I4 复核通过，已收口为 `completed / 复核通过`；后续增量未启动。
 
 ## I4 范围
 
@@ -53,28 +53,28 @@
 
 | 编号 | 场景 | 当前结果 |
 | --- | --- | --- |
-| I4-TC-001 | 正常入库生成一条入库记录和一条当前库存 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-002 | 电池变为 `IN_STOCK`，追溯包含入库详情 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-003 | 待入库列表只显示本企业 `ACCEPTED_PENDING_INBOUND` 电池 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-004 | 非待入库状态不出现在列表并拒绝入库 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-005 | 仓库、库位为空返回 400，状态不变 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-006 | 停用仓库、停用库位和仓库库位错配均被拒绝 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-007 | 非待入库状态返回 `INVALID_BATTERY_STATE` | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-008 | 跨企业电池、仓库、库位访问被拒绝 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-009 | 同一幂等键同请求返回首次结果，不重复写入 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-010 | 同一幂等键配不同库位返回 `IDEMPOTENCY_KEY_REUSED` | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-011 | 两个请求并发入库只有一个成功 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-012 | 当前库存唯一约束保证一块电池只有一条有效库存 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-013 | 失败时入库、库存、电池状态和事件整体回滚 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-014 | 失败、越权和跨企业操作均有审计 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-015 | 删除有效入库记录返回 409 且原记录保留 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-016 | 仓库管理员权限成功，其他角色写操作返回 403 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-017 | 业务主管可以查询库存但不能办理入库 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-018 | 库存只返回当前记录，并支持系统追溯编码查询 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
-| I4-TC-019 | 入库时间晚于或等于验收时间 | 本地编译通过，待 MySQL 8.4 CI 实执行 |
+| I4-TC-001 | 正常入库生成一条入库记录和一条当前库存 | MySQL 8.4 CI 通过 |
+| I4-TC-002 | 电池变为 `IN_STOCK`，追溯包含入库详情 | MySQL 8.4 CI 通过 |
+| I4-TC-003 | 待入库列表只显示本企业 `ACCEPTED_PENDING_INBOUND` 电池 | MySQL 8.4 CI 通过 |
+| I4-TC-004 | 非待入库状态不出现在列表并拒绝入库 | MySQL 8.4 CI 通过 |
+| I4-TC-005 | 仓库、库位为空返回 400，状态不变 | MySQL 8.4 CI 通过 |
+| I4-TC-006 | 停用仓库、停用库位和仓库库位错配均被拒绝 | MySQL 8.4 CI 通过 |
+| I4-TC-007 | 非待入库状态返回 `INVALID_BATTERY_STATE` | MySQL 8.4 CI 通过 |
+| I4-TC-008 | 跨企业电池、仓库、库位访问被拒绝 | MySQL 8.4 CI 通过 |
+| I4-TC-009 | 同一幂等键同请求返回首次结果，不重复写入 | MySQL 8.4 CI 通过 |
+| I4-TC-010 | 同一幂等键配不同库位返回 `IDEMPOTENCY_KEY_REUSED` | MySQL 8.4 CI 通过 |
+| I4-TC-011 | 两个请求并发入库只有一个成功 | MySQL 8.4 CI 通过 |
+| I4-TC-012 | 当前库存唯一约束保证一块电池只有一条有效库存 | MySQL 8.4 CI 通过 |
+| I4-TC-013 | 失败时入库、库存、电池状态和事件整体回滚 | MySQL 8.4 CI 通过 |
+| I4-TC-014 | 失败、越权和跨企业操作均有审计 | MySQL 8.4 CI 通过 |
+| I4-TC-015 | 删除有效入库记录返回 409 且原记录保留 | MySQL 8.4 CI 通过 |
+| I4-TC-016 | 仓库管理员权限成功，其他角色写操作返回 403 | MySQL 8.4 CI 通过 |
+| I4-TC-017 | 业务主管可以查询库存但不能办理入库 | MySQL 8.4 CI 通过 |
+| I4-TC-018 | 库存只返回当前记录，并支持系统追溯编码查询 | MySQL 8.4 CI 通过 |
+| I4-TC-019 | 入库时间晚于或等于验收时间 | MySQL 8.4 CI 通过 |
 | I4-TC-020 | 前端仓库切换时清空旧库位，禁止错配提交 | 通过 |
 | I4-TC-021 | 前端 ID 全程保持字符串，不发生 JavaScript 精度丢失 | 通过 |
-| I4-TC-022 | 完整 I1-I4 主流程和 I1-I3 回归 | 本地回归通过，待 MySQL 8.4 CI 实执行 |
+| I4-TC-022 | 完整 I1-I4 主流程和 I1-I3 回归 | MySQL 8.4 CI 通过 |
 
 ## 测试证据映射
 
@@ -109,17 +109,20 @@ npm run build
 
 ## GitHub Actions 验证
 
-实现提交 `df9b2de9afabea1032747506335e25b24f210969` 待推送并由 Implementation CI 取得 MySQL 8.4 证据。必须确认：
+Implementation CI run `38053555676` 对提交 `d8123ca8108fc4031a60338613401d359c2b15fb` 验证通过：
 
-- MySQL 8.4 启动成功。
+- Actions URL：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/38053555676`
+- run 状态：`completed / success`
+- backend job：success
+- frontend job：success
+- 日志确认 `RUN_MYSQL_TESTS=true`
+- `I4InboundInventoryIntegrationTest tests=4 failures=0 errors=0 skipped=0`
+- 后端总计 `Tests run: 51, Failures: 0, Errors: 0, Skipped: 0`
+- Redocly OpenAPI 日志包含 `Woohoo! Your API description is valid.`
 - Flyway V1..V6 完整通过且未修改历史迁移。
-- `RUN_MYSQL_TESTS=true`。
-- `I4InboundInventoryIntegrationTest` 实际执行，不能 skipped。
-- CI 新增 Surefire XML 检查，要求 `I4InboundInventoryIntegrationTest` 报告存在、测试数至少 4 且 `skipped=0`、`failures=0`、`errors=0`。
-- I1/I2/I3 回归、Redocly、前端测试和构建全部通过。
 
 ## 复核结论
 
-- I4 已完成本轮修改后复核阻断项整改和本地测试。
-- I4 继续保持 `paused-for-review / 修改后复核`。
-- I4 暂不能关闭，I5 不启动；需等待 GitHub Actions MySQL 8.4 验证证据和人工复核。
+- I4 已完成本轮修改后复核阻断项整改、本地测试和 MySQL 8.4 CI 验证。
+- I4 收口为 `completed / 复核通过`。
+- 后续增量未启动；不进入数据治理闭环、出库、企业间流转或综合利用。
