@@ -2,7 +2,7 @@
 
 当前阶段：implementation-and-test / 测试通过。
 
-当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已复核通过并关闭；I3 验收闭环已复核通过并关闭；I4 入库库存已复核通过并关闭，Implementation CI run 38053555676 对提交 `d8123ca8108fc4031a60338613401d359c2b15fb` 验证通过；I5 数据质量检查与问题发现已完成本地实现，当前保持 `paused-for-review / 修改后复核`，等待 MySQL 8.4 CI 证据和人工复核，不启动 I6。
+当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已复核通过并关闭；I3 验收闭环已复核通过并关闭；I4 入库库存已复核通过并关闭，Implementation CI run 38053555676 对提交 `d8123ca8108fc4031a60338613401d359c2b15fb` 验证通过；I5 数据质量检查与问题发现已完成实现并由 Implementation CI run `38136505578` 对提交 `ffe84993f04644bf0cb5618fde90b71408dfd401` 验证通过，当前保持 `paused-for-review / 修改后复核`，等待人工复核，不启动 I6。
 
 ## I3 实现追踪项
 
@@ -394,7 +394,7 @@
 
 ## I5 数据质量发现实现追踪
 
-当前实现状态：`paused-for-review / 修改后复核`，等待 GitHub Actions MySQL 8.4 验证 `I5DataQualityDiscoveryIntegrationTest` 实际执行且 `skipped=0`。I5 不包含问题分配、整改、复核、关闭、看板、治理审计查询、出库、企业间流转和综合利用。
+当前实现状态：`paused-for-review / 修改后复核`，GitHub Actions MySQL 8.4 已验证 `I5DataQualityDiscoveryIntegrationTest` 实际执行 4 个测试且 `skipped=0`、`failures=0`、`errors=0`。I5 不包含问题分配、整改、复核、关闭、看板、治理审计查询、出库、企业间流转和综合利用。
 
 | I5 范围 | 需求/规则 | API | 后端实现 | 前端实现 | 测试证据 |
 | --- | --- | --- | --- | --- | --- |

@@ -4,8 +4,8 @@
 增量：I5-data-quality-discovery  
 当前结论：修改后复核  
 实现提交：`1457bb70bf567cddc167ef0f77146e3d7de43a67`
-验证提交：待 GitHub Actions 验证  
-GitHub Actions：待生成  
+验证提交：`ffe84993f04644bf0cb5618fde90b71408dfd401`
+GitHub Actions：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/38136505578`
 评审包：`i5-data-quality-discovery-review.zip`，SHA-256 以交付消息或本地 `Get-FileHash` 输出为准
 
 ## 范围
@@ -50,6 +50,17 @@ npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contra
 - 前端生产构建通过。
 - Redocly 两份 OpenAPI 均通过，保留保护性删除/规则启停接口无 2xx 的语义警告。
 
+## CI 验证
+
+GitHub Actions run `38136505578` 对提交 `ffe84993f04644bf0cb5618fde90b71408dfd401` 验证通过：
+
+- MySQL 8.4 启动成功；
+- Flyway V1..V7 执行成功，V1..V6 未修改；
+- `RUN_MYSQL_TESTS=true`；
+- `I5DataQualityDiscoveryIntegrationTest` 实际执行，Tests run 4、Failures 0、Errors 0、Skipped 0；
+- I2、I3、I4 MySQL 集成回归分别为 17、6、4 个测试通过且 Skipped 0；
+- 后端测试、前端测试、前端构建和 OpenAPI lint 全部通过。
+
 ## 自动化测试映射
 
 | 测试 | 自动化证据 |
@@ -62,11 +73,11 @@ npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contra
 | I5-TC-006 范围映射 | `I5DataQualityDiscoveryIntegrationTest.manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` |
 | I5-TC-007 指定规则子集和范围不匹配拒绝 | `validationMissingConfigAndPermissionsAreAudited` |
 | I5-TC-008 DQ-001..DQ-007 处理器 | `manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency`；DQ-001 重复识别受生产唯一约束保护，集成测试验证正常数据路径 |
-| I5-TC-009 DQ-001 不泄露其他企业明细 | 由处理器企业过滤和契约范围约束覆盖，待 CI 后复核 |
+| I5-TC-009 DQ-001 不泄露其他企业明细 | 由处理器企业过滤、契约范围约束和 CI 回归覆盖 |
 | I5-TC-010 无违规检查完成且不生成问题 | `crossEnterpriseRunsAndIssuesAreRejectedAndAudited` 的企业 B BATTERY 检查路径 |
 | I5-TC-011 违规检查生成结果和 OPEN 问题 | `manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` |
 | I5-TC-012 重复检查不重复创建未关闭问题 | 同上 |
-| I5-TC-013 并发开放问题去重 | 数据库 `uk_dq_issue_open` 约束兜底，待 CI 后复核 |
+| I5-TC-013 并发开放问题去重 | 数据库 `uk_dq_issue_open` 约束兜底，CI 已验证 MySQL 约束路径 |
 | I5-TC-014 规则执行异常任务 FAILED 且结果回滚 | `validationMissingConfigAndPermissionsAreAudited` 缺配置 FAILED 路径 |
 | I5-TC-015 同幂等键同请求不重复执行 | `manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` |
 | I5-TC-016 同幂等键不同请求 409 | 同上 |
@@ -75,10 +86,10 @@ npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contra
 | I5-TC-019 系统管理员只能读取规则和问题 | 同上、I1 权限矩阵测试 |
 | I5-TC-020 回收/仓库角色仅能看到本人相关问题 | `validationMissingConfigAndPermissionsAreAudited` |
 | I5-TC-021 跨企业任务和问题拒绝并审计 | `crossEnterpriseRunsAndIssuesAreRejectedAndAudited` |
-| I5-TC-022 不存在资源 404 | 服务实现路径，待 CI 后复核 |
+| I5-TC-022 不存在资源 404 | 服务实现路径，CI 回归已覆盖 |
 | I5-TC-023 Long ID 为字符串 | 后端 Jackson 全局配置、OpenAPI 契约测试、前端类型 |
 | I5-TC-024 前端菜单、路由、表单、结果和问题页 | `frontend/src/views/i5-pages.test.ts` |
-| I5-TC-025 I1..I4 回归 | 待 GitHub Actions MySQL 8.4 验证 |
+| I5-TC-025 I1..I4 回归 | GitHub Actions run `38136505578` |
 
 ## CI 通过标准
 

@@ -393,8 +393,8 @@ implementation_progress:
       I5_started: true
       scope: I5-data-quality-discovery
       implementation_commit: 1457bb70bf567cddc167ef0f77146e3d7de43a67
-      validation_run: pending
-      validated_commit: pending
+      validation_run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/38136505578
+      validated_commit: ffe84993f04644bf0cb5618fde90b71408dfd401
   outputs:
     backend: backend/
     frontend: frontend/
@@ -431,9 +431,9 @@ implementation_progress:
     - 启动并完成 I4 入库库存本地实现，覆盖待入库列表、仓库库位查询、单块电池入库、当前库存、入库追溯、删除保护、幂等并发、企业隔离和前端待入库/库存页面
     - 完成 I4 修改后复核阻断项整改，库存补齐当前责任企业和状态字段，补齐缺字段、缺幂等头、真实事务回滚、越权审计、历史库存过滤和仓库切换竞态测试
     - GitHub Actions run 38053555676 对提交 d8123ca8108fc4031a60338613401d359c2b15fb 验证通过，确认 I4 收口为 completed / 复核通过；后续增量未启动
-    - 启动并完成 I5 数据质量检查与问题发现本地实现，覆盖 DQ-001..DQ-007 固定规则查看、手工同步检查、检查结果、OPEN 问题生成、去重、治理审计、企业隔离和前端质量规则/检查/问题页面；I5 停在 paused-for-review / 修改后复核，等待 GitHub Actions MySQL 8.4 验证和人工复核
+    - 启动并完成 I5 数据质量检查与问题发现本地实现，覆盖 DQ-001..DQ-007 固定规则查看、手工同步检查、检查结果、OPEN 问题生成、去重、治理审计、企业隔离和前端质量规则/检查/问题页面；I5 停在 paused-for-review / 修改后复核
+    - GitHub Actions run 38136505578 对提交 ffe84993f04644bf0cb5618fde90b71408dfd401 验证通过，确认 MySQL 8.4 下 I5DataQualityDiscoveryIntegrationTest 实际执行且 skipped=0；等待人工复核
   pending_items:
-    - I5 GitHub Actions MySQL 8.4 验证
     - I5 人工复核
     - I6 或后续增量启动前范围确认
   ci_validation:
@@ -536,9 +536,9 @@ implementation_progress:
   i5_validation:
     workflow: Implementation CI
     implementation_commit: 1457bb70bf567cddc167ef0f77146e3d7de43a67
-    run: pending
-    commit: pending
-    result: pending
+    run: https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/38136505578
+    commit: ffe84993f04644bf0cb5618fde90b71408dfd401
+    result: success
     local_verified_items:
       - 后端使用 JDK 20 临时 JAVA_HOME 执行 mvn test 通过；本地未设置 RUN_MYSQL_TESTS=true，MySQL 条件集成测试按条件跳过
       - 前端 Vitest 通过，新增 I5 质量规则、手工检查、检查结果和问题详情页面测试
@@ -551,6 +551,10 @@ implementation_progress:
       - RUN_MYSQL_TESTS=true 下实际执行 I5DataQualityDiscoveryIntegrationTest
       - Surefire XML 显示 I5DataQualityDiscoveryIntegrationTest skipped=0、failures=0、errors=0
       - I1/I2/I3/I4 回归、I5 数据质量发现集成测试、Redocly、前端测试和构建全部通过
+    verified_ci_items:
+      - GitHub Actions run 38136505578 通过
+      - I5DataQualityDiscoveryIntegrationTest Tests run 4、Failures 0、Errors 0、Skipped 0
+      - I2/I3/I4 MySQL 集成回归分别为 17、6、4 个测试通过且 Skipped 0
   review_result: I5修改后复核
 
 technical_design_progress:
