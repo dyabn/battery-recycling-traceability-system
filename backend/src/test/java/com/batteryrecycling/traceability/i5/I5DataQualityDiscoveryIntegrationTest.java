@@ -47,6 +47,8 @@ class I5DataQualityDiscoveryIntegrationTest {
     private static final long WAREHOUSE_A_DISABLED = 20102L;
     private static final long LOCATION_A = 21101L;
     private static final long LOCATION_A_MISMATCH = 21103L;
+    private static final long WAREHOUSE_B = 22001L;
+    private static final long LOCATION_B = 22101L;
 
     @Autowired
     MockMvc mockMvc;
@@ -209,6 +211,23 @@ class I5DataQualityDiscoveryIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(0));
 
+        String warehouseToken = tokenFor("warehouse_admin", "password");
+        long recycleIssueId = insertAssignedIssue("DQ-002", "RECYCLE_OPERATOR", 3L, "RECYCLE-ASSIGNED");
+        long warehouseIssueId = insertAssignedIssue("DQ-007", "WAREHOUSE_ADMIN", 4L, "WAREHOUSE-ASSIGNED");
+        mockMvc.perform(get("/api/v1/data-quality/issues").header("Authorization", bearer(recycleToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].id", hasItem(String.valueOf(recycleIssueId))))
+                .andExpect(jsonPath("$.data[*].id", not(hasItem(String.valueOf(warehouseIssueId)))));
+        mockMvc.perform(get("/api/v1/data-quality/issues/{issueId}", warehouseIssueId).header("Authorization", bearer(recycleToken)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/data-quality/issues").header("Authorization", bearer(warehouseToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].id", hasItem(String.valueOf(warehouseIssueId))))
+                .andExpect(jsonPath("$.data[*].id", not(hasItem(String.valueOf(recycleIssueId)))));
+        mockMvc.perform(get("/api/v1/data-quality/issues/{issueId}", warehouseIssueId).header("Authorization", bearer(warehouseToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(String.valueOf(warehouseIssueId)));
+
         jdbcTemplate.update("DELETE FROM dq_enterprise_rule_config WHERE enterprise_id = 2 AND rule_code = 'DQ-007'");
         try {
             JsonNode failedRun = postCheckRun(tokenFor("enterprise_b_user", "password"), "i5-missing-config", """
@@ -238,7 +257,11 @@ class I5DataQualityDiscoveryIntegrationTest {
                 {"runScope":"BATTERY"}
                 """)
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.runStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.issueCount").value(0))
                 .andReturnJson().get("data");
+        Assertions.assertThat(issueCountForRun(enterpriseBRun.get("id").asLong())).isZero();
+        Assertions.assertThat(resultStatuses(enterpriseBRun.get("id").asLong())).containsOnly("PASS");
         long enterpriseBIssue = insertEnterpriseBIssue(enterpriseBRun.get("id").asLong());
 
         int checkDeniedBefore = dqAuditCount("DQ_CHECK_CROSS_ENTERPRISE_DENIED", "FORBIDDEN");
@@ -252,6 +275,15 @@ class I5DataQualityDiscoveryIntegrationTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("CROSS_ENTERPRISE_ACCESS_DENIED"));
         Assertions.assertThat(dqAuditCount("DQ_ISSUE_CROSS_ENTERPRISE_DENIED", "FORBIDDEN")).isGreaterThan(issueDeniedBefore);
+    }
+
+    @Test
+    void ruleProcessorsCoverDuplicateClosedCandidateAndEnterpriseIsolation() throws Exception {
+        String supervisorToken = tokenFor("supervisor", "password");
+        verifyDq001DuplicateTraceCode(supervisorToken);
+        verifyDq003ClosedCandidateWithoutReview(supervisorToken);
+        verifyDq004AllowsAcceptedInboundWithoutInboundCompletedEvent(supervisorToken);
+        verifyDq005AndDq007RejectCrossEnterpriseReferencesWithoutLeakingOtherEnterpriseDetails(supervisorToken);
     }
 
     @Test
@@ -336,6 +368,85 @@ class I5DataQualityDiscoveryIntegrationTest {
         Assertions.assertThat(coreMissingBattery).isPositive();
     }
 
+    private void verifyDq001DuplicateTraceCode(String supervisorToken) throws Exception {
+        String duplicateTrace = "BAT-I5-DUPLICATE-TRACE";
+        try {
+            if (traceIndexExists()) {
+                jdbcTemplate.execute("ALTER TABLE battery DROP INDEX uk_battery_trace_code");
+            }
+            battery(1L, 3L, duplicateTrace, "ORI-I5-DUP-TRACE-A", "REGISTERED", 1L);
+            battery(1L, 3L, duplicateTrace, "ORI-I5-DUP-TRACE-B", "REGISTERED", 1L);
+            postCheckRun(supervisorToken, "i5-dq001-duplicate", """
+                    {"runScope":"BATTERY","requestedRuleCodes":["DQ-001"]}
+                    """)
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.data.runStatus").value("COMPLETED"))
+                    .andExpect(jsonPath("$.data.issueCount").value(greaterThanOrEqualTo(1)));
+            Assertions.assertThat(issueCountForObject("DQ-001", duplicateTrace)).isGreaterThanOrEqualTo(1);
+        } finally {
+            jdbcTemplate.update("DELETE FROM battery WHERE system_trace_code = ?", duplicateTrace);
+            if (!traceIndexExists()) {
+                jdbcTemplate.execute("CREATE UNIQUE INDEX uk_battery_trace_code ON battery (system_trace_code)");
+            }
+            Assertions.assertThat(traceIndexExists()).as("battery trace unique index restored").isTrue();
+        }
+    }
+
+    private void verifyDq003ClosedCandidateWithoutReview(String supervisorToken) throws Exception {
+        long candidateId = idGenerator.nextId();
+        jdbcTemplate.update("""
+                INSERT INTO battery_registration_candidate (
+                  id, enterprise_id, original_code, battery_type, battery_chemistry, candidate_status,
+                  submitted_by, submitted_at, closed_at, created_at, updated_at, version
+                )
+                VALUES (?, 1, ?, 'PACK', 'UNKNOWN', 'CLOSED_DIFFERENT', 3, CURRENT_TIMESTAMP(3),
+                        CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), 0)
+                """, candidateId, "ORI-I5-CLOSED-NO-REVIEW");
+        postCheckRun(supervisorToken, "i5-dq003-closed-missing-review", """
+                {"runScope":"BATTERY","requestedRuleCodes":["DQ-003"]}
+                """)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.runStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.issueCount").value(greaterThanOrEqualTo(1)));
+        Assertions.assertThat(issueCountForObject("DQ-003", String.valueOf(candidateId))).isGreaterThanOrEqualTo(1);
+    }
+
+    private void verifyDq004AllowsAcceptedInboundWithoutInboundCompletedEvent(String supervisorToken) throws Exception {
+        long batteryId = battery(1L, 4L, "BAT-I5-DQ004-NO-INBOUND-EVENT", "ORI-I5-DQ004-NO-INBOUND-EVENT", "IN_STOCK", 1L);
+        acceptancePass(batteryId);
+        lifecycle(batteryId, "ACCEPTANCE_PASSED", "PENDING_ACCEPTANCE", "ACCEPTED_PENDING_INBOUND", LocalDateTime.now().minusMinutes(5));
+        inbound(batteryId, WAREHOUSE_A, LOCATION_A, "IB-I5-DQ004-NO-INBOUND-EVENT");
+        postCheckRun(supervisorToken, "i5-dq004-no-inbound-event", """
+                {"runScope":"INBOUND","requestedRuleCodes":["DQ-004"]}
+                """)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.runStatus").value("COMPLETED"));
+        Assertions.assertThat(issueCountForObject("DQ-004", "IB-I5-DQ004-NO-INBOUND-EVENT")).isZero();
+    }
+
+    private void verifyDq005AndDq007RejectCrossEnterpriseReferencesWithoutLeakingOtherEnterpriseDetails(String supervisorToken) throws Exception {
+        ensureEnterpriseBWarehouseAndLocation();
+        long inboundBattery = battery(1L, 4L, "BAT-I5-DQ005-CROSS-WH", "ORI-I5-DQ005-CROSS-WH", "IN_STOCK", 1L);
+        long crossWarehouseInboundId = inbound(inboundBattery, WAREHOUSE_B, LOCATION_B, "IB-I5-DQ005-CROSS-WH");
+        postCheckRun(supervisorToken, "i5-dq005-cross-enterprise", """
+                {"runScope":"INBOUND","requestedRuleCodes":["DQ-005"]}
+                """)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.runStatus").value("COMPLETED"));
+        Assertions.assertThat(issueCountForObject("DQ-005", "IB-I5-DQ005-CROSS-WH")).isGreaterThanOrEqualTo(1);
+
+        long otherEnterpriseBattery = battery(2L, 6L, "BAT-I5-SECRET-ENTERPRISE-B", "ORI-I5-SECRET-ENTERPRISE-B", "IN_STOCK", 2L);
+        long crossEnterpriseInventoryId = inventory(otherEnterpriseBattery, crossWarehouseInboundId);
+        postCheckRun(supervisorToken, "i5-dq007-cross-enterprise", """
+                {"runScope":"INVENTORY","requestedRuleCodes":["DQ-007"]}
+                """)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.runStatus").value("COMPLETED"));
+        String description = issueDescriptionForObject("DQ-007", String.valueOf(crossEnterpriseInventoryId));
+        Assertions.assertThat(description).contains("不属于本企业");
+        Assertions.assertThat(description).doesNotContain("BAT-I5-SECRET-ENTERPRISE-B");
+    }
+
     private long battery(long enterpriseId, long userId, String traceCode, String originalCode, String lifecycleStatus, long responsibleEnterpriseId) {
         long batteryId = idGenerator.nextId();
         jdbcTemplate.update("""
@@ -383,7 +494,7 @@ class I5DataQualityDiscoveryIntegrationTest {
                 """, idGenerator.nextId(), batteryId, batchId);
     }
 
-    private void inventory(long batteryId, long inboundId) {
+    private long inventory(long batteryId, long inboundId) {
         long inventoryId = idGenerator.nextId();
         jdbcTemplate.update("""
                 INSERT INTO inventory (
@@ -392,6 +503,7 @@ class I5DataQualityDiscoveryIntegrationTest {
                 )
                 VALUES (?, 1, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), 0)
                 """, inventoryId, batteryId, WAREHOUSE_A, LOCATION_A, inboundId);
+        return inventoryId;
     }
 
     private void lifecycle(long batteryId, String eventType, LocalDateTime occurredAt) {
@@ -426,6 +538,51 @@ class I5DataQualityDiscoveryIntegrationTest {
                 VALUES (?, 2, ?, 'DQ-002', 'BATTERY', ?, ?, ?, 'DQ-002 企业B问题',
                         '企业B测试问题', 'MEDIUM', 'RECYCLE_OPERATOR', 'OPEN', ?, ?)
                 """, issueId, "DQI-" + issueId, 200000001L, "B-" + issueId, "B-" + issueId, runId, resultId);
+        return issueId;
+    }
+
+    private long insertAssignedIssue(String ruleCode, String ownerRoleCode, long assignedUserId, String suffix) {
+        long runId = idGenerator.nextId();
+        long resultId = idGenerator.nextId();
+        long issueId = idGenerator.nextId();
+        jdbcTemplate.update("""
+                INSERT INTO dq_check_run (
+                  id, enterprise_id, run_no, run_scope, run_status, requested_rule_codes,
+                  executed_rule_codes, checked_object_count, checked_rule_count, issue_count,
+                  result_summary, started_by, started_at, completed_at, trace_id, version
+                )
+                VALUES (?, 1, ?, 'BATTERY', 'COMPLETED', JSON_ARRAY(?), JSON_ARRAY(?), 1, 1, 1,
+                        JSON_OBJECT('passRuleCount', 0, 'violationRuleCount', 1, 'newIssueCount', 1, 'dedupHitCount', 0),
+                        2, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), ?, 0)
+                """, runId, "DQR-" + runId, ruleCode, ruleCode, "trace-i5-assigned-" + suffix);
+        jdbcTemplate.update("""
+                INSERT INTO dq_check_result (
+                  id, enterprise_id, run_id, rule_code, check_status, checked_object_count,
+                  violation_count, rule_snapshot, started_at, completed_at
+                )
+                VALUES (?, 1, ?, ?, 'VIOLATION', 1, 1, JSON_OBJECT('ruleCode', ?),
+                        CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
+                """, resultId, runId, ruleCode, ruleCode);
+        jdbcTemplate.update("""
+                INSERT INTO dq_issue (
+                  id, enterprise_id, issue_no, rule_code, object_type, object_id, object_identity,
+                  object_key, title, description, severity, owner_role_code, issue_status,
+                  assigned_to_user_id, discovered_run_id, discovered_result_id
+                )
+                VALUES (?, 1, ?, ?, 'BATTERY', ?, ?, ?, ?, ?, 'MEDIUM', ?, 'OPEN', ?, ?, ?)
+                """,
+                issueId,
+                "DQI-" + issueId,
+                ruleCode,
+                issueId,
+                "ASSIGNED-" + suffix,
+                "ASSIGNED-" + suffix,
+                ruleCode + " assigned issue",
+                "assigned issue " + suffix,
+                ownerRoleCode,
+                assignedUserId,
+                runId,
+                resultId);
         return issueId;
     }
 
@@ -503,6 +660,46 @@ class I5DataQualityDiscoveryIntegrationTest {
 
     private int openIssueCount(String ruleCode, String objectIdentity) {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM dq_issue WHERE enterprise_id = 1 AND rule_code = ? AND object_identity = ? AND issue_status = 'OPEN'", Integer.class, ruleCode, objectIdentity);
+    }
+
+    private List<String> resultStatuses(long runId) {
+        return jdbcTemplate.queryForList("SELECT check_status FROM dq_check_result WHERE run_id = ? ORDER BY rule_code", String.class, runId);
+    }
+
+    private String issueDescriptionForObject(String ruleCode, String objectKey) {
+        return jdbcTemplate.queryForObject("SELECT description FROM dq_issue WHERE enterprise_id = 1 AND rule_code = ? AND object_key = ? ORDER BY id DESC LIMIT 1", String.class, ruleCode, objectKey);
+    }
+
+    private boolean traceIndexExists() {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM information_schema.statistics
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'battery'
+                  AND index_name = 'uk_battery_trace_code'
+                """, Integer.class);
+        return count != null && count > 0;
+    }
+
+    private void ensureEnterpriseBWarehouseAndLocation() {
+        jdbcTemplate.update("""
+                INSERT INTO warehouse (
+                  id, enterprise_id, warehouse_code, warehouse_name, enabled_status,
+                  created_by, created_at, updated_by, updated_at, version
+                )
+                VALUES (?, 2, 'WH-201', 'B企业启用仓库', 'ENABLED', 6,
+                        CURRENT_TIMESTAMP(3), NULL, CURRENT_TIMESTAMP(3), 0)
+                ON DUPLICATE KEY UPDATE id = id
+                """, WAREHOUSE_B);
+        jdbcTemplate.update("""
+                INSERT INTO warehouse_location (
+                  id, enterprise_id, warehouse_id, location_code, enabled_status,
+                  created_by, created_at, updated_by, updated_at, version
+                )
+                VALUES (?, 2, ?, 'WH-201-A01-R01-L01', 'ENABLED', 6,
+                        CURRENT_TIMESTAMP(3), NULL, CURRENT_TIMESTAMP(3), 0)
+                ON DUPLICATE KEY UPDATE id = id
+                """, LOCATION_B, WAREHOUSE_B);
     }
 
     private Map<String, Object> latestDqAudit(String actionCode, String result) {

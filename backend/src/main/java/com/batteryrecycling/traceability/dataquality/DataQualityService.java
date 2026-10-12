@@ -436,16 +436,6 @@ public class DataQualityService {
                         AND le.event_result = 'SUCCESS'
                         AND le.occurred_at <= ir.inbound_at
                     )
-                    OR NOT EXISTS (
-                      SELECT 1
-                      FROM lifecycle_event le
-                      WHERE le.enterprise_id = ir.enterprise_id
-                        AND le.battery_id = ir.battery_id
-                        AND le.event_type = 'INBOUND_COMPLETED'
-                        AND le.to_status = 'IN_STOCK'
-                        AND le.event_result = 'SUCCESS'
-                        AND le.occurred_at >= ir.inbound_at
-                    )
                   )
                 ORDER BY ir.id
                 """, (rs, rowNum) -> violation(rs.getLong("id"), String.valueOf(rs.getLong("id")), rs.getString("inbound_no"), "入库前缺少验收通过事实: " + rs.getString("inbound_no")), currentUser.enterpriseId());
@@ -457,11 +447,18 @@ public class DataQualityService {
         List<RuleViolation> violations = jdbcTemplate.query("""
                 SELECT ir.id, ir.inbound_no
                 FROM inbound_record ir
+                LEFT JOIN warehouse w ON w.id = ir.warehouse_id
                 LEFT JOIN warehouse_location wl ON wl.id = ir.location_id
                 WHERE ir.enterprise_id = ?
-                  AND (wl.id IS NULL OR wl.warehouse_id <> ir.warehouse_id)
+                  AND (
+                    w.id IS NULL
+                    OR wl.id IS NULL
+                    OR w.enterprise_id <> ir.enterprise_id
+                    OR wl.enterprise_id <> ir.enterprise_id
+                    OR wl.warehouse_id <> ir.warehouse_id
+                  )
                 ORDER BY ir.id
-                """, (rs, rowNum) -> violation(rs.getLong("id"), String.valueOf(rs.getLong("id")), rs.getString("inbound_no"), "入库库位不存在或不属于所选仓库: " + rs.getString("inbound_no")), currentUser.enterpriseId());
+                """, (rs, rowNum) -> violation(rs.getLong("id"), String.valueOf(rs.getLong("id")), rs.getString("inbound_no"), "入库仓库、库位与企业归属不一致: " + rs.getString("inbound_no")), currentUser.enterpriseId());
         return new RuleOutcome(checked, violations);
     }
 
@@ -517,14 +514,25 @@ public class DataQualityService {
     private RuleOutcome dq007(CurrentUser currentUser) {
         int checked = count("SELECT COUNT(*) FROM inventory WHERE enterprise_id = ? AND is_current = 1", currentUser.enterpriseId());
         List<RuleViolation> violations = jdbcTemplate.query("""
-                SELECT i.id, b.system_trace_code
+                SELECT i.id,
+                       CASE
+                         WHEN b.enterprise_id = i.enterprise_id THEN b.system_trace_code
+                         ELSE NULL
+                       END AS visible_trace_code
                 FROM inventory i
                 JOIN battery b ON b.id = i.battery_id
                 WHERE i.enterprise_id = ?
                   AND i.is_current = 1
-                  AND i.enterprise_id <> b.current_responsible_enterprise_id
+                  AND (
+                    b.enterprise_id <> i.enterprise_id
+                    OR i.enterprise_id <> b.current_responsible_enterprise_id
+                  )
                 ORDER BY i.id
-                """, (rs, rowNum) -> violation(rs.getLong("id"), String.valueOf(rs.getLong("id")), "当前库存企业与电池责任企业不一致: " + rs.getString("system_trace_code")), currentUser.enterpriseId());
+                """, (rs, rowNum) -> {
+                    String traceCode = rs.getString("visible_trace_code");
+                    String suffix = traceCode == null || traceCode.isBlank() ? "当前库存引用的电池不属于本企业" : "当前库存企业与电池责任企业不一致: " + traceCode;
+                    return violation(rs.getLong("id"), String.valueOf(rs.getLong("id")), suffix);
+                }, currentUser.enterpriseId());
         return new RuleOutcome(checked, violations);
     }
 

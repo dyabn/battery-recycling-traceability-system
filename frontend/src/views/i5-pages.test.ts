@@ -15,6 +15,7 @@ import {
   type DataQualityRule,
 } from '../api/i2';
 import { routes } from '../router/routes';
+import ShellView from './ShellView.vue';
 import DataQualityCheckRunView from './data-quality/DataQualityCheckRunView.vue';
 import DataQualityChecksView from './data-quality/DataQualityChecksView.vue';
 import DataQualityIssueDetailView from './data-quality/DataQualityIssueDetailView.vue';
@@ -22,6 +23,10 @@ import DataQualityIssuesView from './data-quality/DataQualityIssuesView.vue';
 import DataQualityRulesView from './data-quality/DataQualityRulesView.vue';
 
 const routerPush = vi.fn();
+const shellAuth = vi.hoisted(() => ({
+  permissions: [] as string[],
+  clearSession: vi.fn(),
+}));
 
 vi.mock('../api/i2', () => ({
   createDataQualityCheckRun: vi.fn(),
@@ -35,6 +40,18 @@ vi.mock('../api/i2', () => ({
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { runId: '9007199254745001', issueId: '9007199254746001' } }),
   useRouter: () => ({ push: routerPush }),
+}));
+
+vi.mock('../stores/auth', () => ({
+  useAuthStore: () => ({
+    currentUser: {
+      displayName: '测试用户',
+      enterpriseId: '1',
+    },
+    roleNames: '测试角色',
+    hasPermission: (permission: string) => shellAuth.permissions.includes(permission),
+    clearSession: shellAuth.clearSession,
+  }),
 }));
 
 function rule(code: string): DataQualityRule {
@@ -104,6 +121,10 @@ function mountWithPlugins(component: object) {
       plugins: [ElementPlus],
       mocks: {
         $router: { push: routerPush, back: vi.fn() },
+        $route: { path: '/data-quality/rules' },
+      },
+      stubs: {
+        RouterView: true,
       },
     },
   });
@@ -145,6 +166,26 @@ describe('I5 data quality pages', () => {
     expect(children.find((route) => route.path === 'data-quality/rules')?.meta?.permission).toBe('dq:rule:read');
     expect(children.find((route) => route.path === 'data-quality/checks')?.meta?.permission).toBe('dq:check:execute');
     expect(children.find((route) => route.path === 'data-quality/issues')?.meta?.permission).toBe('dq:issue:read');
+  });
+
+  it('shows data quality menu items according to role permissions', () => {
+    shellAuth.permissions = ['dq:rule:read', 'dq:check:execute', 'dq:issue:read'];
+    const supervisorShell = mountWithPlugins(ShellView);
+    expect(supervisorShell.text()).toContain('质量规则');
+    expect(supervisorShell.text()).toContain('质量检查');
+    expect(supervisorShell.text()).toContain('质量问题');
+
+    shellAuth.permissions = ['dq:issue:read'];
+    const warehouseShell = mountWithPlugins(ShellView);
+    expect(warehouseShell.text()).not.toContain('质量规则');
+    expect(warehouseShell.text()).not.toContain('质量检查');
+    expect(warehouseShell.text()).toContain('质量问题');
+
+    shellAuth.permissions = [];
+    const noGovernanceShell = mountWithPlugins(ShellView);
+    expect(noGovernanceShell.text()).not.toContain('质量规则');
+    expect(noGovernanceShell.text()).not.toContain('质量检查');
+    expect(noGovernanceShell.text()).not.toContain('质量问题');
   });
 
   it('loads fixed data quality rules', async () => {

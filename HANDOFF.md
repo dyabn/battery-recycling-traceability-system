@@ -42,7 +42,7 @@
 - I3 当前状态：`completed / 复核通过`。
 - I4 当前状态：`completed / 复核通过`；GitHub Actions run `38053555676` 已验证通过。
 - I4 实现提交：`df9b2de9afabea1032747506335e25b24f210969`。
-- I5 当前状态：`paused-for-review / 修改后复核`，实现提交 `1457bb70bf567cddc167ef0f77146e3d7de43a67` 已推送，最新整改验证提交 `fa54798c1f0d01065e4d7ce095e145c9b8f36fe8` 已由 GitHub Actions run `38203806351` 验证通过。
+- I5 当前状态：`paused-for-review / 修改后复核`，实现提交 `1457bb70bf567cddc167ef0f77146e3d7de43a67` 已推送；本轮继续修正 DQ-004/DQ-005/DQ-007 口径并补齐测试证据，当前等待本轮整改 HEAD 的 GitHub Actions MySQL 8.4 验证。
 - 测试阶段缺陷修复：后端 Long/long 响应统一序列化为字符串，前端 ID 类型同步为字符串，避免 JavaScript `number` 精度丢失导致详情、编辑保存或加入电池找错对象。
 
 ## 3. 已完成的前置工作
@@ -234,7 +234,7 @@ I5 已按用户确认范围完成本地实现，状态保持 `paused-for-review 
 - 检查结果、问题、任务完成和成功审计同事务提交，失败仅独立保留 FAILED 任务和失败审计；
 - 前端新增质量规则、质量检查、检查结果、质量问题列表和问题详情页面，规则页展示完整规则元数据；
 - `contracts/api/openapi-data-governance-v1.1.yaml` 保持完整 V1.1 设计基线，`contracts/api/openapi-data-governance-i5-runtime.yaml` 单独声明 I5 已实现的 7 个运行时接口；
-- CI 工作流新增 `I5DataQualityDiscoveryIntegrationTest` Surefire XML 检查，当前阈值为 tests>=6 且 skipped/failures/errors 均为 0。
+- CI 工作流新增 `I5DataQualityDiscoveryIntegrationTest` Surefire XML 检查，当前阈值为 tests>=7 且 skipped/failures/errors 均为 0。
 
 新增测试：
 
@@ -250,15 +250,12 @@ I5 已按用户确认范围完成本地实现，状态保持 `paused-for-review 
 
 GitHub Actions 验证：
 
-- Workflow：Implementation CI；
-- Run：`38203806351`；
-- URL：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/38203806351`；
-- 验证提交：`fa54798c1f0d01065e4d7ce095e145c9b8f36fe8`；
-- 结论：success；
-- backend job：success，包含后端测试、I4/I5 MySQL 执行检查、Flyway V1..V7、迁移后权限基线和 Spring Boot 数据库连接检查；
-- frontend job：success，包含 OpenAPI lint、Vitest、生产构建和演示密码预填检查；
+上一轮 Implementation CI run `38203806351` 只适用于提交 `fa54798c1f0d01065e4d7ce095e145c9b8f36fe8`。本轮又修改了 DQ-004/DQ-005/DQ-007 规则和测试，必须重新取得当前 HEAD 的 MySQL 8.4 证据：
+
+- MySQL 8.4；
+- Flyway V1..V7；
 - `RUN_MYSQL_TESTS=true`；
-- `I5DataQualityDiscoveryIntegrationTest tests>=6 failures=0 errors=0 skipped=0` 由工作流检查确认；
+- `I5DataQualityDiscoveryIntegrationTest tests>=7 failures=0 errors=0 skipped=0`；
 - I1/I2/I3/I4 回归、I5 集成测试、Redocly、前端测试和构建全部通过。
 
 ## 8. I2 前端修复补充
@@ -499,7 +496,7 @@ docs/implementation/i5-data-quality-discovery-verification.md
 I5 状态应为 paused-for-review / 修改后复核。
 ```
 
-6. 本轮整改 HEAD 对应的 GitHub Actions 已通过；下一步进入人工复核。当前不要关闭 I5，不要启动 I6、出库、企业间流转或综合利用。
+6. 等待并复核本轮整改 HEAD 对应的 GitHub Actions；确认 MySQL 8.4 下 `I5DataQualityDiscoveryIntegrationTest` 至少 7 个测试未跳过且全部通过后，再进入人工复核。当前不要关闭 I5，不要启动 I6、出库、企业间流转或综合利用。
 
 ## 14. 避免重复和接口对不上的提醒
 
