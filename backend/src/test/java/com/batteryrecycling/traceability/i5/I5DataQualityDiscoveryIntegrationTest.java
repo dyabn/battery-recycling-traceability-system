@@ -366,11 +366,11 @@ class I5DataQualityDiscoveryIntegrationTest {
         jdbcTemplate.update("""
                 INSERT INTO recycle_batch (
                   id, enterprise_id, batch_no, source_type, source_subject_name,
-                  contact_person, contact_phone, batch_status, created_by, created_at,
-                  updated_by, updated_at, version
+                  handover_date, handover_location, handover_person, batch_status,
+                  submitted_at, created_by, created_at, updated_by, updated_at, version
                 )
-                VALUES (?, 1, ?, 'SOCIAL_RECYCLE', '测试来源', '测试员', '13800000000',
-                        'COMPLETED', 3, CURRENT_TIMESTAMP(3), 3, CURRENT_TIMESTAMP(3), 0)
+                VALUES (?, 1, ?, 'SOCIAL_RECYCLE', '测试来源', CURRENT_DATE, '测试地点', '测试员',
+                        'COMPLETED', CURRENT_TIMESTAMP(3), 3, CURRENT_TIMESTAMP(3), 3, CURRENT_TIMESTAMP(3), 0)
                 """, batchId, "RB-I5-" + batchId);
         jdbcTemplate.update("""
                 INSERT INTO acceptance_record (
