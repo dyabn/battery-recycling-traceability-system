@@ -42,7 +42,7 @@
 - I3 当前状态：`completed / 复核通过`。
 - I4 当前状态：`completed / 复核通过`；GitHub Actions run `38053555676` 已验证通过。
 - I4 实现提交：`df9b2de9afabea1032747506335e25b24f210969`。
-- I5 当前状态：`paused-for-review / 修改后复核`，实现提交 `1457bb70bf567cddc167ef0f77146e3d7de43a67` 已推送；本轮继续修正 DQ-004/DQ-005/DQ-007 口径并补齐测试证据，最新验证提交 `d513e38226b8204b82c9caa869f45e8558dfc158` 已由 GitHub Actions run `38207526224` 验证通过。
+- I5 当前状态：`paused-for-review / 修改后复核`，最新实现提交 `aa343a6878df07fddb874d3072df83f9b0d5a302` 已推送；本轮继续修正 DQ-004 跨企业电池引用漏检、DQ-001 跨企业重复隔离和测试证据映射，最新验证提交 `aa343a6878df07fddb874d3072df83f9b0d5a302` 已由 GitHub Actions run `38249151302` 验证通过。
 - 测试阶段缺陷修复：后端 Long/long 响应统一序列化为字符串，前端 ID 类型同步为字符串，避免 JavaScript `number` 精度丢失导致详情、编辑保存或加入电池找错对象。
 
 ## 3. 已完成的前置工作
@@ -251,9 +251,9 @@ I5 已按用户确认范围完成本地实现，状态保持 `paused-for-review 
 GitHub Actions 验证：
 
 - Workflow：Implementation CI；
-- Run：`38207526224`；
-- URL：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/38207526224`；
-- 验证提交：`d513e38226b8204b82c9caa869f45e8558dfc158`；
+- Run：`38249151302`；
+- URL：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/38249151302`；
+- 验证提交：`aa343a6878df07fddb874d3072df83f9b0d5a302`；
 - 结论：success；
 - backend job：success，包含后端测试、I4/I5 MySQL 执行检查、Flyway V1..V7、迁移后权限基线和 Spring Boot 数据库连接检查；
 - frontend job：success，包含 OpenAPI lint、Vitest、生产构建和演示密码预填检查；

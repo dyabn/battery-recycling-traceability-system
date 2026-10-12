@@ -2,7 +2,7 @@
 
 当前阶段：implementation-and-test / 测试通过。
 
-当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已复核通过并关闭；I3 验收闭环已复核通过并关闭；I4 入库库存已复核通过并关闭，Implementation CI run 38053555676 对提交 `d8123ca8108fc4031a60338613401d359c2b15fb` 验证通过；I5 数据质量检查与问题发现已完成本轮规则口径和测试证据整改，Implementation CI run `38207526224` 对提交 `d513e38226b8204b82c9caa869f45e8558dfc158` 验证通过，当前保持 `paused-for-review / 修改后复核`，等待人工复核，不启动 I6。
+当前状态：CR-DG-001 已复核通过，数据治理需求、测试、原型和技术设计基线 V1.1 已确认。I0 工程骨架已通过 GitHub Actions 验证，I1 身份、权限和企业隔离已复核通过；I2 回收批次与电池登记已复核通过并关闭；I3 验收闭环已复核通过并关闭；I4 入库库存已复核通过并关闭，Implementation CI run 38053555676 对提交 `d8123ca8108fc4031a60338613401d359c2b15fb` 验证通过；I5 数据质量检查与问题发现已完成本轮规则口径和测试证据整改，Implementation CI run `38249151302` 对提交 `aa343a6878df07fddb874d3072df83f9b0d5a302` 验证通过，当前保持 `paused-for-review / 修改后复核`，等待人工复核，不启动 I6。
 
 ## I3 实现追踪项
 
@@ -394,7 +394,7 @@
 
 ## I5 数据质量发现实现追踪
 
-当前实现状态：`paused-for-review / 修改后复核`。本轮复核阻断项已进行代码和测试整改，DQ-004 回归已确认口径，DQ-005/DQ-007 补齐企业归属和信息隔离，I5 MySQL 集成测试增至不少于 7 个；Implementation CI run `38207526224` 已验证 `I5DataQualityDiscoveryIntegrationTest` 实际执行且 `skipped=0`、`failures=0`、`errors=0`，backend、frontend、OpenAPI、Flyway V1..V7 和迁移后权限基线均通过。I5 不包含问题分配、整改、复核、关闭、看板、治理审计查询、出库、企业间流转和综合利用。
+当前实现状态：`paused-for-review / 修改后复核`。本轮复核阻断项已进行代码和测试整改，DQ-004 回归已确认口径并补齐跨企业电池引用漏检，DQ-005/DQ-007 补齐企业归属和信息隔离，I5 MySQL 集成测试不少于 7 个；Implementation CI run `38249151302` 已验证 `I5DataQualityDiscoveryIntegrationTest` 实际执行且 `skipped=0`、`failures=0`、`errors=0`，backend、frontend、OpenAPI、Flyway V1..V7 和迁移后权限基线均通过。I5 不包含问题分配、整改、复核、关闭、看板、治理审计查询、出库、企业间流转和综合利用。
 
 | I5 范围 | 需求/规则 | API | 后端实现 | 前端实现 | 测试证据 |
 | --- | --- | --- | --- | --- | --- |

@@ -3,10 +3,10 @@
 文档状态：待复核  
 增量：I5-data-quality-discovery  
 当前结论：修改后复核  
-实现提交：`1457bb70bf567cddc167ef0f77146e3d7de43a67`
-上一轮验证提交：`fa54798c1f0d01065e4d7ce095e145c9b8f36fe8`
-本轮验证提交：`d513e38226b8204b82c9caa869f45e8558dfc158`
-GitHub Actions：Implementation CI run `38207526224`
+实现提交：`aa343a6878df07fddb874d3072df83f9b0d5a302`
+上一轮验证提交：`d513e38226b8204b82c9caa869f45e8558dfc158`
+本轮验证提交：`aa343a6878df07fddb874d3072df83f9b0d5a302`
+GitHub Actions：Implementation CI run `38249151302`
 评审包：`i5-data-quality-discovery-review.zip`，SHA-256 以交付消息或本地 `Get-FileHash` 输出为准
 
 ## 范围
@@ -58,9 +58,9 @@ npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contra
 | 项目 | 证据 |
 | --- | --- |
 | Workflow | Implementation CI |
-| Run | `38207526224` |
-| URL | `https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/38207526224` |
-| 验证提交 | `d513e38226b8204b82c9caa869f45e8558dfc158` |
+| Run | `38249151302` |
+| URL | `https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/38249151302` |
+| 验证提交 | `aa343a6878df07fddb874d3072df83f9b0d5a302` |
 | 结论 | `success` |
 | backend job | `success` |
 | frontend job | `success` |
@@ -111,7 +111,7 @@ npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contra
 | I5-TC-022 不存在资源 404 | `validationMissingConfigAndPermissionsAreAudited` |
 | I5-TC-023 Long ID 为字符串 | `FirstSliceOpenApiContractTest.i5DataQualityRuntimeContractIsDeclaredInOpenApi`、后端 Jackson 全局配置、前端类型 |
 | I5-TC-024 前端菜单、路由、表单、结果、完整规则元数据和问题页 | `frontend/src/views/i5-pages.test.ts` 断言路由权限、不同权限下 Shell 菜单显示/隐藏、检查表单、结果页、问题详情和规则完整元数据 |
-| I5-TC-025 I1..I4 回归 | Implementation CI run `38207526224` 验证 backend job、I4 执行检查、Flyway V1..V7、前端测试和构建均通过；I2/I3/I4 MySQL 集成测试在 `RUN_MYSQL_TESTS=true` 下随 backend 测试执行 |
+| I5-TC-025 I1..I4 回归 | Implementation CI run `38249151302` 验证 backend job、I4 执行检查、Flyway V1..V7、前端测试和构建均通过；I2/I3/I4 MySQL 集成测试在 `RUN_MYSQL_TESTS=true` 下随 backend 测试执行 |
 
 ## CI 通过标准
 
