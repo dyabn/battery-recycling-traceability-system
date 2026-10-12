@@ -47,9 +47,6 @@ class I5DataQualityDiscoveryIntegrationTest {
     private static final long WAREHOUSE_A_DISABLED = 20102L;
     private static final long LOCATION_A = 21101L;
     private static final long LOCATION_A_MISMATCH = 21103L;
-    private static final long WAREHOUSE_B = 22001L;
-    private static final long LOCATION_B = 22101L;
-
     @Autowired
     MockMvc mockMvc;
 
@@ -257,11 +254,7 @@ class I5DataQualityDiscoveryIntegrationTest {
                 {"runScope":"BATTERY"}
                 """)
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.runStatus").value("COMPLETED"))
-                .andExpect(jsonPath("$.data.issueCount").value(0))
                 .andReturnJson().get("data");
-        Assertions.assertThat(issueCountForRun(enterpriseBRun.get("id").asLong())).isZero();
-        Assertions.assertThat(resultStatuses(enterpriseBRun.get("id").asLong())).containsOnly("PASS");
         long enterpriseBIssue = insertEnterpriseBIssue(enterpriseBRun.get("id").asLong());
 
         int checkDeniedBefore = dqAuditCount("DQ_CHECK_CROSS_ENTERPRISE_DENIED", "FORBIDDEN");
@@ -280,6 +273,7 @@ class I5DataQualityDiscoveryIntegrationTest {
     @Test
     void ruleProcessorsCoverDuplicateClosedCandidateAndEnterpriseIsolation() throws Exception {
         String supervisorToken = tokenFor("supervisor", "password");
+        verifyNoViolationCheckCompletesWithoutIssues(supervisorToken);
         verifyDq001DuplicateTraceCode(supervisorToken);
         verifyDq003ClosedCandidateWithoutReview(supervisorToken);
         verifyDq004AllowsAcceptedInboundWithoutInboundCompletedEvent(supervisorToken);
@@ -392,6 +386,18 @@ class I5DataQualityDiscoveryIntegrationTest {
         }
     }
 
+    private void verifyNoViolationCheckCompletesWithoutIssues(String supervisorToken) throws Exception {
+        JsonNode run = postCheckRun(supervisorToken, "i5-no-violation-dq001", """
+                {"runScope":"BATTERY","requestedRuleCodes":["DQ-001"]}
+                """)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.runStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.issueCount").value(0))
+                .andReturnJson().get("data");
+        Assertions.assertThat(issueCountForRun(run.get("id").asLong())).isZero();
+        Assertions.assertThat(resultStatuses(run.get("id").asLong())).containsOnly("PASS");
+    }
+
     private void verifyDq003ClosedCandidateWithoutReview(String supervisorToken) throws Exception {
         long candidateId = idGenerator.nextId();
         jdbcTemplate.update("""
@@ -425,9 +431,9 @@ class I5DataQualityDiscoveryIntegrationTest {
     }
 
     private void verifyDq005AndDq007RejectCrossEnterpriseReferencesWithoutLeakingOtherEnterpriseDetails(String supervisorToken) throws Exception {
-        ensureEnterpriseBWarehouseAndLocation();
+        long[] enterpriseBWarehouse = createEnterpriseBWarehouseAndLocation();
         long inboundBattery = battery(1L, 4L, "BAT-I5-DQ005-CROSS-WH", "ORI-I5-DQ005-CROSS-WH", "IN_STOCK", 1L);
-        long crossWarehouseInboundId = inbound(inboundBattery, WAREHOUSE_B, LOCATION_B, "IB-I5-DQ005-CROSS-WH");
+        long crossWarehouseInboundId = inbound(inboundBattery, enterpriseBWarehouse[0], enterpriseBWarehouse[1], "IB-I5-DQ005-CROSS-WH");
         postCheckRun(supervisorToken, "i5-dq005-cross-enterprise", """
                 {"runScope":"INBOUND","requestedRuleCodes":["DQ-005"]}
                 """)
@@ -681,25 +687,28 @@ class I5DataQualityDiscoveryIntegrationTest {
         return count != null && count > 0;
     }
 
-    private void ensureEnterpriseBWarehouseAndLocation() {
+    private long[] createEnterpriseBWarehouseAndLocation() {
+        long warehouseId = idGenerator.nextId();
+        long locationId = idGenerator.nextId();
+        String warehouseCode = "WH-" + String.format("%03d", 200 + (int) (warehouseId % 700));
+        String locationCode = warehouseCode + "-A01-R01-L01";
         jdbcTemplate.update("""
                 INSERT INTO warehouse (
                   id, enterprise_id, warehouse_code, warehouse_name, enabled_status,
                   created_by, created_at, updated_by, updated_at, version
                 )
-                VALUES (?, 2, 'WH-201', 'B企业启用仓库', 'ENABLED', 6,
+                VALUES (?, 2, ?, 'B企业启用仓库', 'ENABLED', 6,
                         CURRENT_TIMESTAMP(3), NULL, CURRENT_TIMESTAMP(3), 0)
-                ON DUPLICATE KEY UPDATE id = id
-                """, WAREHOUSE_B);
+                """, warehouseId, warehouseCode);
         jdbcTemplate.update("""
                 INSERT INTO warehouse_location (
                   id, enterprise_id, warehouse_id, location_code, enabled_status,
                   created_by, created_at, updated_by, updated_at, version
                 )
-                VALUES (?, 2, ?, 'WH-201-A01-R01-L01', 'ENABLED', 6,
+                VALUES (?, 2, ?, ?, 'ENABLED', 6,
                         CURRENT_TIMESTAMP(3), NULL, CURRENT_TIMESTAMP(3), 0)
-                ON DUPLICATE KEY UPDATE id = id
-                """, LOCATION_B, WAREHOUSE_B);
+                """, locationId, warehouseId, locationCode);
+        return new long[] {warehouseId, locationId};
     }
 
     private Map<String, Object> latestDqAudit(String actionCode, String result) {
