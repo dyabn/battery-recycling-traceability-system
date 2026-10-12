@@ -244,7 +244,7 @@ I5 已按用户确认范围完成本地实现，状态保持 `paused-for-review 
 本地已验证：
 
 - 后端 `mvn -q test` 通过；本地未设置 `RUN_MYSQL_TESTS=true`，MySQL 条件集成测试按环境变量跳过；
-- 前端 Vitest 28 个测试通过；
+- 前端 Vitest 29 个测试通过；
 - 前端生产构建通过；
 - Redocly 三份 OpenAPI 均通过，当前 4 个 warning 为两个删除保护接口无 2xx、I5 规则启停保护接口无 2xx、完整 V1.1 设计基线保留未使用的 `RecheckId` 组件。
 

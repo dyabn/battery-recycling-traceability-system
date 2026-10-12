@@ -94,9 +94,9 @@ npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contra
 | I5-TC-005 不存在算法/脚本编辑接口 | `FirstSliceOpenApiContractTest.i5DataQualityRuntimeContractIsDeclaredInOpenApi` |
 | I5-TC-006 范围映射 | `I5DataQualityDiscoveryIntegrationTest.manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` |
 | I5-TC-007 指定规则子集和范围不匹配拒绝 | `validationMissingConfigAndPermissionsAreAudited` |
-| I5-TC-008 DQ-001..DQ-007 处理器 | `manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` 验证 DQ-002..DQ-007 命中与 DQ-004 合规反例；`ruleProcessorsCoverDuplicateClosedCandidateAndEnterpriseIsolation` 临时移除并恢复追溯编码唯一索引以验证 DQ-001 重复识别，验证 DQ-003 已关闭但缺核实记录、DQ-004 无 `INBOUND_COMPLETED` 事件仍通过、DQ-005/DQ-007 跨企业异常引用 |
-| I5-TC-009 DQ-001 不泄露其他企业明细 | DQ-001 处理器只返回当前企业对象；`ruleProcessorsCoverDuplicateClosedCandidateAndEnterpriseIsolation` 验证 DQ-007 跨企业异常引用不泄露另一企业追溯编码 |
-| I5-TC-010 无违规检查完成且不生成问题 | `crossEnterpriseRunsAndIssuesAreRejectedAndAudited` 断言企业 B BATTERY 检查 `issueCount=0`、结果全部 PASS、未生成问题 |
+| I5-TC-008 DQ-001..DQ-007 处理器 | `manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` 验证 DQ-002..DQ-007 命中与 DQ-004 合规反例；`ruleProcessorsCoverDuplicateClosedCandidateAndEnterpriseIsolation` 临时移除并恢复追溯编码唯一索引以验证 DQ-001 重复识别，验证 DQ-003 已关闭但缺核实记录、DQ-004 无 `INBOUND_COMPLETED` 事件仍通过、DQ-004/DQ-005/DQ-007 跨企业异常引用 |
+| I5-TC-009 DQ-001 不泄露其他企业明细 | `ruleProcessorsCoverDuplicateClosedCandidateAndEnterpriseIsolation` 构造企业 A、企业 B 相同追溯编码，断言企业 A 检查只生成企业 A 对象问题，问题描述不包含企业 B 电池 ID 或原始编码 |
+| I5-TC-010 无违规检查完成且不生成问题 | `verifyNoViolationCheckCompletesWithoutIssues` 断言 DQ-001 无违规检查 `issueCount=0`、结果全部 PASS、未生成问题 |
 | I5-TC-011 违规检查生成结果和 OPEN 问题 | `manualCheckCreatesResultsOpenIssuesAndDeduplicatesWithIdempotency` |
 | I5-TC-012 重复检查不重复创建未关闭问题 | 同上 |
 | I5-TC-013 并发开放问题去重 | `concurrentChecksDeduplicateOpenIssues` 使用双线程不同幂等键真实并发检查 |

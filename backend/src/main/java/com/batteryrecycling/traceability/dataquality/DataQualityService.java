@@ -413,10 +413,12 @@ public class DataQualityService {
         List<RuleViolation> violations = jdbcTemplate.query("""
                 SELECT ir.id, ir.inbound_no
                 FROM inbound_record ir
-                JOIN battery b ON b.id = ir.battery_id AND b.enterprise_id = ir.enterprise_id
+                LEFT JOIN battery b ON b.id = ir.battery_id
                 WHERE ir.enterprise_id = ?
                   AND (
                     ir.inbound_status <> 'EFFECTIVE'
+                    OR b.id IS NULL
+                    OR b.enterprise_id <> ir.enterprise_id
                     OR b.lifecycle_status <> 'IN_STOCK'
                     OR NOT EXISTS (
                     SELECT 1

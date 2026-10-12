@@ -364,12 +364,17 @@ class I5DataQualityDiscoveryIntegrationTest {
 
     private void verifyDq001DuplicateTraceCode(String supervisorToken) throws Exception {
         String duplicateTrace = "BAT-I5-DUPLICATE-TRACE";
+        String crossEnterpriseTrace = "BAT-I5-DUPLICATE-CROSS-TRACE";
+        long enterpriseABatteryId = 0L;
+        long enterpriseBBatteryId = 0L;
         try {
             if (traceIndexExists()) {
                 jdbcTemplate.execute("ALTER TABLE battery DROP INDEX uk_battery_trace_code");
             }
             battery(1L, 3L, duplicateTrace, "ORI-I5-DUP-TRACE-A", "REGISTERED", 1L);
             battery(1L, 3L, duplicateTrace, "ORI-I5-DUP-TRACE-B", "REGISTERED", 1L);
+            enterpriseABatteryId = battery(1L, 3L, crossEnterpriseTrace, "ORI-I5-DUP-CROSS-A", "REGISTERED", 1L);
+            enterpriseBBatteryId = battery(2L, 6L, crossEnterpriseTrace, "ORI-I5-DUP-CROSS-B", "REGISTERED", 2L);
             postCheckRun(supervisorToken, "i5-dq001-duplicate", """
                     {"runScope":"BATTERY","requestedRuleCodes":["DQ-001"]}
                     """)
@@ -377,8 +382,15 @@ class I5DataQualityDiscoveryIntegrationTest {
                     .andExpect(jsonPath("$.data.runStatus").value("COMPLETED"))
                     .andExpect(jsonPath("$.data.issueCount").value(greaterThanOrEqualTo(1)));
             Assertions.assertThat(issueCountForObject("DQ-001", duplicateTrace)).isGreaterThanOrEqualTo(1);
+            Assertions.assertThat(issueObjectIds("DQ-001", crossEnterpriseTrace))
+                    .contains(String.valueOf(enterpriseABatteryId))
+                    .doesNotContain(String.valueOf(enterpriseBBatteryId));
+            String description = issueDescriptionForObject("DQ-001", crossEnterpriseTrace);
+            Assertions.assertThat(description)
+                    .doesNotContain(String.valueOf(enterpriseBBatteryId))
+                    .doesNotContain("ORI-I5-DUP-CROSS-B");
         } finally {
-            jdbcTemplate.update("DELETE FROM battery WHERE system_trace_code = ?", duplicateTrace);
+            jdbcTemplate.update("DELETE FROM battery WHERE system_trace_code IN (?, ?)", duplicateTrace, crossEnterpriseTrace);
             if (!traceIndexExists()) {
                 jdbcTemplate.execute("CREATE UNIQUE INDEX uk_battery_trace_code ON battery (system_trace_code)");
             }
@@ -440,6 +452,19 @@ class I5DataQualityDiscoveryIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.runStatus").value("COMPLETED"));
         Assertions.assertThat(issueCountForObject("DQ-005", "IB-I5-DQ005-CROSS-WH")).isGreaterThanOrEqualTo(1);
+
+        long otherEnterpriseInboundBattery = battery(2L, 6L, "BAT-I5-SECRET-DQ004-B", "ORI-I5-SECRET-DQ004-B", "IN_STOCK", 2L);
+        inbound(otherEnterpriseInboundBattery, WAREHOUSE_A, LOCATION_A, "IB-I5-DQ004-CROSS-BATTERY");
+        postCheckRun(supervisorToken, "i5-dq004-cross-enterprise-battery", """
+                {"runScope":"INBOUND","requestedRuleCodes":["DQ-004"]}
+                """)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.runStatus").value("COMPLETED"));
+        String dq004Description = issueDescriptionForObject("DQ-004", "IB-I5-DQ004-CROSS-BATTERY");
+        Assertions.assertThat(dq004Description).contains("IB-I5-DQ004-CROSS-BATTERY");
+        Assertions.assertThat(dq004Description)
+                .doesNotContain("BAT-I5-SECRET-DQ004-B")
+                .doesNotContain(String.valueOf(otherEnterpriseInboundBattery));
 
         long otherEnterpriseBattery = battery(2L, 6L, "BAT-I5-SECRET-ENTERPRISE-B", "ORI-I5-SECRET-ENTERPRISE-B", "IN_STOCK", 2L);
         long crossEnterpriseInventoryId = inventory(otherEnterpriseBattery, crossWarehouseInboundId);
@@ -674,6 +699,10 @@ class I5DataQualityDiscoveryIntegrationTest {
 
     private String issueDescriptionForObject(String ruleCode, String objectKey) {
         return jdbcTemplate.queryForObject("SELECT description FROM dq_issue WHERE enterprise_id = 1 AND rule_code = ? AND object_key = ? ORDER BY id DESC LIMIT 1", String.class, ruleCode, objectKey);
+    }
+
+    private List<String> issueObjectIds(String ruleCode, String objectKey) {
+        return jdbcTemplate.queryForList("SELECT object_id FROM dq_issue WHERE enterprise_id = 1 AND rule_code = ? AND object_key = ? ORDER BY object_id", String.class, ruleCode, objectKey);
     }
 
     private boolean traceIndexExists() {
