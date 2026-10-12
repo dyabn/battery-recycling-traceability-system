@@ -277,7 +277,7 @@ public class DataQualityService {
         }
         long issueId = idGenerator.nextId();
         try {
-            jdbcTemplate.update("""
+            int affectedRows = jdbcTemplate.update("""
                     INSERT INTO dq_issue (
                       id, enterprise_id, issue_no, rule_code, object_type, object_id, object_identity,
                       object_key, title, description, severity, owner_role_code, issue_status,
@@ -286,6 +286,11 @@ public class DataQualityService {
                     )
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', NULL, ?, ?, CURRENT_TIMESTAMP(3),
                             CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), 0)
+                    ON DUPLICATE KEY UPDATE
+                      id = LAST_INSERT_ID(id),
+                      last_detected_at = CURRENT_TIMESTAMP(3),
+                      updated_at = CURRENT_TIMESTAMP(3),
+                      version = version + 1
                     """,
                     issueId,
                     currentUser.enterpriseId(),
@@ -301,21 +306,40 @@ public class DataQualityService {
                     rule.defaultOwnerRoleCode(),
                     runId,
                     resultId);
-            auditService.recordInCurrentTransaction(currentUser, "DQ_ISSUE_CREATED", "DQ_ISSUE", issueId, null, "OPEN", "SUCCESS", rule.ruleCode(), request, keyHash);
-            return true;
+            if (affectedRows == 1) {
+                auditService.recordInCurrentTransaction(currentUser, "DQ_ISSUE_CREATED", "DQ_ISSUE", issueId, null, "OPEN", "SUCCESS", rule.ruleCode(), request, keyHash);
+                return true;
+            }
+            Long existingIssueId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+            auditService.recordInCurrentTransaction(currentUser, "DQ_ISSUE_REDISCOVERED", "DQ_ISSUE", existingIssueId, "OPEN", "OPEN", "SUCCESS", "并发检查命中既有质量问题", request, keyHash);
+            return false;
         } catch (DataIntegrityViolationException exception) {
-            List<Long> concurrentExisting = jdbcTemplate.queryForList("""
-                    SELECT id
-                    FROM dq_issue
-                    WHERE enterprise_id = ? AND open_issue_key = ?
-                    """, Long.class, currentUser.enterpriseId(), openIssueKey);
-            if (!concurrentExisting.isEmpty()) {
-                jdbcTemplate.update("UPDATE dq_issue SET last_detected_at = CURRENT_TIMESTAMP(3), updated_at = CURRENT_TIMESTAMP(3), version = version + 1 WHERE id = ?", concurrentExisting.get(0));
-                auditService.recordInCurrentTransaction(currentUser, "DQ_ISSUE_REDISCOVERED", "DQ_ISSUE", concurrentExisting.get(0), "OPEN", "OPEN", "SUCCESS", "并发检查命中既有质量问题", request, keyHash);
-                return false;
+            if (isDuplicateOpenIssue(exception)) {
+                List<Long> concurrentExisting = jdbcTemplate.queryForList("""
+                        SELECT id
+                        FROM dq_issue
+                        WHERE enterprise_id = ? AND open_issue_key = ?
+                        """, Long.class, currentUser.enterpriseId(), openIssueKey);
+                if (!concurrentExisting.isEmpty()) {
+                    jdbcTemplate.update("UPDATE dq_issue SET last_detected_at = CURRENT_TIMESTAMP(3), updated_at = CURRENT_TIMESTAMP(3), version = version + 1 WHERE id = ?", concurrentExisting.get(0));
+                    auditService.recordInCurrentTransaction(currentUser, "DQ_ISSUE_REDISCOVERED", "DQ_ISSUE", concurrentExisting.get(0), "OPEN", "OPEN", "SUCCESS", "并发检查命中既有质量问题", request, keyHash);
+                    return false;
+                }
             }
             throw exception;
         }
+    }
+
+    private boolean isDuplicateOpenIssue(DataIntegrityViolationException exception) {
+        Throwable current = exception;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null && message.contains("uk_dq_issue_open")) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private RuleOutcome runRule(CurrentUser currentUser, String ruleCode) {

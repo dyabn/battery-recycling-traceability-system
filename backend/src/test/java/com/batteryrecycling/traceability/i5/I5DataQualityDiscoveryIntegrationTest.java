@@ -365,7 +365,7 @@ class I5DataQualityDiscoveryIntegrationTest {
         long batchId = idGenerator.nextId();
         jdbcTemplate.update("""
                 INSERT INTO recycle_batch (
-                  id, enterprise_id, batch_no, source_type, source_enterprise_name,
+                  id, enterprise_id, batch_no, source_type, source_subject_name,
                   contact_person, contact_phone, batch_status, created_by, created_at,
                   updated_by, updated_at, version
                 )
