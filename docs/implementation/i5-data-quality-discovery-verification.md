@@ -3,9 +3,9 @@
 文档状态：待复核  
 增量：I5-data-quality-discovery  
 当前结论：修改后复核  
-实现提交：本轮整改提交后填写
-验证提交：待 GitHub Actions 验证当前 HEAD
-GitHub Actions：待取得当前 HEAD 的 MySQL 8.4 运行结果
+实现提交：`1457bb70bf567cddc167ef0f77146e3d7de43a67`
+整改验证提交：`fa54798c1f0d01065e4d7ce095e145c9b8f36fe8`
+GitHub Actions：Implementation CI run `38203806351`
 评审包：`i5-data-quality-discovery-review.zip`，SHA-256 以交付消息或本地 `Get-FileHash` 输出为准
 
 ## 范围
@@ -52,9 +52,28 @@ npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contra
 
 ## CI 验证
 
-上一轮 GitHub Actions run `38136505578` 已不再作为本轮整改的最终证据。本轮修改新增和修正了 I5 规则、事务、审计、契约和前端测试，必须重新取得当前 HEAD 的 MySQL 8.4 CI 结果。
+本轮整改已取得当前 HEAD 的 GitHub Actions MySQL 8.4 证据：
 
-待确认项：
+| 项目 | 证据 |
+| --- | --- |
+| Workflow | Implementation CI |
+| Run | `38203806351` |
+| URL | `https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/38203806351` |
+| 验证提交 | `fa54798c1f0d01065e4d7ce095e145c9b8f36fe8` |
+| 结论 | `success` |
+| backend job | `success` |
+| frontend job | `success` |
+| `Build and test backend` | `success` |
+| `Verify I4 MySQL integration test executed` | `success` |
+| `Verify I5 MySQL integration test executed` | `success` |
+| `Run Flyway V1-V7 migrations on MySQL 8.4` | `success` |
+| `Verify migrated table and permission baseline` | `success` |
+| `Verify Spring Boot connects to migrated database` | `success` |
+| `Validate OpenAPI contracts` | `success` |
+| `Run frontend tests` | `success` |
+| `Build frontend` | `success` |
+
+已确认：
 
 - MySQL 8.4 启动成功；
 - Flyway V1..V7 执行成功，V1..V6 未修改；
@@ -91,7 +110,7 @@ npx --yes @redocly/cli@2.54.3 lint contracts/api/openapi-first-slice.yaml contra
 | I5-TC-022 不存在资源 404 | `validationMissingConfigAndPermissionsAreAudited` |
 | I5-TC-023 Long ID 为字符串 | `FirstSliceOpenApiContractTest.i5DataQualityRuntimeContractIsDeclaredInOpenApi`、后端 Jackson 全局配置、前端类型 |
 | I5-TC-024 前端菜单、路由、表单、结果、完整规则元数据和问题页 | `frontend/src/views/i5-pages.test.ts` |
-| I5-TC-025 I1..I4 回归 | 待当前 HEAD GitHub Actions 验证 |
+| I5-TC-025 I1..I4 回归 | Implementation CI run `38203806351` 验证 backend job、I4 执行检查、Flyway V1..V7、前端测试和构建均通过；I2/I3/I4 MySQL 集成测试在 `RUN_MYSQL_TESTS=true` 下随 backend 测试执行 |
 
 ## CI 通过标准
 
@@ -106,7 +125,7 @@ I5 复核前必须取得 GitHub Actions 证据：
 
 ## 结论
 
-当前 I5 已完成本轮整改和本地验证，仍需取得当前 HEAD 的 GitHub Actions MySQL 8.4 证据，状态保持：
+当前 I5 已完成本轮整改、本地验证和当前 HEAD 的 GitHub Actions MySQL 8.4 验证，状态保持：
 
 ```yaml
 I5:

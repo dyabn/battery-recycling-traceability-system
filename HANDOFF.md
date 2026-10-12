@@ -42,7 +42,7 @@
 - I3 当前状态：`completed / 复核通过`。
 - I4 当前状态：`completed / 复核通过`；GitHub Actions run `38053555676` 已验证通过。
 - I4 实现提交：`df9b2de9afabea1032747506335e25b24f210969`。
-- I5 当前状态：`paused-for-review / 修改后复核`，实现提交 `1457bb70bf567cddc167ef0f77146e3d7de43a67` 已推送，最新验证提交 `ffe84993f04644bf0cb5618fde90b71408dfd401` 已由 GitHub Actions run `38136505578` 验证通过。
+- I5 当前状态：`paused-for-review / 修改后复核`，实现提交 `1457bb70bf567cddc167ef0f77146e3d7de43a67` 已推送，最新整改验证提交 `fa54798c1f0d01065e4d7ce095e145c9b8f36fe8` 已由 GitHub Actions run `38203806351` 验证通过。
 - 测试阶段缺陷修复：后端 Long/long 响应统一序列化为字符串，前端 ID 类型同步为字符串，避免 JavaScript `number` 精度丢失导致详情、编辑保存或加入电池找错对象。
 
 ## 3. 已完成的前置工作
@@ -250,13 +250,16 @@ I5 已按用户确认范围完成本地实现，状态保持 `paused-for-review 
 
 GitHub Actions 验证：
 
-- MySQL 8.4；
-- Flyway V1..V7；
+- Workflow：Implementation CI；
+- Run：`38203806351`；
+- URL：`https://github.com/dyabn/battery-recycling-traceability-system/actions/runs/38203806351`；
+- 验证提交：`fa54798c1f0d01065e4d7ce095e145c9b8f36fe8`；
+- 结论：success；
+- backend job：success，包含后端测试、I4/I5 MySQL 执行检查、Flyway V1..V7、迁移后权限基线和 Spring Boot 数据库连接检查；
+- frontend job：success，包含 OpenAPI lint、Vitest、生产构建和演示密码预填检查；
 - `RUN_MYSQL_TESTS=true`；
-- `I5DataQualityDiscoveryIntegrationTest tests>=6 failures=0 errors=0 skipped=0`；
+- `I5DataQualityDiscoveryIntegrationTest tests>=6 failures=0 errors=0 skipped=0` 由工作流检查确认；
 - I1/I2/I3/I4 回归、I5 集成测试、Redocly、前端测试和构建全部通过。
-
-当前旧验证证据 Implementation CI run `38136505578` 只适用于上一轮提交。本轮整改后必须重新取得当前 HEAD 的 GitHub Actions MySQL 8.4 证据。
 
 ## 8. I2 前端修复补充
 
@@ -496,7 +499,7 @@ docs/implementation/i5-data-quality-discovery-verification.md
 I5 状态应为 paused-for-review / 修改后复核。
 ```
 
-6. 等待并复核本轮整改 HEAD 对应的 GitHub Actions；确认 MySQL 8.4 下 `I5DataQualityDiscoveryIntegrationTest` 至少 6 个测试未跳过且全部通过后，再进入人工复核。当前不要关闭 I5，不要启动 I6、出库、企业间流转或综合利用。
+6. 本轮整改 HEAD 对应的 GitHub Actions 已通过；下一步进入人工复核。当前不要关闭 I5，不要启动 I6、出库、企业间流转或综合利用。
 
 ## 14. 避免重复和接口对不上的提醒
 
